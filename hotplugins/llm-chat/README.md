@@ -35,8 +35,11 @@ python scripts/deploy_hot.py --project llm-chat --config run/plugmc-hot/llm-chat
 | `welcome.message` | 欢迎语模板，支持 `{player}`、`{online}` 占位符 |
 | `welcome.broadcast` | `true` 全服广播；`false` 只发给进服玩家 |
 | `banter.enabled` | 是否对公开聊天按概率触发 NPC 吐槽 |
+| `banter.systemChat` | 是否把系统聊天（成就、公告、`/say` 等）也纳入吐槽（默认 `true`） |
+| `banter.ignoreJoinLeave` | 跳过进服/退服系统消息，避免与进服欢迎重复（默认 `true`） |
 | `banter.chance` | 每条公开消息触发吐槽的概率（0~1，默认 0.12） |
 | `banter.cooldownSeconds` | 两次吐槽之间的全局冷却秒数（默认 45） |
+| `banter.maxPerWindow` / `banter.windowSeconds` | 时间窗内最多吐槽次数，默认 300 秒内最多 3 次 |
 | `banter.minLength` | 触发吐槽的最短消息长度（默认 3） |
 | `banter.maxTokens` | 吐槽回复的最大 token 数（默认 80） |
 | `banter.broadcast` | `true` 全服广播；`false` 只回给发言玩家 |
@@ -59,8 +62,14 @@ python scripts/deploy_hot.py --project llm-chat --config run/plugmc-hot/llm-chat
 进服欢迎通过 tick 监测在线玩家变化实现：插件加载时已在线玩家不会重复欢迎，之后新加入的玩家
 会收到 `welcome.message` 渲染后的广播。
 
-随机吐槽只针对**公开聊天**（不含命令、私聊和 NPC 自身消息）：每条消息按 `banter.chance` 掷骰，
-通过后还要满足全局冷却与“同时只有一个吐槽请求”。`@npc` 触发的正常对话不会触发吐槽。
-启用后公开聊天内容会发送到配置的 LLM 接口，请在服务器上向玩家说明。
+随机吐槽针对**公开信息**：玩家公开聊天 + 系统聊天（成就、公告、`/say` 等；命令、私聊和 NPC 自身消息除外）。
+每条消息按 `banter.chance` 掷骰，通过后还要满足：
+
+- 全局冷却 `cooldownSeconds`；
+- 时间窗限制 `maxPerWindow` / `windowSeconds`（防止成就刷屏时连续吐槽）；
+- 同时只有一个吐槽请求。
+
+`@npc` 触发的正常对话不会触发吐槽，NPC 自己的回复也不会递归触发。启用后公开聊天/系统消息内容
+会发送到配置的 LLM 接口，请在服务器上向玩家说明。
 
 聊天栏用法：`@npc 你好，介绍一下你自己`。

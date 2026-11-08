@@ -54,4 +54,9 @@ final class HotPluginContextImpl implements HotPluginContext {
 	public void onChatMessage(BiConsumer<ServerPlayer, String> handler) {
 		plugin.chatHandlers().add(handler);
 	}
+
+	@Override
+	public void onSystemMessage(Consumer<String> handler) {
+		plugin.systemMessageHandlers().add(handler);
+	}
 }

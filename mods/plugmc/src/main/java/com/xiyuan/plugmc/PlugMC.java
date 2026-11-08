@@ -55,6 +55,21 @@ public class PlugMC implements ModInitializer {
 			}
 		});
 
+		ServerMessageEvents.GAME_MESSAGE.register((server, message, overlay) -> {
+			HotPluginManager manager = hotPluginManager;
+			if (!overlay && manager != null) {
+				manager.dispatchSystemMessage(message.getString());
+			}
+		});
+
+		// /say 等命令广播的公共消息
+		ServerMessageEvents.COMMAND_MESSAGE.register((message, source, parameters) -> {
+			HotPluginManager manager = hotPluginManager;
+			if (manager != null) {
+				manager.dispatchSystemMessage(message.signedContent());
+			}
+		});
+
 		LOGGER.info("PlugMC 已加载，热加载目录: plugmc-hot/");
 	}
 

@@ -46,6 +46,7 @@ public final class LlmChatPlugin implements HotPlugin {
 	private final Map<UUID, Deque<ChatTurn>> histories = new HashMap<>();
 	private final Set<UUID> inFlight = new HashSet<>();
 	private final Set<UUID> knownPlayers = new HashSet<>();
+	private final Deque<Long> banterTimes = new ArrayDeque<>();
 	private long lastBanterAt;
 	private boolean banterInFlight;
 
@@ -82,10 +83,12 @@ public final class LlmChatPlugin implements HotPlugin {
 
 		enabled = true;
 		knownPlayers.clear();
+		banterTimes.clear();
 		for (ServerPlayer player : context.server().getPlayerList().getPlayers()) {
 			knownPlayers.add(player.getUUID());
 		}
 		context.onChatMessage(this::onChatMessage);
+		context.onSystemMessage(this::onSystemMessage);
 		context.onServerTick(this::onServerTick);
 		context.registerCommand(buildCommand());
 
@@ -104,6 +107,7 @@ public final class LlmChatPlugin implements HotPlugin {
 		histories.clear();
 		inFlight.clear();
 		knownPlayers.clear();
+		banterTimes.clear();
 		banterInFlight = false;
 		if (http != null) {
 			try {
@@ -140,7 +144,7 @@ public final class LlmChatPlugin implements HotPlugin {
 			&& (message.length() == prefix.length() || Character.isWhitespace(message.charAt(prefix.length())));
 
 		if (!triggered) {
-			maybeBanter(sender, message);
+			maybeBanter(sender, "玩家 " + sender.getName().getString() + " 说", message);
 			return;
 		}
 
@@ -153,7 +157,32 @@ public final class LlmChatPlugin implements HotPlugin {
 		ask(sender.getUUID(), sender.getName().getString(), text, sender);
 	}
 
-	private void maybeBanter(ServerPlayer sender, String message) {
+	private void onSystemMessage(String message) {
+		if (!enabled || message == null || message.isBlank()) {
+			return;
+		}
+
+		LlmConfig current = config;
+		if (!current.banter().systemChat()) {
+			return;
+		}
+
+		String text = message.trim();
+		// 避免 NPC 自己的回复、管理命令反馈再次触发吐槽
+		if (text.startsWith(current.npc().replyPrefix())
+			|| text.startsWith("[llm-chat]")
+			|| text.startsWith("[PlugMC]")) {
+			return;
+		}
+		// 进服/退服消息由欢迎逻辑处理，避免同一次进服产生欢迎 + 吐槽两条消息
+		if (current.banter().ignoreJoinLeave() && isJoinLeaveMessage(text)) {
+			return;
+		}
+
+		maybeBanter(null, "服务器系统消息", text);
+	}
+
+	private void maybeBanter(ServerPlayer player, String source, String message) {
 		LlmConfig current = config;
 		LlmConfig.Banter banter = current.banter();
 		if (!banter.enabled() || current.api().apiKey().isBlank()) {
@@ -166,6 +195,13 @@ public final class LlmChatPlugin implements HotPlugin {
 		}
 
 		long now = System.currentTimeMillis();
+		long windowMillis = banter.windowSeconds() * 1000L;
+		while (!banterTimes.isEmpty() && now - banterTimes.peekFirst() >= windowMillis) {
+			banterTimes.removeFirst();
+		}
+		if (banterTimes.size() >= banter.maxPerWindow()) {
+			return;
+		}
 		if (now - lastBanterAt < banter.cooldownSeconds() * 1000L) {
 			return;
 		}
@@ -178,7 +214,8 @@ public final class LlmChatPlugin implements HotPlugin {
 
 		banterInFlight = true;
 		lastBanterAt = now;
-		requestBanter(sender, sender.getName().getString(), text, banter);
+		banterTimes.addLast(now);
+		requestBanter(player, source + "：" + text, banter);
 	}
 
 	private void ask(UUID session, String speaker, String text, ServerPlayer player) {
@@ -279,13 +316,13 @@ public final class LlmChatPlugin implements HotPlugin {
 		reply(content, player);
 	}
 
-	private void requestBanter(ServerPlayer player, String speaker, String text, LlmConfig.Banter banter) {
+	private void requestBanter(ServerPlayer player, String userPrompt, LlmConfig.Banter banter) {
 		LlmConfig current = config;
 		long requestGeneration = generation;
 
 		JsonArray messages = new JsonArray();
 		messages.add(turn("system", banter.systemPrompt()));
-		messages.add(turn("user", "玩家 " + speaker + " 说：" + text));
+		messages.add(turn("user", userPrompt));
 
 		HttpRequest request;
 		try {
@@ -296,7 +333,11 @@ public final class LlmChatPlugin implements HotPlugin {
 			return;
 		}
 
-		logger.info("LLM 吐槽请求: {} model={}", speaker, current.api().model());
+		logger.info(
+			"LLM 吐槽请求: {} model={}",
+			player == null ? "system" : player.getName().getString(),
+			current.api().model()
+		);
 		http.sendAsync(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8))
 			.whenComplete((response, throwable) -> {
 				try {
@@ -336,6 +377,7 @@ public final class LlmChatPlugin implements HotPlugin {
 		try {
 			String content = extractContent(body);
 			if (!content.isEmpty()) {
+				logger.info("吐槽回复: {}", content);
 				reply(content, player, banter.broadcast());
 			}
 		} catch (RuntimeException exception) {
@@ -408,7 +450,8 @@ public final class LlmChatPlugin implements HotPlugin {
 			+ " 进行中=" + inFlight.size()
 			+ " 欢迎=" + (current.welcome().enabled() ? "on" : "off")
 			+ " 吐槽=" + (current.banter().enabled()
-				? "on(" + Math.round(current.banter().chance() * 100) + "%)"
+				? "on(" + Math.round(current.banter().chance() * 100) + "%, "
+					+ current.banter().maxPerWindow() + "/" + current.banter().windowSeconds() + "s)"
 				: "off")
 			+ " 配置=" + configPath;
 		source.sendSuccess(() -> Component.literal("[llm-chat] " + text), false);
@@ -448,6 +491,7 @@ public final class LlmChatPlugin implements HotPlugin {
 			generation++;
 			histories.clear();
 			inFlight.clear();
+			banterTimes.clear();
 			banterInFlight = false;
 			logger.info("LLM 配置已重新加载: model={} endpoint={}", config.api().model(), config.api().endpoint());
 			source.sendSuccess(() -> Component.literal("[llm-chat] 已重新加载配置: model=" + config.api().model()), true);
@@ -496,7 +540,7 @@ public final class LlmChatPlugin implements HotPlugin {
 		Component message = Component.literal(current.npc().replyPrefix() + text);
 
 		if (current.welcome().broadcast()) {
-			context.server().getPlayerList().broadcastSystemMessage(message, false);
+			sendToAll(message);
 		} else {
 			player.sendSystemMessage(message);
 		}
@@ -508,7 +552,7 @@ public final class LlmChatPlugin implements HotPlugin {
 		String text = formatWelcome(current.welcome().message(), playerName);
 		Component message = Component.literal(current.npc().replyPrefix() + text);
 		if (current.welcome().broadcast()) {
-			context.server().getPlayerList().broadcastSystemMessage(message, false);
+			sendToAll(message);
 		} else {
 			logger.info("{}", message.getString());
 		}
@@ -542,10 +586,9 @@ public final class LlmChatPlugin implements HotPlugin {
 		}
 
 		banterInFlight = true;
-		lastBanterAt = System.currentTimeMillis();
 		ServerPlayer player = source.getPlayer();
 		String speaker = player != null ? player.getName().getString() : "Console";
-		requestBanter(player, speaker, text, current.banter());
+		requestBanter(player, "玩家 " + speaker + " 说：" + text, current.banter());
 		source.sendSuccess(() -> Component.literal("[llm-chat] 已发送吐槽请求"), false);
 		return 1;
 	}
@@ -557,11 +600,25 @@ public final class LlmChatPlugin implements HotPlugin {
 	private void reply(String content, ServerPlayer player, boolean broadcast) {
 		Component message = Component.literal(config.npc().replyPrefix() + content);
 		if (broadcast) {
-			context.server().getPlayerList().broadcastSystemMessage(message, false);
+			sendToAll(message);
 		} else if (player != null) {
 			player.sendSystemMessage(message);
 		} else {
 			logger.info("{}", message.getString());
+		}
+	}
+
+	/**
+	 * 逐个玩家发送，避免走 PlayerList.broadcastSystemMessage 触发 GAME_MESSAGE 造成自触发。
+	 */
+	private void sendToAll(Component message) {
+		List<ServerPlayer> players = context.server().getPlayerList().getPlayers();
+		if (players.isEmpty()) {
+			logger.info("{}", message.getString());
+			return;
+		}
+		for (ServerPlayer player : players) {
+			player.sendSystemMessage(message);
 		}
 	}
 
@@ -576,6 +633,14 @@ public final class LlmChatPlugin implements HotPlugin {
 
 	private static Predicate<CommandSourceStack> admin() {
 		return source -> Commands.LEVEL_ADMINS.check(source.permissions());
+	}
+
+	private static boolean isJoinLeaveMessage(String text) {
+		String lower = text.toLowerCase(java.util.Locale.ROOT);
+		return lower.contains(" joined the game")
+			|| lower.contains(" left the game")
+			|| text.contains("加入了游戏")
+			|| text.contains("离开了游戏");
 	}
 
 	private static JsonObject turn(String role, String content) {

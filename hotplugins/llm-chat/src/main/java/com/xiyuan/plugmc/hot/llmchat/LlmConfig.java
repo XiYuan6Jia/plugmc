@@ -50,8 +50,12 @@ record LlmConfig(Api api, Npc npc, Welcome welcome, Banter banter) {
 
 	record Banter(
 		boolean enabled,
+		boolean systemChat,
+		boolean ignoreJoinLeave,
 		double chance,
 		int cooldownSeconds,
+		int maxPerWindow,
+		int windowSeconds,
 		int minLength,
 		int maxTokens,
 		boolean broadcast,
@@ -64,7 +68,7 @@ record LlmConfig(Api api, Npc npc, Welcome welcome, Banter banter) {
 			new Api(DEFAULT_BASE_URL, DEFAULT_MODEL, "", 0.7, 256, 60, false, DEFAULT_SYSTEM_PROMPT),
 			new Npc("小页", "@npc", "[小页] ", 6, true),
 			new Welcome(true, DEFAULT_WELCOME, true),
-			new Banter(true, 0.12, 45, 3, 80, true, DEFAULT_BANTER_PROMPT)
+			new Banter(true, true, true, 0.12, 45, 3, 300, 3, 80, true, DEFAULT_BANTER_PROMPT)
 		);
 	}
 
@@ -106,8 +110,12 @@ record LlmConfig(Api api, Npc npc, Welcome welcome, Banter banter) {
 			),
 			new Banter(
 				bool(banter, "enabled", true),
+				bool(banter, "systemChat", true),
+				bool(banter, "ignoreJoinLeave", true),
 				clamp(number(banter, "chance", 0.12), 0.0, 1.0),
 				clamp(integer(banter, "cooldownSeconds", 45), 0, 600),
+				clamp(integer(banter, "maxPerWindow", 3), 0, 100),
+				clamp(integer(banter, "windowSeconds", 300), 10, 3600),
 				clamp(integer(banter, "minLength", 3), 0, 100),
 				clamp(integer(banter, "maxTokens", 80), 16, 512),
 				bool(banter, "broadcast", true),
@@ -146,8 +154,12 @@ record LlmConfig(Api api, Npc npc, Welcome welcome, Banter banter) {
 
 		JsonObject banterJson = new JsonObject();
 		banterJson.addProperty("enabled", banter.enabled());
+		banterJson.addProperty("systemChat", banter.systemChat());
+		banterJson.addProperty("ignoreJoinLeave", banter.ignoreJoinLeave());
 		banterJson.addProperty("chance", banter.chance());
 		banterJson.addProperty("cooldownSeconds", banter.cooldownSeconds());
+		banterJson.addProperty("maxPerWindow", banter.maxPerWindow());
+		banterJson.addProperty("windowSeconds", banter.windowSeconds());
 		banterJson.addProperty("minLength", banter.minLength());
 		banterJson.addProperty("maxTokens", banter.maxTokens());
 		banterJson.addProperty("broadcast", banter.broadcast());

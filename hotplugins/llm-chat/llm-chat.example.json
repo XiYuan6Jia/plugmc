@@ -23,8 +23,12 @@
   },
   "banter": {
     "enabled": true,
+    "systemChat": true,
+    "ignoreJoinLeave": true,
     "chance": 0.12,
     "cooldownSeconds": 45,
+    "maxPerWindow": 3,
+    "windowSeconds": 300,
     "minLength": 3,
     "maxTokens": 80,
     "broadcast": true,

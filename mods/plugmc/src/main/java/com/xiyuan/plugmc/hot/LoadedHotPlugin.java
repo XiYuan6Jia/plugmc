@@ -24,6 +24,7 @@ final class LoadedHotPlugin {
 	private final List<LiteralCommandNode<CommandSourceStack>> commands = new ArrayList<>();
 	private final List<Consumer<MinecraftServer>> tickCallbacks = new ArrayList<>();
 	private final List<BiConsumer<ServerPlayer, String>> chatHandlers = new ArrayList<>();
+	private final List<Consumer<String>> systemMessageHandlers = new ArrayList<>();
 	private HotPluginContext context;
 
 	LoadedHotPlugin(PluginDescriptor descriptor, Path jar, URLClassLoader classLoader, HotPlugin instance) {
@@ -67,5 +68,9 @@ final class LoadedHotPlugin {
 
 	List<BiConsumer<ServerPlayer, String>> chatHandlers() {
 		return chatHandlers;
+	}
+
+	List<Consumer<String>> systemMessageHandlers() {
+		return systemMessageHandlers;
 	}
 }

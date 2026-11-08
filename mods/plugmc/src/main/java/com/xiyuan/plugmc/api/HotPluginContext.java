@@ -35,4 +35,9 @@ public interface HotPluginContext {
 	 * 注册玩家聊天回调（原始聊天内容，运行在服务端线程）。
 	 */
 	void onChatMessage(BiConsumer<ServerPlayer, String> handler);
+
+	/**
+	 * 注册系统聊天回调（成就、公告、/say 等非玩家聊天的公共消息，运行在服务端线程）。
+	 */
+	void onSystemMessage(Consumer<String> handler);
 }

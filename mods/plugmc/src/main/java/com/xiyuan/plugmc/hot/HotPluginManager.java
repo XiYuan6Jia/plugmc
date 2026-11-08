@@ -158,6 +158,7 @@ public final class HotPluginManager {
 				removeCommands(plugin);
 				plugin.tickCallbacks().clear();
 				plugin.chatHandlers().clear();
+				plugin.systemMessageHandlers().clear();
 			}
 			closeQuietly(classLoader);
 			if (throwable instanceof Exception exception) {
@@ -182,6 +183,7 @@ public final class HotPluginManager {
 		removeCommands(plugin);
 		plugin.tickCallbacks().clear();
 		plugin.chatHandlers().clear();
+		plugin.systemMessageHandlers().clear();
 		closeQuietly(plugin.classLoader());
 		refreshCommands();
 		LOGGER.info("已卸载热插件 {}", id);
@@ -256,6 +258,22 @@ public final class HotPluginManager {
 		}
 	}
 
+	public void dispatchSystemMessage(String message) {
+		if (plugins.isEmpty() || message == null || message.isBlank()) {
+			return;
+		}
+
+		for (LoadedHotPlugin plugin : List.copyOf(plugins.values())) {
+			for (Consumer<String> handler : List.copyOf(plugin.systemMessageHandlers())) {
+				try {
+					handler.accept(message);
+				} catch (Throwable throwable) {
+					logger(plugin).error("系统消息回调异常", throwable);
+				}
+			}
+		}
+	}
+
 	public void close() {
 		for (String id : List.copyOf(plugins.keySet())) {
 			LoadedHotPlugin plugin = plugins.remove(id);
@@ -266,6 +284,7 @@ public final class HotPluginManager {
 			}
 			plugin.tickCallbacks().clear();
 			plugin.chatHandlers().clear();
+			plugin.systemMessageHandlers().clear();
 			closeQuietly(plugin.classLoader());
 		}
 	}
