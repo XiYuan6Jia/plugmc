@@ -40,3 +40,11 @@ replay_*.log
 
 # 仅本地使用的协作说明，不入库
 AGENTS.md
+
+# 本地密钥 / 环境变量（明文，禁止入库）
+.local/
+secrets/
+.env
+.env.*
+!.env.example
+*.secret
