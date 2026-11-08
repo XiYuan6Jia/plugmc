@@ -3,6 +3,11 @@
 热加载插件源码目录。这里的工程编译成普通 jar（不是 Fabric 模组），由服务器上的
 `mods/plugmc` 宿主在运行时加载，可在不重启服务器的情况下新增、替换、卸载功能。
 
+当前包含：
+
+- `demo/`：最小示例，注册命令 + tick 回调。
+- `llm-chat/`：聊天栏常驻大模型 NPC，配置与密钥说明见 [llm-chat/README.md](llm-chat/README.md)。
+
 ## 新建与构建
 
 ```powershell

@@ -1,0 +1,6 @@
+{
+  "id": "llm-chat",
+  "name": "LLM Chat NPC",
+  "version": "0.1.0",
+  "main": "com.xiyuan.plugmc.hot.llmchat.LlmChatPlugin"
+}

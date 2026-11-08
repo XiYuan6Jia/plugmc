@@ -96,6 +96,13 @@ python scripts/deploy_hot.py --project demo   # 上传到测试服并触发热�
 本地开发时把 jar 放进 `run/plugmc-hot/`，服务器启动会自动加载；运行中替换 jar 后在控制台执行
 `/plugmc reloadall` 即可生效。热插件工程约定见 [hotplugins/README.md](hotplugins/README.md)。
 
+内置示例：
+
+- `hotplugins/demo`：最小热插件示例。
+- `hotplugins/llm-chat`：聊天栏常驻 NPC，玩家发送 `@npc <内容>` 即调用大模型并在聊天栏回复；
+  默认使用硅基流动 `Qwen/Qwen3.5-9B`，配置见 [hotplugins/llm-chat/README.md](hotplugins/llm-chat/README.md)。
+  密钥只放在 `plugmc-hot/llm-chat.json` 或环境变量中，**不要提交到仓库**。
+
 ## 常用命令
 
 | 命令 | 作用 |
@@ -110,6 +117,7 @@ python scripts/deploy_hot.py --project demo   # 上传到测试服并触发热�
 | `.\gradlew :hotplugins:<id>:build` | 构建指定热加载插件 |
 | `python scripts/deploy_test.py` | 构建并部署全部插件到麦块联机测试服 |
 | `python scripts/deploy_hot.py --project <id>` | 上传热插件并触发热加载 |
+| `python scripts/deploy_hot.py --project llm-chat --config run/plugmc-hot/llm-chat.json` | 同时上传 LLM 配置 |
 
 所有开发运行都复用根目录的 `run/`，客户端与服务端、各插件之间共享同一个世界与配置。
 

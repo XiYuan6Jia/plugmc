@@ -4,6 +4,7 @@
 用法：
   python scripts/deploy_hot.py hotplugins/demo/build/libs/demo-0.1.0.jar
   python scripts/deploy_hot.py --project demo
+  python scripts/deploy_hot.py --project llm-chat --config run/plugmc-hot/llm-chat.json
   python scripts/deploy_hot.py <jar> --no-load
 
 凭据与 mods 部署脚本共用：
@@ -66,7 +67,7 @@ def read_descriptor(jar: pathlib.Path) -> dict:
         sys.exit(f"{jar.name} 的 plugmc-plugin.json 不合法：{exc}")
 
 
-def upload(env: dict[str, str], jar: pathlib.Path, remote_name: str) -> str:
+def upload_file(env: dict[str, str], local: pathlib.Path, remote_name: str) -> str:
     import paramiko
 
     host = dt.need(env, "MINEKUAI_SFTP_HOST")
@@ -89,7 +90,7 @@ def upload(env: dict[str, str], jar: pathlib.Path, remote_name: str) -> str:
                 print(f"    创建目录 {hot_path}/")
 
             remote = f"{hot_path}/{remote_name}"
-            sftp.put(str(jar), remote, confirm=True)
+            sftp.put(str(local), remote, confirm=True)
             size = sftp.stat(remote).st_size
             print(f"    上传完成 {remote} ({size / 1024:.0f} KB)")
             return remote
@@ -131,6 +132,7 @@ def main() -> None:
     parser.add_argument("jar", nargs="?", help="热插件 jar 路径")
     parser.add_argument("--project", help="先构建 hotplugins/<name>/ 再上传")
     parser.add_argument("--file-name", help="服务器上的文件名，默认 <id>.jar")
+    parser.add_argument("--config", help="随插件一同上传的配置文件（保持原文件名，内容不会打印）")
     parser.add_argument("--no-load", action="store_true", help="只上传，不触发 reloadall")
     parser.add_argument("--timeout", type=int, default=60, help="等待热加载结果的秒数（默认 60）")
     args = parser.parse_args()
@@ -154,7 +156,13 @@ def main() -> None:
     print(f"==> 热插件 {plugin_id} {descriptor.get('version', '?')} ({remote_name})")
 
     env = dt.load_env(dt.ENV_FILES)
-    upload(env, jar, remote_name)
+    upload_file(env, jar, remote_name)
+
+    if args.config:
+        config_path = pathlib.Path(args.config).resolve()
+        if not config_path.is_file():
+            sys.exit(f"配置文件不存在：{config_path}")
+        upload_file(env, config_path, config_path.name)
 
     if args.no_load:
         print("    已上传，未触发热加载")

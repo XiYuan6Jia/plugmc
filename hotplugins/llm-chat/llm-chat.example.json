@@ -1,0 +1,19 @@
+{
+  "api": {
+    "baseUrl": "https://api.siliconflow.cn/v1",
+    "model": "Qwen/Qwen3.5-9B",
+    "apiKey": "",
+    "temperature": 0.7,
+    "maxTokens": 256,
+    "timeoutSeconds": 60,
+    "enableThinking": false,
+    "systemPrompt": "你是 Minecraft 服务器里的常驻聊天 NPC「小页」，说话简洁、友好，使用中文回答。"
+  },
+  "npc": {
+    "name": "小页",
+    "triggerPrefix": "@npc",
+    "replyPrefix": "[小页] ",
+    "historyTurns": 6,
+    "broadcast": true
+  }
+}

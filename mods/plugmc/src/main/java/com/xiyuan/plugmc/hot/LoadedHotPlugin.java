@@ -7,11 +7,13 @@ import com.xiyuan.plugmc.api.HotPluginContext;
 
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerPlayer;
 
 import java.net.URLClassLoader;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 final class LoadedHotPlugin {
@@ -21,6 +23,7 @@ final class LoadedHotPlugin {
 	private final HotPlugin instance;
 	private final List<LiteralCommandNode<CommandSourceStack>> commands = new ArrayList<>();
 	private final List<Consumer<MinecraftServer>> tickCallbacks = new ArrayList<>();
+	private final List<BiConsumer<ServerPlayer, String>> chatHandlers = new ArrayList<>();
 	private HotPluginContext context;
 
 	LoadedHotPlugin(PluginDescriptor descriptor, Path jar, URLClassLoader classLoader, HotPlugin instance) {
@@ -60,5 +63,9 @@ final class LoadedHotPlugin {
 
 	List<Consumer<MinecraftServer>> tickCallbacks() {
 		return tickCallbacks;
+	}
+
+	List<BiConsumer<ServerPlayer, String>> chatHandlers() {
+		return chatHandlers;
 	}
 }

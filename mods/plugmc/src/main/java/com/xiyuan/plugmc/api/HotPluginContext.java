@@ -4,9 +4,11 @@ import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerPlayer;
 
 import org.slf4j.Logger;
 
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 /**
@@ -28,4 +30,9 @@ public interface HotPluginContext {
 	 * 注册服务器 tick 回调（每 tick 一次，运行在服务端线程）。
 	 */
 	void onServerTick(Consumer<MinecraftServer> callback);
+
+	/**
+	 * 注册玩家聊天回调（原始聊天内容，运行在服务端线程）。
+	 */
+	void onChatMessage(BiConsumer<ServerPlayer, String> handler);
 }

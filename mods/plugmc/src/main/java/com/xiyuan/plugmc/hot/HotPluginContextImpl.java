@@ -6,10 +6,12 @@ import com.xiyuan.plugmc.api.HotPluginContext;
 
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerPlayer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 final class HotPluginContextImpl implements HotPluginContext {
@@ -46,5 +48,10 @@ final class HotPluginContextImpl implements HotPluginContext {
 	@Override
 	public void onServerTick(Consumer<MinecraftServer> callback) {
 		plugin.tickCallbacks().add(callback);
+	}
+
+	@Override
+	public void onChatMessage(BiConsumer<ServerPlayer, String> handler) {
+		plugin.chatHandlers().add(handler);
 	}
 }
