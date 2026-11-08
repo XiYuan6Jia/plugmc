@@ -1,0 +1,7 @@
+{
+  "pack": {
+    "description": "__NAME__",
+    "min_format": __PACK_FORMAT__,
+    "max_format": __PACK_FORMAT__
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "id": "__MOD_ID__",
+  "version": "${version}",
+  "name": "__MOD_NAME__",
+  "description": "__DESCRIPTION__",
+  "authors": [
+    "__AUTHOR__"
+  ],
+  "contact": {
+    "homepage": "https://github.com/XiYuan6Jia/plugmc",
+    "sources": "https://github.com/XiYuan6Jia/plugmc"
+  },
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "__PACKAGE__.__MAIN_CLASS__"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=${loader_version}",
+    "minecraft": "~${minecraft_version}",
+    "java": ">=25",
+    "fabric-api": "*"
+  }
+}

@@ -1,41 +1,44 @@
 #!/usr/bin/env python3
-"""构建 PlugMC 并部署到麦块联机（minekuai）测试服。
+"""构建并部署 mods/ 下的插件到麦块联机（minekuai）测试服。
 
-流程：gradlew build -> SFTP 上传 jar 到 mods/ -> RESTART -> 轮询日志校验模组已加载。
+流程：gradlew 构建 -> SFTP 上传插件 jar（自动附带 Fabric API）-> RESTART -> 轮询日志校验。
 
 凭据只从本地文件读取，从不打印：
   .local/minekuai.env   MINEKUAI_API_KEY
   .local/sftp.env       MINEKUAI_SFTP_HOST / PORT / USER / PASSWORD、MINEKUAI_SERVER_ID、MINEKUAI_MODS_PATH
 
 用法：
-  python scripts/deploy_test.py                # 构建 + 上传 + 重启 + 校验
-  python scripts/deploy_test.py --skip-build   # 复用已有 jar
-  python scripts/deploy_test.py --upload-only  # 只上传，不重启
-  python scripts/deploy_test.py --check-only   # 只读当前日志判断模组是否加载
+  python scripts/deploy_test.py                    # 构建并部署 mods/ 下全部插件
+  python scripts/deploy_test.py --mod a --mod b    # 只部署指定插件
+  python scripts/deploy_test.py --skip-build       # 复用已有 jar
+  python scripts/deploy_test.py --upload-only      # 只上传，不重启
+  python scripts/deploy_test.py --check-only       # 只读当前日志校验插件是否加载
 """
 
 from __future__ import annotations
 
 import argparse
 import fnmatch
+import json
 import os
 import pathlib
 import subprocess
 import sys
 import time
+from dataclasses import dataclass
 
 import requests
 
 REPO_ROOT = pathlib.Path(__file__).resolve().parents[1]
+MODS_DIR = REPO_ROOT / "mods"
 ENV_FILES = [
     REPO_ROOT / ".local" / "minekuai.env",
     REPO_ROOT / ".local" / "sftp.env",
 ]
 API_DEFAULT = "https://api.minekuai.cn/panel/client-api"
 
-# 服务端实例自带的基座是空 mods/，而模组硬依赖 Fabric API，需要一并上传。
+# 服务端实例自带的基座是空 mods/，而插件硬依赖 Fabric API，需要一并上传。
 FABRIC_API_COORDS = "net/fabricmc/fabric-api/fabric-api/{version}/fabric-api-{version}.jar"
-FABRIC_API_VERSION = "0.165.2+26.3"
 MAVEN_BASE = "https://maven.fabricmc.net"
 THIRDPARTY_DIR = REPO_ROOT / ".local" / "thirdparty"
 
@@ -51,7 +54,6 @@ ENV_KEYS = (
 )
 
 DONE_MARKER = "Done ("
-MOD_MARKER = "PlugMC"
 
 API_ERRORS = {
     401: "API 密钥无效",
@@ -61,6 +63,30 @@ API_ERRORS = {
     422: "参数错误",
     429: "触发限流（每密钥 300 次/分钟）",
 }
+
+
+@dataclass(frozen=True)
+class Mod:
+    """mods/ 下的一个插件工程。"""
+
+    id: str
+    name: str
+    project_dir: pathlib.Path
+
+    @property
+    def gradle_path(self) -> str:
+        return f":mods:{self.id}"
+
+    def jar(self) -> pathlib.Path:
+        libs = self.project_dir / "build" / "libs"
+        jars = [
+            path
+            for path in libs.glob(f"{self.id}-*.jar")
+            if not path.name.endswith(("-sources.jar", "-dev.jar"))
+        ]
+        if not jars:
+            sys.exit(f"在 {libs} 未找到 {self.id} 的插件 jar，请先构建")
+        return max(jars, key=lambda path: path.stat().st_mtime)
 
 
 def load_env(files: list[pathlib.Path]) -> dict[str, str]:
@@ -89,11 +115,50 @@ def need(env: dict[str, str], key: str) -> str:
     return value
 
 
-def run_build() -> None:
-    print("==> 构建 (gradlew build)")
+def read_gradle_properties() -> dict[str, str]:
+    path = REPO_ROOT / "gradle.properties"
+    props: dict[str, str] = {}
+    if not path.is_file():
+        return props
+    for raw in path.read_text(encoding="utf-8").splitlines():
+        line = raw.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        props[key.strip()] = value.strip()
+    return props
+
+
+def discover_mods() -> list[Mod]:
+    """扫描 mods/ 下带 fabric.mod.json 的工程目录。"""
+    mods: list[Mod] = []
+    if not MODS_DIR.is_dir():
+        return mods
+    for path in sorted(MODS_DIR.iterdir()):
+        if not path.is_dir() or not (path / "build.gradle.kts").is_file():
+            continue
+        meta_path = path / "src" / "main" / "resources" / "fabric.mod.json"
+        if not meta_path.is_file():
+            print(f"    跳过 {path.name}：缺少 fabric.mod.json")
+            continue
+        try:
+            meta = json.loads(meta_path.read_text(encoding="utf-8"))
+        except ValueError as exc:
+            sys.exit(f"{meta_path} 不是合法 JSON：{exc}")
+        mods.append(Mod(id=path.name, name=meta.get("name", path.name), project_dir=path))
+    return mods
+
+
+def run_build(targets: list[Mod], all_mods: list[Mod]) -> None:
     gradlew = REPO_ROOT / ("gradlew.bat" if sys.platform == "win32" else "gradlew")
+    if len(targets) == len(all_mods):
+        tasks = ["build"]
+    else:
+        tasks = [f"{mod.gradle_path}:build" for mod in targets]
+
+    print(f"==> 构建 ({' '.join(tasks)})")
     result = subprocess.run(
-        [str(gradlew), "build", "--console=plain"],
+        [str(gradlew), *tasks, "--console=plain"],
         cwd=REPO_ROOT,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
@@ -107,30 +172,16 @@ def run_build() -> None:
     print("    构建成功")
 
 
-def find_jar() -> pathlib.Path:
-    libs = REPO_ROOT / "build" / "libs"
-    jars = [
-        p
-        for p in libs.glob("plugmc-*.jar")
-        if not p.name.endswith(("-sources.jar", "-dev.jar"))
-    ]
-    if not jars:
-        sys.exit(f"在 {libs} 未找到模组 jar，请先构建")
-    jar = max(jars, key=lambda p: p.stat().st_mtime)
-    print(f"==> 产物 {jar.name} ({jar.stat().st_size / 1024:.0f} KB)")
-    return jar
-
-
-def ensure_fabric_api() -> pathlib.Path:
-    """下载并缓存 Fabric API（模组的硬依赖），返回本地路径。"""
+def ensure_fabric_api(version: str) -> pathlib.Path:
+    """下载并缓存 Fabric API（插件的硬依赖），返回本地路径。"""
     THIRDPARTY_DIR.mkdir(parents=True, exist_ok=True)
-    target = THIRDPARTY_DIR / f"fabric-api-{FABRIC_API_VERSION}.jar"
+    target = THIRDPARTY_DIR / f"fabric-api-{version}.jar"
     if target.is_file() and target.stat().st_size > 0:
         print(f"==> Fabric API 已缓存 {target.name}")
         return target
 
-    url = f"{MAVEN_BASE}/{FABRIC_API_COORDS.format(version=FABRIC_API_VERSION)}"
-    print(f"==> 下载 Fabric API {FABRIC_API_VERSION}")
+    url = f"{MAVEN_BASE}/{FABRIC_API_COORDS.format(version=version)}"
+    print(f"==> 下载 Fabric API {version}")
     resp = requests.get(url, timeout=120)
     resp.raise_for_status()
     target.write_bytes(resp.content)
@@ -138,7 +189,12 @@ def ensure_fabric_api() -> pathlib.Path:
     return target
 
 
-def upload(env: dict[str, str], files: list[pathlib.Path]) -> list[str]:
+def upload(
+    env: dict[str, str],
+    files: list[pathlib.Path],
+    deployed_ids: list[str],
+    all_ids: list[str],
+) -> list[str]:
     import paramiko
 
     host = need(env, "MINEKUAI_SFTP_HOST")
@@ -163,11 +219,22 @@ def upload(env: dict[str, str], files: list[pathlib.Path]) -> list[str]:
 
             existing = set(sftp.listdir(mods))
 
+            # 只清理本次要部署的插件旧版本，避免误删其它插件
             for name in sorted(existing):
-                if fnmatch.fnmatch(name, "plugmc-*.jar"):
+                if not name.endswith(".jar"):
+                    continue
+                for mod_id in deployed_ids:
+                    if not fnmatch.fnmatch(name, f"{mod_id}-*.jar"):
+                        continue
+                    if any(
+                        other != mod_id and fnmatch.fnmatch(name, f"{other}-*.jar")
+                        for other in all_ids
+                    ):
+                        continue
                     sftp.remove(f"{mods}/{name}")
                     existing.discard(name)
                     print(f"    删除旧版本 {name}")
+                    break
 
             for local in files:
                 remote = f"{mods}/{local.name}"
@@ -184,7 +251,6 @@ def upload(env: dict[str, str], files: list[pathlib.Path]) -> list[str]:
             sftp.close()
     finally:
         transport.close()
-
 
 
 class Api:
@@ -247,25 +313,52 @@ def wait_ready(api: Api, timeout: int) -> str:
     sys.exit("服务端未在限定时间内就绪")
 
 
-def report(log: str) -> None:
-    hits = [line for line in log.splitlines() if MOD_MARKER.lower() in line.lower()]
+def report(log: str, mods: list[Mod]) -> None:
     print("==> 日志校验")
-    if not hits:
-        print("    未在日志中找到 PlugMC，可能缺少依赖或 mods 路径不对：")
+    lowered = log.lower()
+    missing = [
+        mod
+        for mod in mods
+        if mod.id.lower() not in lowered and mod.name.lower() not in lowered
+    ]
+    if missing:
+        print("    未在日志中找到：" + "、".join(f"{mod.name} ({mod.id})" for mod in missing))
+        print("    可能缺少依赖或 mods 路径不对，日志末尾：")
         print("\n".join(log.splitlines()[-25:]))
-        sys.exit("模组未加载")
-    for line in hits[-6:]:
-        print(f"    {line.strip()}")
-    print("    模组已加载 OK")
+        sys.exit("插件未全部加载")
+
+    for mod in mods:
+        print(f"    {mod.name} ({mod.id}) 已加载")
+    print("    插件加载校验 OK")
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="部署 PlugMC 到麦块联机测试服")
-    parser.add_argument("--skip-build", action="store_true", help="跳过 gradlew build")
+    parser = argparse.ArgumentParser(description="部署 mods/ 下的插件到麦块联机测试服")
+    parser.add_argument(
+        "--mod",
+        action="append",
+        dest="selected",
+        metavar="ID",
+        help="只部署指定插件（可重复）",
+    )
+    parser.add_argument("--skip-build", action="store_true", help="跳过 gradlew 构建")
     parser.add_argument("--upload-only", action="store_true", help="只上传，不重启")
     parser.add_argument("--check-only", action="store_true", help="只读日志校验，不上传")
     parser.add_argument("--timeout", type=int, default=300, help="等待就绪的秒数（默认 300）")
     args = parser.parse_args()
+
+    all_mods = discover_mods()
+    if not all_mods:
+        sys.exit("mods/ 下没有可部署的插件，请先用 scripts/new_plugin.py 创建")
+
+    by_id = {mod.id: mod for mod in all_mods}
+    if args.selected:
+        unknown = [mod_id for mod_id in args.selected if mod_id not in by_id]
+        if unknown:
+            sys.exit(f"未知插件：{', '.join(unknown)}；可选：{', '.join(by_id)}")
+        targets = [by_id[mod_id] for mod_id in dict.fromkeys(args.selected)]
+    else:
+        targets = all_mods
 
     env = load_env(ENV_FILES)
     api = Api(
@@ -275,13 +368,26 @@ def main() -> None:
     )
 
     if args.check_only:
-        report(api.log())
+        report(api.log(), targets)
         return
 
     if not args.skip_build:
-        run_build()
-    jar = find_jar()
-    uploaded = upload(env, [jar, ensure_fabric_api()])
+        run_build(targets, all_mods)
+
+    jars = [mod.jar() for mod in targets]
+    print("==> 待部署：" + "、".join(f"{mod.name} ({mod.id})" for mod in targets))
+
+    fabric_api_version = read_gradle_properties().get("fabric_api_version")
+    if not fabric_api_version:
+        sys.exit("gradle.properties 缺少 fabric_api_version")
+    files = jars + [ensure_fabric_api(fabric_api_version)]
+
+    uploaded = upload(
+        env,
+        files,
+        [mod.id for mod in targets],
+        [mod.id for mod in all_mods],
+    )
 
     if args.upload_only:
         print("==> 已上传：")
@@ -292,7 +398,7 @@ def main() -> None:
 
     print("==> 重启实例")
     api.power("restart")
-    report(wait_ready(api, args.timeout))
+    report(wait_ready(api, args.timeout), targets)
 
 
 if __name__ == "__main__":

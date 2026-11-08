@@ -38,6 +38,11 @@ replay_*.log
 *.hprof
 *.jfr
 
+# python
+
+__pycache__/
+*.py[cod]
+
 # 仅本地使用的协作说明，不入库
 AGENTS.md
 
