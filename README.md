@@ -28,6 +28,25 @@
 
 首次执行 `.\gradlew runServer` 前需在 `run/eula.txt` 中写入 `eula=true`（目录会在首次运行时生成）。
 
+## 部署到测试服
+
+项目附带脚本，可一键「构建 → SFTP 上传 → 重启 → 读日志校验」：
+
+```powershell
+pip install paramiko requests
+python scripts/deploy_test.py
+```
+
+凭据放在 `.local/minekuai.env`（API 密钥）与 `.local/sftp.env`（SFTP 连接信息），该目录已被 `.gitignore` 排除，不会入库。详见 [scripts/deploy_test.py](scripts/deploy_test.py) 顶部说明。
+
+| 参数 | 作用 |
+| --- | --- |
+| 无参数 | 构建 + 上传 + 重启 + 校验 |
+| `--skip-build` | 复用已有 jar |
+| `--upload-only` | 只上传，不重启 |
+| `--check-only` | 只读日志判断模组是否已加载 |
+
+
 ## 安装
 
 1. 为 Minecraft 26.3 安装 [Fabric Loader](https://fabricmc.net/use/)；
@@ -39,6 +58,7 @@
 ```
 src/main/java/com/xiyuan/plugmc/PlugMC.java   模组入口（ModInitializer）
 src/main/resources/fabric.mod.json            模组元数据
+scripts/deploy_test.py                        部署到麦块联机测试服（构建 / 上传 / 重启 / 校验）
 build.gradle.kts                              Gradle（Kotlin DSL）+ Loom 配置
 gradle.properties                             Minecraft / Loader / Fabric API 版本
 gradle/gradle-daemon-jvm.properties           Gradle 守护进程 JVM 要求（Java 25）
