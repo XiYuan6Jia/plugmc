@@ -100,7 +100,8 @@ python scripts/deploy_hot.py --project demo   # 上传到测试服并触发热�
 
 - `hotplugins/demo`：最小热插件示例。
 - `hotplugins/llm-chat`：聊天栏常驻 NPC，玩家发送 `@npc <内容>` 即调用大模型并在聊天栏回复；
-  默认使用硅基流动 `Qwen/Qwen3.5-9B`，配置见 [hotplugins/llm-chat/README.md](hotplugins/llm-chat/README.md)。
+  新玩家进服时自动发送欢迎语，配置见 [hotplugins/llm-chat/README.md](hotplugins/llm-chat/README.md)。
+  默认使用硅基流动 `Qwen/Qwen3.5-9B`。
   密钥只放在 `plugmc-hot/llm-chat.json` 或环境变量中，**不要提交到仓库**。
 
 ## 常用命令

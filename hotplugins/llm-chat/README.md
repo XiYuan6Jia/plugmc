@@ -31,6 +31,9 @@ python scripts/deploy_hot.py --project llm-chat --config run/plugmc-hot/llm-chat
 | `npc.replyPrefix` | 回复前缀，默认 `[小页] ` |
 | `npc.historyTurns` | 保留的历史对话轮数（0 表示不带上下文） |
 | `npc.broadcast` | `true` 广播回复；`false` 只回给提问者 |
+| `welcome.enabled` | 是否在玩家进服时发送欢迎语 |
+| `welcome.message` | 欢迎语模板，支持 `{player}`、`{online}` 占位符 |
+| `welcome.broadcast` | `true` 全服广播；`false` 只发给进服玩家 |
 
 **密钥不要写入仓库**。本地放在 `.local/` 或 `run/plugmc-hot/llm-chat.json`（均被 gitignore），
 测试服通过 `scripts/deploy_hot.py --config <本地配置>` 上传到服务器。
@@ -43,5 +46,9 @@ python scripts/deploy_hot.py --project llm-chat --config run/plugmc-hot/llm-chat
 | `/npc reload` | 重新读取配置（管理员） |
 | `/npc clear` | 清空自己的对话历史；控制台执行会清空全部 |
 | `/npc chat <内容>` | 通过命令直接对话（便于控制台测试） |
+| `/npc welcome <玩家名>` | 手动发送欢迎语（管理员；离线名称可用于预览模板） |
+
+进服欢迎通过 tick 监测在线玩家变化实现：插件加载时已在线玩家不会重复欢迎，之后新加入的玩家
+会收到 `welcome.message` 渲染后的广播。
 
 聊天栏用法：`@npc 你好，介绍一下你自己`。

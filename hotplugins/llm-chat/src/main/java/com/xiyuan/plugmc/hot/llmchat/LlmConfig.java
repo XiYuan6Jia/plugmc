@@ -14,12 +14,14 @@ import java.nio.file.Path;
  * plugmc-hot/llm-chat.json 的读取与默认值。密钥也可以来自环境变量
  * SILICONFLOW_API_KEY / PLUGMC_LLM_API_KEY。
  */
-record LlmConfig(Api api, Npc npc) {
+record LlmConfig(Api api, Npc npc, Welcome welcome) {
 	private static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
 	private static final String DEFAULT_BASE_URL = "https://api.siliconflow.cn/v1";
 	private static final String DEFAULT_MODEL = "Qwen/Qwen3.5-9B";
 	private static final String DEFAULT_SYSTEM_PROMPT =
 		"你是 Minecraft 服务器里的常驻聊天 NPC「小页」，说话简洁、友好，使用中文回答。";
+	private static final String DEFAULT_WELCOME =
+		"欢迎 {player} 加入服务器！我是常驻 NPC 小页，聊天栏输入 @npc 可以找我聊天。";
 
 	record Api(
 		String baseUrl,
@@ -40,10 +42,14 @@ record LlmConfig(Api api, Npc npc) {
 	record Npc(String name, String triggerPrefix, String replyPrefix, int historyTurns, boolean broadcast) {
 	}
 
+	record Welcome(boolean enabled, String message, boolean broadcast) {
+	}
+
 	static LlmConfig defaults() {
 		return new LlmConfig(
 			new Api(DEFAULT_BASE_URL, DEFAULT_MODEL, "", 0.7, 256, 60, false, DEFAULT_SYSTEM_PROMPT),
-			new Npc("小页", "@npc", "[小页] ", 6, true)
+			new Npc("小页", "@npc", "[小页] ", 6, true),
+			new Welcome(true, DEFAULT_WELCOME, true)
 		);
 	}
 
@@ -57,6 +63,7 @@ record LlmConfig(Api api, Npc npc) {
 		JsonObject root = JsonParser.parseString(Files.readString(path, StandardCharsets.UTF_8)).getAsJsonObject();
 		JsonObject api = object(root, "api");
 		JsonObject npc = object(root, "npc");
+		JsonObject welcome = object(root, "welcome");
 
 		return new LlmConfig(
 			new Api(
@@ -75,6 +82,11 @@ record LlmConfig(Api api, Npc npc) {
 				string(npc, "replyPrefix", "[小页] "),
 				clamp(integer(npc, "historyTurns", 6), 0, 20),
 				bool(npc, "broadcast", true)
+			),
+			new Welcome(
+				bool(welcome, "enabled", true),
+				string(welcome, "message", DEFAULT_WELCOME),
+				bool(welcome, "broadcast", true)
 			)
 		);
 	}
@@ -100,6 +112,12 @@ record LlmConfig(Api api, Npc npc) {
 		npcJson.addProperty("historyTurns", npc.historyTurns());
 		npcJson.addProperty("broadcast", npc.broadcast());
 		root.add("npc", npcJson);
+
+		JsonObject welcomeJson = new JsonObject();
+		welcomeJson.addProperty("enabled", welcome.enabled());
+		welcomeJson.addProperty("message", welcome.message());
+		welcomeJson.addProperty("broadcast", welcome.broadcast());
+		root.add("welcome", welcomeJson);
 
 		Path parent = path.toAbsolutePath().getParent();
 		if (parent != null) {

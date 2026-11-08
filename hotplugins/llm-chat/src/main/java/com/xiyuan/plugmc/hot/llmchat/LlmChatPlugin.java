@@ -12,6 +12,7 @@ import com.xiyuan.plugmc.api.HotPluginContext;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 
 import org.slf4j.Logger;
@@ -44,6 +45,7 @@ public final class LlmChatPlugin implements HotPlugin {
 
 	private final Map<UUID, Deque<ChatTurn>> histories = new HashMap<>();
 	private final Set<UUID> inFlight = new HashSet<>();
+	private final Set<UUID> knownPlayers = new HashSet<>();
 
 	private HotPluginContext context;
 	private Logger logger;
@@ -77,7 +79,12 @@ public final class LlmChatPlugin implements HotPlugin {
 		}
 
 		enabled = true;
+		knownPlayers.clear();
+		for (ServerPlayer player : context.server().getPlayerList().getPlayers()) {
+			knownPlayers.add(player.getUUID());
+		}
 		context.onChatMessage(this::onChatMessage);
+		context.onServerTick(this::onServerTick);
 		context.registerCommand(buildCommand());
 
 		logger.info(
@@ -94,6 +101,7 @@ public final class LlmChatPlugin implements HotPlugin {
 		generation++;
 		histories.clear();
 		inFlight.clear();
+		knownPlayers.clear();
 		if (http != null) {
 			try {
 				http.close();
@@ -101,6 +109,21 @@ public final class LlmChatPlugin implements HotPlugin {
 			}
 		}
 		logger.info("LLM 聊天 NPC 已卸载");
+	}
+
+	private void onServerTick(MinecraftServer server) {
+		if (!enabled) {
+			return;
+		}
+
+		Set<UUID> current = new HashSet<>();
+		for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+			current.add(player.getUUID());
+			if (knownPlayers.add(player.getUUID()) && config.welcome().enabled()) {
+				welcome(player);
+			}
+		}
+		knownPlayers.retainAll(current);
 	}
 
 	private void onChatMessage(ServerPlayer sender, String message) {
@@ -259,6 +282,10 @@ public final class LlmChatPlugin implements HotPlugin {
 			.then(Commands.literal("chat")
 				.then(Commands.argument("message", StringArgumentType.greedyString())
 					.executes(command -> chat(command.getSource(), StringArgumentType.getString(command, "message")))))
+			.then(Commands.literal("welcome")
+				.requires(admin())
+				.then(Commands.argument("player", StringArgumentType.word())
+					.executes(command -> welcome(command.getSource(), StringArgumentType.getString(command, "player")))))
 			.then(Commands.literal("reload")
 				.requires(admin())
 				.executes(command -> reload(command.getSource())));
@@ -271,6 +298,7 @@ public final class LlmChatPlugin implements HotPlugin {
 			+ " key=" + mask(current.api().apiKey())
 			+ " 会话=" + histories.size()
 			+ " 进行中=" + inFlight.size()
+			+ " 欢迎=" + (current.welcome().enabled() ? "on" : "off")
 			+ " 配置=" + configPath;
 		source.sendSuccess(() -> Component.literal("[llm-chat] " + text), false);
 		return 1;
@@ -317,6 +345,67 @@ public final class LlmChatPlugin implements HotPlugin {
 			source.sendFailure(Component.literal("[llm-chat] 重新加载失败: " + exception.getMessage()));
 			return 0;
 		}
+	}
+
+	private int welcome(CommandSourceStack source, String playerName) {
+		LlmConfig current = config;
+		if (!current.welcome().enabled()) {
+			source.sendFailure(Component.literal("[llm-chat] 进服欢迎已关闭"));
+			return 0;
+		}
+
+		ServerPlayer target = null;
+		for (ServerPlayer player : context.server().getPlayerList().getPlayers()) {
+			if (player.getName().getString().equalsIgnoreCase(playerName)) {
+				target = player;
+				break;
+			}
+		}
+
+		if (target != null) {
+			welcome(target);
+			source.sendSuccess(() -> Component.literal("[llm-chat] 已欢迎 " + playerName), true);
+			return 1;
+		}
+
+		broadcastWelcome(playerName);
+		source.sendSuccess(() -> Component.literal("[llm-chat] 已发送欢迎语（该玩家不在线）"), false);
+		return 1;
+	}
+
+	private void welcome(ServerPlayer player) {
+		LlmConfig current = config;
+		if (!current.welcome().enabled()) {
+			return;
+		}
+
+		String name = player.getName().getString();
+		String text = formatWelcome(current.welcome().message(), name);
+		Component message = Component.literal(current.npc().replyPrefix() + text);
+
+		if (current.welcome().broadcast()) {
+			context.server().getPlayerList().broadcastSystemMessage(message, false);
+		} else {
+			player.sendSystemMessage(message);
+		}
+		logger.info("欢迎新玩家 {}: {}", name, text);
+	}
+
+	private void broadcastWelcome(String playerName) {
+		LlmConfig current = config;
+		String text = formatWelcome(current.welcome().message(), playerName);
+		Component message = Component.literal(current.npc().replyPrefix() + text);
+		if (current.welcome().broadcast()) {
+			context.server().getPlayerList().broadcastSystemMessage(message, false);
+		} else {
+			logger.info("{}", message.getString());
+		}
+	}
+
+	private String formatWelcome(String template, String playerName) {
+		return template
+			.replace("{player}", playerName)
+			.replace("{online}", Integer.toString(context.server().getPlayerList().getPlayers().size()));
 	}
 
 	private void reply(String content, ServerPlayer player) {
