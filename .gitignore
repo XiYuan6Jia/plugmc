@@ -1,0 +1,42 @@
+# gradle
+
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+
+# eclipse
+
+*.launch
+
+# idea
+
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# vscode
+
+.settings/
+.vscode/
+bin/
+.classpath
+.project
+
+# macos
+
+*.DS_Store
+
+# fabric
+
+run/
+
+# java
+
+hs_err_*.log
+replay_*.log
+*.hprof
+*.jfr
+
+# 仅本地使用的协作说明，不入库
+AGENTS.md

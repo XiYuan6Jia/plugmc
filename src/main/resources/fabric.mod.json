@@ -1,0 +1,26 @@
+{
+	"schemaVersion": 1,
+	"id": "plugmc",
+	"version": "${version}",
+	"name": "PlugMC",
+	"description": "面向原版 Minecraft 的 Fabric 模组/插件基础工程。",
+	"authors": [
+		"XiYuan6Jia"
+	],
+	"contact": {
+		"homepage": "https://github.com/XiYuan6Jia/plugmc",
+		"sources": "https://github.com/XiYuan6Jia/plugmc"
+	},
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			"com.xiyuan.plugmc.PlugMC"
+		]
+	},
+	"depends": {
+		"fabricloader": ">=0.20.1",
+		"minecraft": "~26.3",
+		"java": ">=25",
+		"fabric-api": "*"
+	}
+}
