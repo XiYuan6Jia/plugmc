@@ -20,5 +20,14 @@
     "enabled": true,
     "message": "欢迎 {player} 加入服务器！我是常驻 NPC 小页，聊天栏输入 @npc 可以找我聊天。",
     "broadcast": true
+  },
+  "banter": {
+    "enabled": true,
+    "chance": 0.12,
+    "cooldownSeconds": 45,
+    "minLength": 3,
+    "maxTokens": 80,
+    "broadcast": true,
+    "systemPrompt": "你是 Minecraft 服务器里的常驻 NPC「小页」。请对玩家刚说的这句话做一句简短、幽默、友善的吐槽，最多 40 字，不要人身攻击，不要复述原句。"
   }
 }

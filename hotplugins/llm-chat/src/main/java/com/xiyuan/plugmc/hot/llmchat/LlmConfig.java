@@ -14,7 +14,7 @@ import java.nio.file.Path;
  * plugmc-hot/llm-chat.json 的读取与默认值。密钥也可以来自环境变量
  * SILICONFLOW_API_KEY / PLUGMC_LLM_API_KEY。
  */
-record LlmConfig(Api api, Npc npc, Welcome welcome) {
+record LlmConfig(Api api, Npc npc, Welcome welcome, Banter banter) {
 	private static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
 	private static final String DEFAULT_BASE_URL = "https://api.siliconflow.cn/v1";
 	private static final String DEFAULT_MODEL = "Qwen/Qwen3.5-9B";
@@ -22,6 +22,9 @@ record LlmConfig(Api api, Npc npc, Welcome welcome) {
 		"你是 Minecraft 服务器里的常驻聊天 NPC「小页」，说话简洁、友好，使用中文回答。";
 	private static final String DEFAULT_WELCOME =
 		"欢迎 {player} 加入服务器！我是常驻 NPC 小页，聊天栏输入 @npc 可以找我聊天。";
+	private static final String DEFAULT_BANTER_PROMPT =
+		"你是 Minecraft 服务器里的常驻 NPC「小页」。请对玩家刚说的这句话做一句简短、幽默、友善的吐槽，"
+			+ "最多 40 字，不要人身攻击，不要复述原句。";
 
 	record Api(
 		String baseUrl,
@@ -45,11 +48,23 @@ record LlmConfig(Api api, Npc npc, Welcome welcome) {
 	record Welcome(boolean enabled, String message, boolean broadcast) {
 	}
 
+	record Banter(
+		boolean enabled,
+		double chance,
+		int cooldownSeconds,
+		int minLength,
+		int maxTokens,
+		boolean broadcast,
+		String systemPrompt
+	) {
+	}
+
 	static LlmConfig defaults() {
 		return new LlmConfig(
 			new Api(DEFAULT_BASE_URL, DEFAULT_MODEL, "", 0.7, 256, 60, false, DEFAULT_SYSTEM_PROMPT),
 			new Npc("小页", "@npc", "[小页] ", 6, true),
-			new Welcome(true, DEFAULT_WELCOME, true)
+			new Welcome(true, DEFAULT_WELCOME, true),
+			new Banter(true, 0.12, 45, 3, 80, true, DEFAULT_BANTER_PROMPT)
 		);
 	}
 
@@ -64,6 +79,7 @@ record LlmConfig(Api api, Npc npc, Welcome welcome) {
 		JsonObject api = object(root, "api");
 		JsonObject npc = object(root, "npc");
 		JsonObject welcome = object(root, "welcome");
+		JsonObject banter = object(root, "banter");
 
 		return new LlmConfig(
 			new Api(
@@ -87,6 +103,15 @@ record LlmConfig(Api api, Npc npc, Welcome welcome) {
 				bool(welcome, "enabled", true),
 				string(welcome, "message", DEFAULT_WELCOME),
 				bool(welcome, "broadcast", true)
+			),
+			new Banter(
+				bool(banter, "enabled", true),
+				clamp(number(banter, "chance", 0.12), 0.0, 1.0),
+				clamp(integer(banter, "cooldownSeconds", 45), 0, 600),
+				clamp(integer(banter, "minLength", 3), 0, 100),
+				clamp(integer(banter, "maxTokens", 80), 16, 512),
+				bool(banter, "broadcast", true),
+				string(banter, "systemPrompt", DEFAULT_BANTER_PROMPT)
 			)
 		);
 	}
@@ -118,6 +143,16 @@ record LlmConfig(Api api, Npc npc, Welcome welcome) {
 		welcomeJson.addProperty("message", welcome.message());
 		welcomeJson.addProperty("broadcast", welcome.broadcast());
 		root.add("welcome", welcomeJson);
+
+		JsonObject banterJson = new JsonObject();
+		banterJson.addProperty("enabled", banter.enabled());
+		banterJson.addProperty("chance", banter.chance());
+		banterJson.addProperty("cooldownSeconds", banter.cooldownSeconds());
+		banterJson.addProperty("minLength", banter.minLength());
+		banterJson.addProperty("maxTokens", banter.maxTokens());
+		banterJson.addProperty("broadcast", banter.broadcast());
+		banterJson.addProperty("systemPrompt", banter.systemPrompt());
+		root.add("banter", banterJson);
 
 		Path parent = path.toAbsolutePath().getParent();
 		if (parent != null) {
@@ -160,6 +195,10 @@ record LlmConfig(Api api, Npc npc, Welcome welcome) {
 	}
 
 	private static int clamp(int value, int min, int max) {
+		return Math.max(min, Math.min(max, value));
+	}
+
+	private static double clamp(double value, double min, double max) {
 		return Math.max(min, Math.min(max, value));
 	}
 }

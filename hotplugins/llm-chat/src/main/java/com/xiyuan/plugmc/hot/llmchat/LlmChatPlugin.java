@@ -46,6 +46,8 @@ public final class LlmChatPlugin implements HotPlugin {
 	private final Map<UUID, Deque<ChatTurn>> histories = new HashMap<>();
 	private final Set<UUID> inFlight = new HashSet<>();
 	private final Set<UUID> knownPlayers = new HashSet<>();
+	private long lastBanterAt;
+	private boolean banterInFlight;
 
 	private HotPluginContext context;
 	private Logger logger;
@@ -102,6 +104,7 @@ public final class LlmChatPlugin implements HotPlugin {
 		histories.clear();
 		inFlight.clear();
 		knownPlayers.clear();
+		banterInFlight = false;
 		if (http != null) {
 			try {
 				http.close();
@@ -133,10 +136,11 @@ public final class LlmChatPlugin implements HotPlugin {
 
 		LlmConfig current = config;
 		String prefix = current.npc().triggerPrefix();
-		if (!message.regionMatches(true, 0, prefix, 0, prefix.length())) {
-			return;
-		}
-		if (message.length() > prefix.length() && !Character.isWhitespace(message.charAt(prefix.length()))) {
+		boolean triggered = message.regionMatches(true, 0, prefix, 0, prefix.length())
+			&& (message.length() == prefix.length() || Character.isWhitespace(message.charAt(prefix.length())));
+
+		if (!triggered) {
+			maybeBanter(sender, message);
 			return;
 		}
 
@@ -147,6 +151,34 @@ public final class LlmChatPlugin implements HotPlugin {
 		}
 
 		ask(sender.getUUID(), sender.getName().getString(), text, sender);
+	}
+
+	private void maybeBanter(ServerPlayer sender, String message) {
+		LlmConfig current = config;
+		LlmConfig.Banter banter = current.banter();
+		if (!banter.enabled() || current.api().apiKey().isBlank()) {
+			return;
+		}
+
+		String text = message.trim();
+		if (text.length() < banter.minLength()) {
+			return;
+		}
+
+		long now = System.currentTimeMillis();
+		if (now - lastBanterAt < banter.cooldownSeconds() * 1000L) {
+			return;
+		}
+		if (banterInFlight) {
+			return;
+		}
+		if (java.util.concurrent.ThreadLocalRandom.current().nextDouble() >= banter.chance()) {
+			return;
+		}
+
+		banterInFlight = true;
+		lastBanterAt = now;
+		requestBanter(sender, sender.getName().getString(), text, banter);
 	}
 
 	private void ask(UUID session, String speaker, String text, ServerPlayer player) {
@@ -168,32 +200,16 @@ public final class LlmChatPlugin implements HotPlugin {
 		Deque<ChatTurn> history = histories.computeIfAbsent(session, key -> new ArrayDeque<>());
 		List<ChatTurn> snapshot = new ArrayList<>(history);
 
-		JsonObject body = new JsonObject();
-		body.addProperty("model", current.api().model());
-		body.addProperty("temperature", current.api().temperature());
-		body.addProperty("max_tokens", current.api().maxTokens());
-		body.addProperty("stream", false);
-		if (current.api().model().toLowerCase(java.util.Locale.ROOT).contains("qwen")) {
-			body.addProperty("enable_thinking", current.api().enableThinking());
-		}
-
 		JsonArray messages = new JsonArray();
 		messages.add(turn("system", current.api().systemPrompt()));
 		for (ChatTurn item : snapshot) {
 			messages.add(turn(item.role(), item.content()));
 		}
 		messages.add(turn("user", text));
-		body.add("messages", messages);
 
 		HttpRequest request;
 		try {
-			request = HttpRequest.newBuilder(URI.create(current.api().endpoint()))
-				.timeout(Duration.ofSeconds(current.api().timeoutSeconds()))
-				.header("Authorization", "Bearer " + current.api().apiKey())
-				.header("Content-Type", "application/json")
-				.header("Accept", "application/json")
-				.POST(HttpRequest.BodyPublishers.ofString(body.toString(), StandardCharsets.UTF_8))
-				.build();
+			request = buildRequest(current, messages, current.api().maxTokens());
 		} catch (RuntimeException exception) {
 			inFlight.remove(session);
 			logger.warn("构建 LLM 请求失败: {}", exception.getMessage());
@@ -245,16 +261,7 @@ public final class LlmChatPlugin implements HotPlugin {
 
 		String content;
 		try {
-			JsonObject json = JsonParser.parseString(body).getAsJsonObject();
-			JsonArray choices = json.getAsJsonArray("choices");
-			if (choices == null || choices.isEmpty()) {
-				throw new IllegalStateException("choices 为空");
-			}
-			content = choices.get(0).getAsJsonObject()
-				.getAsJsonObject("message")
-				.get("content")
-				.getAsString()
-				.trim();
+			content = extractContent(body);
 		} catch (RuntimeException exception) {
 			logger.warn("解析 LLM 响应失败: {} | {}", exception.getMessage(), truncate(body, 300));
 			notify(player, "响应解析失败");
@@ -272,6 +279,103 @@ public final class LlmChatPlugin implements HotPlugin {
 		reply(content, player);
 	}
 
+	private void requestBanter(ServerPlayer player, String speaker, String text, LlmConfig.Banter banter) {
+		LlmConfig current = config;
+		long requestGeneration = generation;
+
+		JsonArray messages = new JsonArray();
+		messages.add(turn("system", banter.systemPrompt()));
+		messages.add(turn("user", "玩家 " + speaker + " 说：" + text));
+
+		HttpRequest request;
+		try {
+			request = buildRequest(current, messages, banter.maxTokens());
+		} catch (RuntimeException exception) {
+			banterInFlight = false;
+			logger.warn("构建 LLM 吐槽请求失败: {}", exception.getMessage());
+			return;
+		}
+
+		logger.info("LLM 吐槽请求: {} model={}", speaker, current.api().model());
+		http.sendAsync(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8))
+			.whenComplete((response, throwable) -> {
+				try {
+					context.server().executeIfPossible(() ->
+						handleBanterResponse(requestGeneration, player, banter, response, throwable));
+				} catch (RuntimeException exception) {
+					banterInFlight = false;
+					logger.warn("无法回到服务端线程处理 LLM 吐槽响应: {}", exception.getMessage());
+				}
+			});
+	}
+
+	private void handleBanterResponse(
+		long requestGeneration,
+		ServerPlayer player,
+		LlmConfig.Banter banter,
+		HttpResponse<String> response,
+		Throwable throwable
+	) {
+		if (!enabled || requestGeneration != generation) {
+			return;
+		}
+		banterInFlight = false;
+
+		if (throwable != null) {
+			logger.warn("LLM 吐槽请求失败: {}", throwable.toString());
+			return;
+		}
+
+		int status = response.statusCode();
+		String body = response.body() == null ? "" : response.body();
+		if (status < 200 || status >= 300) {
+			logger.warn("LLM 吐槽 API 返回 {}: {}", status, truncate(body, 500));
+			return;
+		}
+
+		try {
+			String content = extractContent(body);
+			if (!content.isEmpty()) {
+				reply(content, player, banter.broadcast());
+			}
+		} catch (RuntimeException exception) {
+			logger.warn("解析 LLM 吐槽响应失败: {} | {}", exception.getMessage(), truncate(body, 300));
+		}
+	}
+
+	private HttpRequest buildRequest(LlmConfig current, JsonArray messages, int maxTokens) {
+		JsonObject body = new JsonObject();
+		body.addProperty("model", current.api().model());
+		body.addProperty("temperature", current.api().temperature());
+		body.addProperty("max_tokens", maxTokens);
+		body.addProperty("stream", false);
+		if (current.api().model().toLowerCase(java.util.Locale.ROOT).contains("qwen")) {
+			body.addProperty("enable_thinking", current.api().enableThinking());
+		}
+		body.add("messages", messages);
+
+		return HttpRequest.newBuilder(URI.create(current.api().endpoint()))
+			.timeout(Duration.ofSeconds(current.api().timeoutSeconds()))
+			.header("Authorization", "Bearer " + current.api().apiKey())
+			.header("Content-Type", "application/json")
+			.header("Accept", "application/json")
+			.POST(HttpRequest.BodyPublishers.ofString(body.toString(), StandardCharsets.UTF_8))
+			.build();
+	}
+
+	private static String extractContent(String body) {
+		JsonObject json = JsonParser.parseString(body).getAsJsonObject();
+		JsonArray choices = json.getAsJsonArray("choices");
+		if (choices == null || choices.isEmpty()) {
+			throw new IllegalStateException("choices 为空");
+		}
+		return choices.get(0).getAsJsonObject()
+			.getAsJsonObject("message")
+			.get("content")
+			.getAsString()
+			.trim();
+	}
+
 	private LiteralArgumentBuilder<CommandSourceStack> buildCommand() {
 		return Commands.literal("npc")
 			.requires(source -> Commands.LEVEL_ALL.check(source.permissions()))
@@ -286,6 +390,10 @@ public final class LlmChatPlugin implements HotPlugin {
 				.requires(admin())
 				.then(Commands.argument("player", StringArgumentType.word())
 					.executes(command -> welcome(command.getSource(), StringArgumentType.getString(command, "player")))))
+			.then(Commands.literal("banter")
+				.requires(admin())
+				.then(Commands.argument("message", StringArgumentType.greedyString())
+					.executes(command -> forceBanter(command.getSource(), StringArgumentType.getString(command, "message")))))
 			.then(Commands.literal("reload")
 				.requires(admin())
 				.executes(command -> reload(command.getSource())));
@@ -299,6 +407,9 @@ public final class LlmChatPlugin implements HotPlugin {
 			+ " 会话=" + histories.size()
 			+ " 进行中=" + inFlight.size()
 			+ " 欢迎=" + (current.welcome().enabled() ? "on" : "off")
+			+ " 吐槽=" + (current.banter().enabled()
+				? "on(" + Math.round(current.banter().chance() * 100) + "%)"
+				: "off")
 			+ " 配置=" + configPath;
 		source.sendSuccess(() -> Component.literal("[llm-chat] " + text), false);
 		return 1;
@@ -337,6 +448,7 @@ public final class LlmChatPlugin implements HotPlugin {
 			generation++;
 			histories.clear();
 			inFlight.clear();
+			banterInFlight = false;
 			logger.info("LLM 配置已重新加载: model={} endpoint={}", config.api().model(), config.api().endpoint());
 			source.sendSuccess(() -> Component.literal("[llm-chat] 已重新加载配置: model=" + config.api().model()), true);
 			return 1;
@@ -408,10 +520,43 @@ public final class LlmChatPlugin implements HotPlugin {
 			.replace("{online}", Integer.toString(context.server().getPlayerList().getPlayers().size()));
 	}
 
-	private void reply(String content, ServerPlayer player) {
+	private int forceBanter(CommandSourceStack source, String message) {
 		LlmConfig current = config;
-		Component message = Component.literal(current.npc().replyPrefix() + content);
-		if (current.npc().broadcast()) {
+		if (!current.banter().enabled()) {
+			source.sendFailure(Component.literal("[llm-chat] 随机吐槽已关闭"));
+			return 0;
+		}
+		if (current.api().apiKey().isBlank()) {
+			source.sendFailure(Component.literal("[llm-chat] 未配置 API 密钥"));
+			return 0;
+		}
+
+		String text = message.trim();
+		if (text.isEmpty()) {
+			source.sendFailure(Component.literal("[llm-chat] 内容不能为空"));
+			return 0;
+		}
+		if (banterInFlight) {
+			source.sendFailure(Component.literal("[llm-chat] 已有吐槽请求进行中"));
+			return 0;
+		}
+
+		banterInFlight = true;
+		lastBanterAt = System.currentTimeMillis();
+		ServerPlayer player = source.getPlayer();
+		String speaker = player != null ? player.getName().getString() : "Console";
+		requestBanter(player, speaker, text, current.banter());
+		source.sendSuccess(() -> Component.literal("[llm-chat] 已发送吐槽请求"), false);
+		return 1;
+	}
+
+	private void reply(String content, ServerPlayer player) {
+		reply(content, player, config.npc().broadcast());
+	}
+
+	private void reply(String content, ServerPlayer player, boolean broadcast) {
+		Component message = Component.literal(config.npc().replyPrefix() + content);
+		if (broadcast) {
 			context.server().getPlayerList().broadcastSystemMessage(message, false);
 		} else if (player != null) {
 			player.sendSystemMessage(message);
