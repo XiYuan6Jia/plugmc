@@ -2,6 +2,9 @@
 
 每款 Fabric 插件占一个子目录，目录名即模组 id（如 `mods/my-plugin/`），每个子目录都是独立的 Gradle 工程。
 
+> `mods/plugmc/` 是正式宿主插件，负责热加载 `plugmc-hot/` 下的功能 jar（见
+> [hotplugins/README.md](../hotplugins/README.md)），不要删除或改名。
+
 ## 新建插件
 
 ```powershell

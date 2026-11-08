@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "id": "plugmc",
+  "version": "${version}",
+  "name": "PlugMC",
+  "description": "服务器热加载宿主插件：运行时加载 plugmc-hot/ 下的功能 jar。",
+  "authors": [
+    "XiYuan6Jia"
+  ],
+  "contact": {
+    "homepage": "https://github.com/XiYuan6Jia/plugmc",
+    "sources": "https://github.com/XiYuan6Jia/plugmc"
+  },
+  "environment": "server",
+  "entrypoints": {
+    "main": [
+      "com.xiyuan.plugmc.PlugMC"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=${loader_version}",
+    "minecraft": "~${minecraft_version}",
+    "java": ">=25",
+    "fabric-api": "*"
+  }
+}

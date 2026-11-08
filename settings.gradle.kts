@@ -26,6 +26,12 @@ file("mods").listFiles()
 	?.sortedBy { it.name }
 	?.forEach { include(":mods:${it.name}") }
 
+// hotplugins/<id>/ 下存在构建脚本即视为一个热加载插件工程
+file("hotplugins").listFiles()
+	?.filter { it.isDirectory && it.resolve("build.gradle.kts").isFile }
+	?.sortedBy { it.name }
+	?.forEach { include(":hotplugins:${it.name}") }
+
 // 数据包聚合工程：每个数据包仍是 datapacks/<id>/ 下的纯文件夹
 include(":datapacks")
 

@@ -1,0 +1,6 @@
+{
+  "id": "hotdemo",
+  "name": "Hot Demo",
+  "version": "0.1.0",
+  "main": "com.xiyuan.plugmc.hot.demo.DemoHotPlugin"
+}

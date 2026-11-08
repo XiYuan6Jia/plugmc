@@ -27,12 +27,14 @@
 
 ```
 mods/<id>/                    每款 Fabric 插件一个独立 Gradle 工程（目录名 = 模组 id）
+hotplugins/<id>/              热加载插件：编译成普通 jar，服务器运行时可加载/卸载
 datapacks/<id>/               每个数据包一个纯数据文件夹（pack.mcmeta + data/）
 templates/fabric-plugin/      新插件模板
 templates/datapack/           新数据包模板
 scripts/new_plugin.py         从模板生成插件工程
 scripts/new_datapack.py       从模板生成数据包
 scripts/deploy_test.py        构建并部署插件到麦块联机测试服
+scripts/deploy_hot.py         上传热插件并触发热加载（无需重启）
 dev/                          联调工程：自动聚合 mods/ 下全部插件
 run/                          开发运行目录（客户端/服务端共用，已 gitignore）
 ```
@@ -70,6 +72,30 @@ python scripts/new_datapack.py --id my-pack --name "我的数据包"
 
 `runServer` 启动前会自动执行 `:datapacks:syncToRun`，本地改完数据包重启开发服即可生效。
 
+## 热加载（不重启服务器）
+
+`mods/plugmc` 是正式宿主插件：服务器启动时扫描根目录的 `plugmc-hot/`（开发服为 `run/plugmc-hot/`），
+加载其中的热插件 jar。热插件可以注册命令与服务器 tick 回调，卸载时注册会被自动注销。
+
+```powershell
+.\gradlew :hotplugins:demo:build              # 构建示例热插件
+python scripts/deploy_hot.py --project demo   # 上传到测试服并触发热加载
+```
+
+服务器命令（需要管理员权限）：
+
+| 命令 | 作用 |
+| --- | --- |
+| `/plugmc list` | 查看已加载的热插件 |
+| `/plugmc path` | 查看热加载目录 |
+| `/plugmc load <文件>` | 加载目录内的 jar（可省略 `.jar`） |
+| `/plugmc reload <id>` | 卸载并重新加载同一 jar |
+| `/plugmc unload <id>` | 卸载 |
+| `/plugmc reloadall` | 重新扫描并加载整个目录 |
+
+本地开发时把 jar 放进 `run/plugmc-hot/`，服务器启动会自动加载；运行中替换 jar 后在控制台执行
+`/plugmc reloadall` 即可生效。热插件工程约定见 [hotplugins/README.md](hotplugins/README.md)。
+
 ## 常用命令
 
 | 命令 | 作用 |
@@ -81,7 +107,9 @@ python scripts/new_datapack.py --id my-pack --name "我的数据包"
 | `.\gradlew :dev:runServer` | 聚合全部插件启动开发服务端（联调） |
 | `.\gradlew :datapacks:buildDatapacks` | 打包全部数据包 |
 | `.\gradlew :datapacks:syncToRun` | 把数据包同步到 `run/world/datapacks` |
+| `.\gradlew :hotplugins:<id>:build` | 构建指定热加载插件 |
 | `python scripts/deploy_test.py` | 构建并部署全部插件到麦块联机测试服 |
+| `python scripts/deploy_hot.py --project <id>` | 上传热插件并触发热加载 |
 
 所有开发运行都复用根目录的 `run/`，客户端与服务端、各插件之间共享同一个世界与配置。
 
@@ -118,7 +146,8 @@ python scripts/deploy_test.py --mod my-plugin --skip-build
 
 1. 为 Minecraft 26.3 安装 [Fabric Loader](https://fabricmc.net/use/)；
 2. 将 [Fabric API](https://modrinth.com/mod/fabric-api) 与 `mods/<id>/build/libs/<id>-<version>.jar` 放入 `mods/`；
-3. 数据包分发时使用 `datapacks/build/libs/<id>.zip`，放入世界的 `datapacks/` 目录。
+3. 数据包分发时使用 `datapacks/build/libs/<id>.zip`，放入世界的 `datapacks/` 目录；
+4. 热加载功能 jar 放入服务器根目录的 `plugmc-hot/`，启动时自动加载，或用 `/plugmc reloadall` 热加载。
 
 ## 许可
 
