@@ -9,8 +9,11 @@
 | Minecraft | 26.3 | `gradle.properties` 中的 `minecraft_version` |
 | Fabric Loader | 0.20.1 | `loader_version` |
 | Fabric API | 0.165.2+26.3 | `fabric_api_version` |
-| Java | 25 | Minecraft 26.3 要求；由 Gradle toolchain 自动下载，无需手动安装 |
+| Java | 25 | Minecraft 26.3 要求；缺失时由 Gradle 按 `gradle/gradle-daemon-jvm.properties` 自动获取 |
 | Gradle | 9.8.2 | 通过 `gradlew` 使用，无需本地安装 |
+
+> Minecraft 26.3 起 Fabric Loom 要求 **运行 Gradle 的 JVM 本身是 Java 25**，该要求已通过
+> `gradle/gradle-daemon-jvm.properties`（`toolchainVersion=25`）固化，无需手动设置 `JAVA_HOME`。
 
 ## 常用命令
 
@@ -22,6 +25,8 @@
 ```
 
 构建产物：`build/libs/plugmc-0.1.0.jar`（`-sources` 为源码包）。
+
+首次执行 `.\gradlew runServer` 前需在 `run/eula.txt` 中写入 `eula=true`（目录会在首次运行时生成）。
 
 ## 安装
 
@@ -36,6 +41,7 @@ src/main/java/com/xiyuan/plugmc/PlugMC.java   模组入口（ModInitializer）
 src/main/resources/fabric.mod.json            模组元数据
 build.gradle.kts                              Gradle（Kotlin DSL）+ Loom 配置
 gradle.properties                             Minecraft / Loader / Fabric API 版本
+gradle/gradle-daemon-jvm.properties           Gradle 守护进程 JVM 要求（Java 25）
 ```
 
 ## 版本升级

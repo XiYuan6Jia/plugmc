@@ -3,9 +3,9 @@ plugins {
 	id("net.fabricmc.fabric-loom") version "1.19-SNAPSHOT"
 }
 
-val minecraftVersion: String by project
-val loaderVersion: String by project
-val fabricApiVersion: String by project
+val minecraftVersion = property("minecraft_version") as String
+val loaderVersion = property("loader_version") as String
+val fabricApiVersion = property("fabric_api_version") as String
 
 dependencies {
 	// Loom 会自动配置 Minecraft 仓库与 mappings
@@ -16,13 +16,13 @@ dependencies {
 
 loom {
 	mods {
-		"plugmc" {
+		register("plugmc") {
 			sourceSet(sourceSets["main"])
 		}
 	}
 }
 
-processResources {
+tasks.processResources {
 	val modVersion = project.version.toString()
 	inputs.property("version", modVersion)
 
