@@ -1,0 +1,19 @@
+name: server-menu
+version: '${version}'
+main: com.xiyuan.plugmc.servermenu.ServerMenuPlugin
+api-version: '${api_version}'
+authors: [XiYuan6Jia]
+description: "测试服功能菜单与金币 HUD"
+depend: [economy]
+commands:
+  menu:
+    description: "打开服务器功能菜单"
+    usage: /menu [reload]
+    aliases: [servermenu]
+  moneyhud:
+    description: "切换金币 HUD"
+    usage: /moneyhud
+permissions:
+  server-menu.admin:
+    description: "重新加载服务器菜单配置"
+    default: op

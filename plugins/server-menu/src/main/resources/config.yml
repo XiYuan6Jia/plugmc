@@ -1,0 +1,37 @@
+menu:
+  title: "&8服务器菜单"
+  rows: 3
+  items:
+    "11":
+      material: GOLD_INGOT
+      name: "&6查看余额"
+      lore:
+        - "&7当前余额：&e{balance}"
+        - "&8点击查看详细余额"
+      action: balance
+    "13":
+      material: BOOK
+      name: "&b服务器帮助"
+      lore:
+        - "&7查看常用经济命令"
+        - "&8点击查看"
+      action: message
+      value: "&e/money &7查看余额  &e/pay <玩家> <金额> &7转账"
+    "15":
+      material: CLOCK
+      name: "&a金币 HUD：{hud_status}"
+      lore:
+        - "&7在屏幕右侧显示当前余额"
+        - "&e点击切换"
+      action: toggle_hud
+    "22":
+      material: BOOK
+      name: "&b插件列表"
+      lore:
+        - "&7查看已启用插件的功能和用法"
+        - "&e点击浏览"
+      action: plugin_list
+hud:
+  enabled-by-default: true
+  title: "&6&l经济"
+  balance-label: "&7余额"
