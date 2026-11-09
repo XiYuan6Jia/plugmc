@@ -11,13 +11,21 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 
 public final class OrderGui {
 	private static final DateTimeFormatter TIME = DateTimeFormatter
 		.ofPattern("MM-dd HH:mm")
 		.withZone(ZoneId.systemDefault());
 	private static final int PAGE_SIZE = 45;
+	private static final List<Material> ITEM_CATALOG = Arrays.stream(Material.values())
+		.filter(material -> material.isItem() && !material.isAir())
+		.filter(material -> !material.name().startsWith("LEGACY_"))
+		.sorted(Comparator.comparing(Enum::name))
+		.toList();
 
 	private final OrderService service;
 	private final ChatPrompt chatPrompt;
@@ -51,6 +59,10 @@ public final class OrderGui {
 			holder.set(45, item(Material.ARROW, "&e上一页", List.of()), p -> openList(p, current - 1));
 		}
 		holder.set(49, GuiNavigation.backButton(), GuiNavigation::back);
+		holder.set(48, item(Material.COMPASS, "&b选择物品求购", List.of(
+			"&7从全部物品中选择要收购的东西",
+			"&8点击打开物品列表"
+		)), p -> openItemPicker(p, 0));
 		holder.set(50, item(Material.HOPPER, "&a发布收购（主手物品）", List.of(
 			"&7用主手物品作为收购样本",
 			"&8点击后输入单价"
@@ -105,10 +117,15 @@ public final class OrderGui {
 	}
 
 	private void startCreate(Player player) {
-		if (player.getInventory().getItemInMainHand().getType().isAir()) {
-			player.sendMessage("请先把要收购的物品拿在主手。");
+		ItemStack hand = player.getInventory().getItemInMainHand();
+		if (hand.getType().isAir()) {
+			player.sendMessage("请先把要收购的物品拿在主手，或点击「选择物品求购」。");
 			return;
 		}
+		startPrice(player, hand.clone());
+	}
+
+	private void startPrice(Player player, ItemStack template) {
 		chatPrompt.request(player, "请输入收购单价：", input -> {
 			BigDecimal price;
 			try {
@@ -117,41 +134,108 @@ public final class OrderGui {
 				player.sendMessage("单价无效：" + input);
 				return;
 			}
-			openCreateQuantity(player, price);
+			if (price.signum() <= 0) {
+				player.sendMessage("单价必须大于 0。");
+				return;
+			}
+			ItemStack single = template.clone();
+			single.setAmount(1);
+			openQuantity(player, single, price, 1);
 		});
 	}
 
-	private void openCreateQuantity(Player player, BigDecimal price) {
-		ItemStack hand = player.getInventory().getItemInMainHand();
-		if (hand.getType().isAir()) {
-			player.sendMessage("主手已经空了，发布取消。");
-			openList(player, 0);
-			return;
-		}
-		int available = hand.getAmount();
+	/**
+	 * 数量选择：用 -/+ 按钮调整，而不是固定档位。
+	 */
+	private void openQuantity(Player player, ItemStack template, BigDecimal price, int quantity) {
+		int max = service.maxAffordable(player, price);
+		int current = Math.max(1, Math.min(quantity, max));
+
 		EconomyMenuHolder holder = new EconomyMenuHolder(3, "&8收购数量");
 		holder.fill(filler());
-		holder.set(4, item(Material.PAPER, "&f" + hand.getType().name(), List.of(
+		BigDecimal total = price.multiply(BigDecimal.valueOf(current));
+		BigDecimal fee = service.estimateFee(price, current);
+		holder.set(4, item(Material.PAPER, "&f" + template.getType().name(), List.of(
 			"&7单价：&e" + service.format(price),
-			"&7托管总额：&e" + service.format(price.multiply(BigDecimal.valueOf(available)))
+			"&7数量：&f" + current + " &8/ 最多 " + max,
+			"&7托管总额：&e" + service.format(total),
+			"&7手续费：&e" + service.format(fee),
+			"&7余额：&e" + service.format(service.balance(player))
 		)), null);
-		holder.set(10, item(Material.LIME_STAINED_GLASS_PANE, "&a收购 1 个", List.of()), p ->
-			create(p, price, 1, false));
-		holder.set(12, item(Material.LIME_STAINED_GLASS_PANE, "&a收购 16 个", List.of()), p ->
-			create(p, price, 16, false));
-		holder.set(14, item(Material.LIME_STAINED_GLASS_PANE, "&a收购 64 个", List.of()), p ->
-			create(p, price, 64, false));
-		holder.set(16, item(Material.CHEST, "&a收购整组 &7(" + available + ")", List.of()), p ->
-			create(p, price, available, true));
-		holder.set(22, item(Material.ARROW, "&e返回收购列表", List.of()), p -> openList(p, 0));
+		holder.set(13, item(Material.LIME_STAINED_GLASS_PANE, "&a数量：" + current, List.of(
+			"&7使用下方按钮增减数量"
+		)), null);
+
+		holder.set(10, quantityButton("-64", -64), p ->
+			openQuantity(p, template, price, current - 64));
+		holder.set(11, quantityButton("-16", -16), p ->
+			openQuantity(p, template, price, current - 16));
+		holder.set(12, quantityButton("-1", -1), p ->
+			openQuantity(p, template, price, current - 1));
+		holder.set(14, quantityButton("+1", 1), p ->
+			openQuantity(p, template, price, current + 1));
+		holder.set(15, quantityButton("+16", 16), p ->
+			openQuantity(p, template, price, current + 16));
+		holder.set(16, quantityButton("+64", 64), p ->
+			openQuantity(p, template, price, current + 64));
+
+		holder.set(18, item(Material.GOLD_BLOCK, "&6最大可买：" + max, List.of(
+			"&7按当前余额与单价计算",
+			"&8点击设为最大数量"
+		)), p -> openQuantity(p, template, price, max));
+		holder.set(22, item(Material.EMERALD_BLOCK, "&a确认发布订单", List.of(
+			"&7收购 &f" + current + " 个 " + template.getType().name(),
+			"&7托管 &e" + service.format(total),
+			"&7手续费 &e" + service.format(fee)
+		)), p -> create(p, template, price, current));
+		holder.set(26, item(Material.ARROW, "&e返回收购列表", List.of()), p -> openList(p, 0));
 		player.openInventory(holder.getInventory());
 	}
 
-	private void create(Player player, BigDecimal price, int amount, boolean all) {
+	private ItemStack quantityButton(String label, int delta) {
+		return item(
+			delta > 0 ? Material.LIME_STAINED_GLASS_PANE : Material.RED_STAINED_GLASS_PANE,
+			(delta > 0 ? "&a" : "&c") + label + " 个",
+			List.of("&7点击" + (delta > 0 ? "增加" : "减少") + " &f" + Math.abs(delta) + " &7个")
+		);
+	}
+
+	private void create(Player player, ItemStack template, BigDecimal price, int amount) {
 		player.closeInventory();
-		if (service.create(player, price, amount, all)) {
+		if (service.create(player, template, price, amount)) {
 			openList(player, 0);
 		}
+	}
+
+	/**
+	 * 全部物品选择页：列出所有可作为物品的材质，分页展示。
+	 */
+	private void openItemPicker(Player player, int page) {
+		List<Material> items = ITEM_CATALOG;
+		int pageCount = Math.max(1, (items.size() + PAGE_SIZE - 1) / PAGE_SIZE);
+		int current = Math.max(0, Math.min(page, pageCount - 1));
+		EconomyMenuHolder holder = new EconomyMenuHolder(
+			6,
+			"&8选择收购物品 &7(" + (current + 1) + "/" + pageCount + ")"
+		);
+		holder.fill(filler());
+
+		int start = current * PAGE_SIZE;
+		for (int index = 0; index < PAGE_SIZE && start + index < items.size(); index++) {
+			Material material = items.get(start + index);
+			holder.set(index, item(material, "&f" + material.name(), List.of(
+				"&7点击选择该物品作为收购目标"
+			)), p -> startPrice(p, new ItemStack(material)));
+		}
+
+		if (current > 0) {
+			holder.set(45, item(Material.ARROW, "&e上一页", List.of()), p -> openItemPicker(p, current - 1));
+		}
+		holder.set(49, item(Material.ARROW, "&e返回收购列表", List.of()), p -> openList(p, 0));
+		if (current + 1 < pageCount) {
+			holder.set(53, item(Material.ARROW, "&e下一页", List.of()), p -> openItemPicker(p, current + 1));
+		}
+		player.openInventory(holder.getInventory());
 	}
 
 	private ItemStack icon(BuyOrder order) {

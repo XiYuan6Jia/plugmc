@@ -13,7 +13,9 @@ import java.util.Locale;
 import java.util.Optional;
 
 public final class ShopCommand implements CommandExecutor, TabCompleter {
-	private static final List<String> SUBCOMMANDS = List.of("buy", "sell", "price", "search", "reload");
+	private static final List<String> SUBCOMMANDS = List.of(
+		"buy", "sell", "sellall", "price", "search", "reload"
+	);
 
 	private final ShopService service;
 	private final ShopGui gui;
@@ -40,6 +42,12 @@ public final class ShopCommand implements CommandExecutor, TabCompleter {
 		switch (action) {
 			case "buy" -> buy(sender, args);
 			case "sell" -> sell(sender, args);
+			case "sellall" -> {
+				Player player = requirePlayer(sender);
+				if (player != null) {
+					gui.openSell(player);
+				}
+			}
 			case "price" -> {
 				if (args.length >= 2) {
 					price(sender, args[1]);
@@ -160,7 +168,8 @@ public final class ShopCommand implements CommandExecutor, TabCompleter {
 	}
 
 	private void usage(CommandSender sender) {
-		sender.sendMessage("用法：/shop [buy <商品> [数量] | sell [数量|all] | price [商品] | search <关键词> | reload]");
+		sender.sendMessage("用法：/shop [buy <商品> [数量] | sell [数量|all] | sellall | "
+			+ "price [商品] | search <关键词> | reload]");
 	}
 
 	@Override

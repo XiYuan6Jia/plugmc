@@ -11,9 +11,11 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 public final class ShopService {
 	private static final int MAX_TRANSACTION_AMOUNT = 2304;
@@ -152,6 +154,73 @@ public final class ShopService {
 		player.sendMessage("已出售 " + amount + " 个 " + item.id() + "，获得 "
 			+ ledger.format(total) + "，余额 " + ledger.format(ledger.balance(player.getUniqueId())) + "。");
 		return true;
+	}
+
+	public boolean sellBatch(Player player, List<ItemStack> offered, List<ItemStack> leftoversLeftInGui) {
+		if (!checkAvailable(player)) {
+			return false;
+		}
+		BigDecimal earned = Money.zero(ledger.decimalPlaces());
+		int soldTotal = 0;
+		Set<String> unsellable = new LinkedHashSet<>();
+		Set<String> limited = new LinkedHashSet<>();
+
+		for (ItemStack stack : offered) {
+			if (stack == null || stack.getType().isAir() || stack.getAmount() <= 0) {
+				continue;
+			}
+			ShopItem item = goods.match(stack, settings.allowCustomItems());
+			if (item == null) {
+				unsellable.add(stack.getType().name());
+				leftoversLeftInGui.add(stack.clone());
+				continue;
+			}
+			int limit = settings.effectiveSellLimit(item.dailySellLimit());
+			int remaining = dailyLimits.remaining(player, "sell", item.id(), limit);
+			int sellable = Math.min(stack.getAmount(), remaining);
+			if (sellable <= 0) {
+				limited.add(item.id());
+				leftoversLeftInGui.add(stack.clone());
+				continue;
+			}
+
+			ItemStack sold = stack.clone();
+			sold.setAmount(sellable);
+			BigDecimal value = total(item.sellPrice(), sellable);
+			try {
+				ledger.deposit(player.getUniqueId(), value, "SHOP_SELL", item.id());
+			} catch (RuntimeException exception) {
+				leftoversLeftInGui.add(stack.clone());
+				continue;
+			}
+			dailyLimits.consume(player, "sell", item.id(), sellable);
+			earned = earned.add(value);
+			soldTotal += sellable;
+
+			int rest = stack.getAmount() - sellable;
+			if (rest > 0) {
+				ItemStack leftover = stack.clone();
+				leftover.setAmount(rest);
+				leftoversLeftInGui.add(leftover);
+				limited.add(item.id());
+			}
+		}
+
+		if (soldTotal > 0) {
+			player.sendMessage("批量回收完成：出售 " + soldTotal + " 件，获得 "
+				+ ledger.format(earned) + "，余额 "
+				+ ledger.format(ledger.balance(player.getUniqueId())) + "。");
+		} else {
+			player.sendMessage("没有可回收的物品。");
+		}
+		if (!unsellable.isEmpty()) {
+			player.sendMessage("以下物品商店不回收，已留在原地：" + String.join("、", unsellable));
+		}
+		if (!limited.isEmpty()) {
+			player.sendMessage("以下商品达到今日回收上限，剩余部分已留在原地："
+				+ String.join("、", limited));
+		}
+		return soldTotal > 0;
 	}
 
 	public void price(Player player) {

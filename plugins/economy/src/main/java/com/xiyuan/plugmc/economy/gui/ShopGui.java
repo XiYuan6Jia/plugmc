@@ -14,9 +14,15 @@ import java.util.function.Consumer;
 
 public final class ShopGui {
 	private final ShopService service;
+	private final ShopSellGui sellGui;
 
 	public ShopGui(ShopService service) {
 		this.service = service;
+		this.sellGui = new ShopSellGui(service);
+	}
+
+	public void openSell(Player player) {
+		sellGui.open(player);
 	}
 
 	public void openMain(Player player) {
@@ -52,6 +58,16 @@ public final class ShopGui {
 			p -> {
 				service.sell(p, 0, true);
 				openMain(p);
+			}
+		);
+		holder.set(
+			28,
+			button(Material.CHEST_MINECART, "&6批量回收", List.of(
+				"&7打开回收页，放入物品一键出售"
+			)),
+			p -> {
+				p.closeInventory();
+				sellGui.open(p);
 			}
 		);
 		holder.set(

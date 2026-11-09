@@ -27,6 +27,7 @@ import java.util.UUID;
  */
 public final class OrderService {
 	private static final Gson GSON = new GsonBuilder().disableHtmlEscaping().create();
+	private static final int MAX_ORDER_AMOUNT = 2304;
 
 	private final JavaPlugin plugin;
 	private final LedgerService ledger;
@@ -145,6 +146,28 @@ public final class OrderService {
 		return ledger.format(amount);
 	}
 
+	public int decimalPlaces() {
+		return ledger.decimalPlaces();
+	}
+
+	public BigDecimal estimateFee(BigDecimal unitPrice, int amount) {
+		return config.listingFee(total(unitPrice, amount), ledger.decimalPlaces());
+	}
+
+	/**
+	 * 按当前余额与单价推算最多能收购多少个（不超过 2304）。
+	 */
+	public int maxAffordable(Player player, BigDecimal unitPrice) {
+		if (unitPrice == null || unitPrice.signum() <= 0) {
+			return 1;
+		}
+		BigDecimal balance = ledger.balance(player.getUniqueId());
+		int byBalance = balance
+			.divide(unitPrice, 0, java.math.RoundingMode.FLOOR)
+			.intValue();
+		return Math.max(1, Math.min(MAX_ORDER_AMOUNT, byBalance));
+	}
+
 	public int usedSlots(Player player) {
 		return (int) store.orders().values().stream()
 			.filter(dto -> player.getUniqueId().toString().equals(dto.buyer))
@@ -153,13 +176,25 @@ public final class OrderService {
 	}
 
 	public boolean create(Player player, BigDecimal unitPrice, int requestedAmount, boolean all) {
+		ItemStack hand = player.getInventory().getItemInMainHand();
+		if (hand.getType().isAir() || hand.getAmount() <= 0) {
+			player.sendMessage("请把要收购的物品拿在主手，或在界面中选择物品。");
+			return false;
+		}
+		int amount = all ? hand.getAmount() : Math.max(1, requestedAmount);
+		return create(player, hand, unitPrice, amount);
+	}
+
+	/**
+	 * 用指定物品作为收购样本创建订单，供界面选物使用。
+	 */
+	public boolean create(Player player, ItemStack templateStack, BigDecimal unitPrice, int amount) {
 		if (!config.enabled()) {
 			player.sendMessage("收购订单功能已关闭。");
 			return false;
 		}
-		ItemStack hand = player.getInventory().getItemInMainHand();
-		if (hand.getType().isAir() || hand.getAmount() <= 0) {
-			player.sendMessage("请把要收购的物品拿在主手。");
+		if (templateStack == null || templateStack.getType().isAir()) {
+			player.sendMessage("收购物品无效。");
 			return false;
 		}
 		if (usedSlots(player) >= config.slots()) {
@@ -167,7 +202,7 @@ public final class OrderService {
 			return false;
 		}
 
-		int amount = all ? hand.getAmount() : Math.max(1, requestedAmount);
+		int finalAmount = Math.max(1, Math.min(amount, MAX_ORDER_AMOUNT));
 		BigDecimal price;
 		try {
 			price = Money.positive(unitPrice, ledger.decimalPlaces());
@@ -176,7 +211,7 @@ public final class OrderService {
 			return false;
 		}
 
-		BigDecimal total = total(price, amount);
+		BigDecimal total = total(price, finalAmount);
 		BigDecimal fee = config.listingFee(total, ledger.decimalPlaces());
 		BigDecimal cost = total.add(fee);
 		if (ledger.balance(player.getUniqueId()).compareTo(cost) < 0) {
@@ -186,7 +221,7 @@ public final class OrderService {
 
 		long now = System.currentTimeMillis();
 		long id = store.nextOrderId();
-		ItemStack template = hand.clone();
+		ItemStack template = templateStack.clone();
 		template.setAmount(1);
 
 		BuyOrder order = new BuyOrder(
@@ -195,7 +230,7 @@ public final class OrderService {
 			player.getName(),
 			template,
 			price,
-			amount,
+			finalAmount,
 			now,
 			now + config.durationHours() * 60L * 60L * 1000L,
 			BuyOrder.Status.ACTIVE
@@ -217,7 +252,7 @@ public final class OrderService {
 			return false;
 		}
 
-		player.sendMessage("已发布收购订单 #" + id + "：" + amount + " 个 "
+		player.sendMessage("已发布收购订单 #" + id + "：" + finalAmount + " 个 "
 			+ template.getType().name() + "，单价 " + ledger.format(price)
 			+ "，已托管 " + ledger.format(total) + "（手续费 " + ledger.format(fee) + "）。");
 		return true;

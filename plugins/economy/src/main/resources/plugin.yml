@@ -21,7 +21,7 @@ commands:
     usage: /eco <give|take|set> <玩家> <金额> | /eco stats|doctor|selftest|audit|treasury|freeze|save|backup
   shop:
     description: "系统商店"
-    usage: /shop [buy <商品> [数量] | sell [数量|all] | price [商品] | search <关键词> | reload]
+    usage: /shop [buy <商品> [数量] | sell [数量|all] | sellall | price [商品] | search <关键词> | reload]
     aliases: [store]
   market:
     description: "玩家市场"
