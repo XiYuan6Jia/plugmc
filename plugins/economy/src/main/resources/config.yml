@@ -3,3 +3,21 @@ currency:
   symbol: $
   decimal-places: 2
 starting-balance: "100.00"
+storage:
+  snapshot-interval-seconds: 300
+  backup-count: 14
+shop:
+  enabled: true
+  daily-buy-limit: 256
+  daily-sell-limit: 256
+  allow-custom-items: false
+market:
+  enabled: true
+  slots: 8
+  duration-hours: 168
+  listing-fee-rate: 0.01
+  listing-fee-min: "5.00"
+  tax-rate: 0.03
+mail:
+  capacity: 50
+  expire-days: 30

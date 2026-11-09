@@ -70,18 +70,21 @@ subprojects {
 				add("compileOnly", "io.papermc.paper:paper-api:$paperApiVersion")
 			}
 
-			// plugin.yml 里的 ${version} / ${api_version} 统一由构建展开
-			val pluginVersion = version.toString()
-			val expandProperties = mapOf(
-				"version" to pluginVersion,
-				"api_version" to paperMinecraftVersion,
-			)
-			tasks.named<ProcessResources>("processResources") {
-				filteringCharset = "UTF-8"
-				inputs.property("version", pluginVersion)
-				inputs.property("api_version", paperMinecraftVersion)
-				filesMatching("plugin.yml") {
-					expand(expandProperties)
+			// 子工程 build.gradle.kts 的 version 在 plugins 块之后才赋值，
+			// 因此放到 afterEvaluate 里读取，避免 plugin.yml 固定成根工程版本。
+			afterEvaluate {
+				val pluginVersion = version.toString()
+				val expandProperties = mapOf(
+					"version" to pluginVersion,
+					"api_version" to paperMinecraftVersion,
+				)
+				tasks.named<ProcessResources>("processResources") {
+					filteringCharset = "UTF-8"
+					inputs.property("version", pluginVersion)
+					inputs.property("api_version", paperMinecraftVersion)
+					filesMatching("plugin.yml") {
+						expand(expandProperties)
+					}
 				}
 			}
 		}

@@ -3,7 +3,7 @@ version: '${version}'
 main: com.xiyuan.plugmc.economy.EconomyPlugin
 api-version: '${api_version}'
 authors: [XiYuan6Jia]
-description: "可扩展的基础经济系统"
+description: "复式记账经济系统（钱包/账本/备份）"
 commands:
   money:
     description: "查看余额"
@@ -13,8 +13,20 @@ commands:
     description: "向其他玩家转账"
     usage: /pay <玩家> <金额>
   eco:
-    description: "管理玩家余额"
-    usage: /eco <give|take|set> <玩家> <金额>
+    description: "管理玩家余额与经济数据"
+    usage: /eco <give|take|set> <玩家> <金额> | /eco stats|doctor|save|backup
+  shop:
+    description: "系统商店"
+    usage: /shop [buy <商品> [数量] | sell [数量|all] | price [商品] | search <关键词> | reload]
+    aliases: [store]
+  market:
+    description: "玩家市场"
+    usage: /market [sell <单价> [数量|all] | buy <编号> [数量] | cancel <编号> | mine | search <关键词> | reload]
+    aliases: [marketplace]
+  mail:
+    description: "邮箱"
+    usage: /mail [claim <id|all>]
+    aliases: [mailbox]
 permissions:
   economy.balance.others:
     description: "查看其他玩家余额"
@@ -22,3 +34,18 @@ permissions:
   economy.admin:
     description: "管理玩家余额"
     default: op
+  economy.shop.use:
+    description: "使用系统商店"
+    default: true
+  economy.shop.admin:
+    description: "重载商店配置"
+    default: op
+  economy.market.use:
+    description: "使用玩家市场"
+    default: true
+  economy.market.admin:
+    description: "重载市场配置"
+    default: op
+  economy.mail.use:
+    description: "使用邮箱"
+    default: true

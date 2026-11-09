@@ -1,0 +1,173 @@
+categories:
+  building:
+    display: "建筑"
+    icon: BRICKS
+    items: [stone, oak_log, glass, bricks, quartz_block]
+  mineral:
+    display: "矿物"
+    icon: DIAMOND
+    items: [coal, iron_ingot, copper_ingot, gold_ingot, redstone, lapis_lazuli, diamond, emerald]
+  food:
+    display: "食物"
+    icon: BREAD
+    items: [bread, cooked_beef, golden_carrot, apple]
+  utility:
+    display: "杂项"
+    icon: TORCH
+    items: [torch, arrow, stick, string, gunpowder]
+
+items:
+  stone:
+    material: STONE
+    buy: "2.00"
+    sell: "1.00"
+    daily-buy: 256
+    daily-sell: 256
+    aliases: [石头]
+  oak_log:
+    material: OAK_LOG
+    buy: "3.00"
+    sell: "1.50"
+    daily-buy: 256
+    daily-sell: 256
+    aliases: [橡木原木, 原木]
+  glass:
+    material: GLASS
+    buy: "4.00"
+    sell: "2.00"
+    daily-buy: 256
+    daily-sell: 256
+    aliases: [玻璃]
+  bricks:
+    material: BRICKS
+    buy: "5.00"
+    sell: "2.50"
+    daily-buy: 256
+    daily-sell: 256
+    aliases: [砖块]
+  quartz_block:
+    material: QUARTZ_BLOCK
+    buy: "12.00"
+    sell: "6.00"
+    daily-buy: 128
+    daily-sell: 128
+    aliases: [石英块]
+  coal:
+    material: COAL
+    buy: "8.00"
+    sell: "4.00"
+    daily-buy: 256
+    daily-sell: 256
+    aliases: [煤炭, 煤]
+  iron_ingot:
+    material: IRON_INGOT
+    buy: "30.00"
+    sell: "15.00"
+    daily-buy: 128
+    daily-sell: 128
+    aliases: [铁锭, 铁]
+  copper_ingot:
+    material: COPPER_INGOT
+    buy: "12.00"
+    sell: "6.00"
+    daily-buy: 128
+    daily-sell: 128
+    aliases: [铜锭, 铜]
+  gold_ingot:
+    material: GOLD_INGOT
+    buy: "40.00"
+    sell: "20.00"
+    daily-buy: 128
+    daily-sell: 128
+    aliases: [金锭, 金]
+  redstone:
+    material: REDSTONE
+    buy: "6.00"
+    sell: "3.00"
+    daily-buy: 256
+    daily-sell: 256
+    aliases: [红石]
+  lapis_lazuli:
+    material: LAPIS_LAZULI
+    buy: "12.00"
+    sell: "6.00"
+    daily-buy: 256
+    daily-sell: 256
+    aliases: [青金石]
+  diamond:
+    material: DIAMOND
+    buy: "120.00"
+    sell: "60.00"
+    daily-buy: 64
+    daily-sell: 64
+    aliases: [钻石]
+  emerald:
+    material: EMERALD
+    buy: "100.00"
+    sell: "50.00"
+    daily-buy: 64
+    daily-sell: 64
+    aliases: [绿宝石]
+  bread:
+    material: BREAD
+    buy: "6.00"
+    sell: "3.00"
+    daily-buy: 128
+    daily-sell: 128
+    aliases: [面包]
+  cooked_beef:
+    material: COOKED_BEEF
+    buy: "10.00"
+    sell: "5.00"
+    daily-buy: 128
+    daily-sell: 128
+    aliases: [熟牛肉, 牛排]
+  golden_carrot:
+    material: GOLDEN_CARROT
+    buy: "20.00"
+    sell: "10.00"
+    daily-buy: 64
+    daily-sell: 64
+    aliases: [金胡萝卜]
+  apple:
+    material: APPLE
+    buy: "4.00"
+    sell: "2.00"
+    daily-buy: 128
+    daily-sell: 128
+    aliases: [苹果]
+  torch:
+    material: TORCH
+    buy: "1.00"
+    sell: "0.50"
+    daily-buy: 512
+    daily-sell: 512
+    aliases: [火把]
+  arrow:
+    material: ARROW
+    buy: "1.00"
+    sell: "0.50"
+    daily-buy: 512
+    daily-sell: 512
+    aliases: [箭]
+  stick:
+    material: STICK
+    buy: "0.50"
+    sell: "0.25"
+    daily-buy: 512
+    daily-sell: 512
+    aliases: [木棍]
+  string:
+    material: STRING
+    buy: "2.00"
+    sell: "1.00"
+    daily-buy: 256
+    daily-sell: 256
+    aliases: [线]
+  gunpowder:
+    material: GUNPOWDER
+    buy: "6.00"
+    sell: "3.00"
+    daily-buy: 256
+    daily-sell: 256
+    aliases: [火药]

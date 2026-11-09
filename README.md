@@ -105,7 +105,8 @@ Paper 开发服用 `python scripts/run_paper.py` 启动时会自动把 `datapack
 ## 内置插件（Paper 主线）
 
 - `plugins/demo`：最小示例，一条 `/demo` 命令，用于验证构建、部署与本地开发服链路。
-- `plugins/economy`：基础经济系统，支持余额查询、玩家转账、管理员余额管理及可扩展的服务 API，
+- `plugins/economy`：复式记账经济系统，支持余额查询、玩家转账、管理员余额管理、系统商店 GUI、
+  玩家市场、邮箱、商品每日限额、账本自检与备份，并提供可扩展的服务 API，
   详见 [plugins/economy/README.md](plugins/economy/README.md)。
 - `plugins/llm-chat`：聊天栏常驻 NPC（Fabric 版 `hotplugins/llm-chat` 的 Paper 移植），
   `@npc <内容>` 调用大模型并广播回复；玩家进服发送欢迎语，公开聊天按概率触发 NPC 吐槽。
