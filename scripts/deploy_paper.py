@@ -24,6 +24,7 @@ import pathlib
 import re
 import subprocess
 import sys
+import time
 from dataclasses import dataclass
 
 import deploy_test as dt
@@ -84,6 +85,24 @@ def discover_plugins() -> list[Plugin]:
     return plugins
 
 
+def parse_upload_files(raw: list[str], known_ids: set[str]) -> list[tuple[str, pathlib.Path]]:
+    """把 --upload-file 的 ID=PATH 参数解析成 (插件 id, 本地文件)。"""
+    entries: list[tuple[str, pathlib.Path]] = []
+    for item in raw:
+        plugin_id, _, path_text = item.partition("=")
+        plugin_id = plugin_id.strip()
+        path_text = path_text.strip()
+        if not plugin_id or not path_text:
+            sys.exit(f"--upload-file 需要 <插件id>=<本地文件>：{item}")
+        if plugin_id not in known_ids:
+            sys.exit(f"--upload-file 指定的插件不存在：{plugin_id}；可选：{', '.join(sorted(known_ids))}")
+        local = pathlib.Path(path_text).expanduser()
+        if not local.is_file():
+            sys.exit(f"--upload-file 找不到文件：{local}")
+        entries.append((plugin_id, local))
+    return entries
+
+
 def run_build(targets: list[Plugin], all_plugins: list[Plugin]) -> None:
     gradlew = dt.REPO_ROOT / ("gradlew.bat" if sys.platform == "win32" else "gradlew")
     if len(targets) == len(all_plugins):
@@ -112,6 +131,7 @@ def upload(
     files: list[pathlib.Path],
     deployed_ids: list[str],
     all_ids: list[str],
+    data_files: list[tuple[str, pathlib.Path]] | None = None,
 ) -> list[str]:
     import paramiko
 
@@ -168,11 +188,52 @@ def upload(
                 size = sftp.stat(remote).st_size
                 print(f"    上传完成 {remote} ({size / 1024:.0f} KB)")
                 uploaded.append(remote)
+
+            # 插件数据文件（如 llm-chat 的 config.json）上传到 plugins/<id>/
+            for plugin_id, local in data_files or []:
+                folder = f"{plugins_path}/{plugin_id}"
+                try:
+                    sftp.stat(folder)
+                except FileNotFoundError:
+                    sftp.mkdir(folder)
+                remote = f"{folder}/{local.name}"
+                sftp.put(str(local), remote, confirm=True)
+                print(f"    上传数据文件 {remote} ({local.stat().st_size / 1024:.1f} KB)")
+                uploaded.append(remote)
             return uploaded
         finally:
             sftp.close()
     finally:
         transport.close()
+
+
+def wait_ready_after_restart(api: "dt.Api", before: str, timeout: int) -> str:
+    """重启后等待就绪。
+
+    刚发出 restart 时实例可能还是 running、日志也还是重启前那一份，
+    直接复用 ``dt.wait_ready`` 会被旧的 Done 标记骗过，所以这里要求
+    先离开 running，或者日志内容已经变化。
+    """
+    print(f"==> 等待服务端就绪（最长 {timeout}s）")
+    deadline = time.time() + timeout
+    left_running = False
+    last_state = None
+    log = before
+    while time.time() < deadline:
+        state = api.state()
+        if state != last_state:
+            print(f"    state={state}")
+            last_state = state
+        if state != "running":
+            left_running = True
+        log = api.log()
+        if state == "running" and dt.DONE_MARKER in log and (left_running or log != before):
+            return log
+        time.sleep(5)
+
+    print("    超时，日志末尾：")
+    print("\n".join(log.splitlines()[-25:]))
+    sys.exit("服务端未在限定时间内就绪")
 
 
 def report(log: str, plugins: list[Plugin]) -> None:
@@ -203,6 +264,13 @@ def main() -> None:
         dest="selected",
         metavar="ID",
         help="只部署指定插件（可重复）",
+    )
+    parser.add_argument(
+        "--upload-file",
+        action="append",
+        default=[],
+        metavar="ID=PATH",
+        help="额外上传插件数据文件到 plugins/<ID>/，如 llm-chat=.local/llm-chat/config.json",
     )
     parser.add_argument("--skip-build", action="store_true", help="跳过 gradlew 构建")
     parser.add_argument("--upload-only", action="store_true", help="只上传，不重启")
@@ -238,6 +306,7 @@ def main() -> None:
         run_build(targets, all_plugins)
 
     jars = [plugin.jar() for plugin in targets]
+    data_files = parse_upload_files(args.upload_file, set(by_id))
     print("==> 待部署：" + "、".join(f"{p.name} ({p.id})" for p in targets))
 
     uploaded = upload(
@@ -245,6 +314,7 @@ def main() -> None:
         jars,
         [plugin.id for plugin in targets],
         [plugin.id for plugin in all_plugins],
+        data_files,
     )
 
     if args.upload_only:
@@ -255,8 +325,9 @@ def main() -> None:
         return
 
     print("==> 重启实例")
+    before = api.log()
     api.power("restart")
-    report(dt.wait_ready(api, args.timeout), targets)
+    report(wait_ready_after_restart(api, before, args.timeout), targets)
 
 
 if __name__ == "__main__":

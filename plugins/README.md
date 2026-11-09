@@ -6,6 +6,9 @@
 当前包含：
 
 - `demo/`：最小示例，注册一条命令，用于验证构建、部署与本地开发服链路。
+- `economy/`：基础经济系统，提供余额查询、转账、管理员管理命令及可供其他插件调用的 `EconomyService` API，详见 [economy/README.md](economy/README.md)。
+- `llm-chat/`：聊天栏常驻大模型 NPC，`@npc <内容>` 触发对话、进服欢迎、按概率吐槽；
+  由 `hotplugins/llm-chat` 移植，配置字段兼容，详见 [llm-chat/README.md](llm-chat/README.md)。
 
 ## 新建插件
 

@@ -98,8 +98,8 @@ def built_jars(selected: list[str] | None) -> list[pathlib.Path]:
     return jars
 
 
-def sync_plugins(selected: list[str] | None) -> None:
-    target = RUN_DIR / "plugins"
+def sync_plugins(run_dir: pathlib.Path, selected: list[str] | None) -> None:
+    target = run_dir / "plugins"
     target.mkdir(parents=True, exist_ok=True)
     jars = built_jars(selected)
     if not jars:
@@ -116,17 +116,17 @@ def sync_plugins(selected: list[str] | None) -> None:
     print("==> 已同步插件：" + "、".join(jar.name for jar in jars))
 
 
-def prepare_run_dir() -> None:
-    RUN_DIR.mkdir(parents=True, exist_ok=True)
-    eula = RUN_DIR / "eula.txt"
+def prepare_run_dir(run_dir: pathlib.Path) -> None:
+    run_dir.mkdir(parents=True, exist_ok=True)
+    eula = run_dir / "eula.txt"
     if not eula.is_file():
         eula.write_text("eula=true\n", encoding="utf-8")
-    properties = RUN_DIR / "server.properties"
+    properties = run_dir / "server.properties"
     if not properties.is_file():
         properties.write_text(SERVER_PROPERTIES, encoding="utf-8")
 
 
-def sync_datapacks() -> None:
+def sync_datapacks(run_dir: pathlib.Path) -> None:
     """把 datapacks/<id>/ 复制进开发世界的 datapacks 目录。"""
     if not DATAPACKS_DIR.is_dir():
         return
@@ -138,7 +138,7 @@ def sync_datapacks() -> None:
     if not packs:
         return
 
-    target = RUN_DIR / "world" / "datapacks"
+    target = run_dir / "world" / "datapacks"
     target.mkdir(parents=True, exist_ok=True)
     for pack in packs:
         destination = target / pack.name
@@ -222,6 +222,11 @@ def main() -> None:
     parser.add_argument("--java", help="java 可执行文件路径，默认取 JAVA_HOME 或 PATH")
     parser.add_argument("--build-plugins", action="store_true", help="启动前先构建 plugins/ 下全部插件")
     parser.add_argument("--plugin", action="append", dest="selected", metavar="ID", help="只同步指定插件")
+    parser.add_argument(
+        "--dir",
+        default=str(RUN_DIR),
+        help="服务端运行目录（默认 run-paper/；并行调试时可换一个目录避免抢世界锁）",
+    )
     parser.add_argument("--sync-only", action="store_true", help="只同步插件并准备目录，不启动服务端")
     known, extra = parser.parse_known_args()
     if extra and extra[0] == "--":
@@ -234,11 +239,12 @@ def main() -> None:
     print(f"    Paper {known.version} build {build['id']}（{build.get('channel', 'unknown')}）")
     jar = ensure_server_jar(known.version, build)
 
-    prepare_run_dir()
-    sync_plugins(known.selected)
-    sync_datapacks()
+    run_dir = pathlib.Path(known.dir).expanduser().resolve()
+    prepare_run_dir(run_dir)
+    sync_plugins(run_dir, known.selected)
+    sync_datapacks(run_dir)
     if known.sync_only:
-        print(f"==> 目录已就绪：{RUN_DIR}")
+        print(f"==> 目录已就绪：{run_dir}")
         return
 
     java = detect_java(known.java)
@@ -252,8 +258,8 @@ def main() -> None:
         *extra,
     ]
     print(f"==> 启动：{' '.join(command)}")
-    print(f"    工作目录：{RUN_DIR}（输入 stop 或 Ctrl+C 停止）")
-    process = subprocess.Popen(command, cwd=RUN_DIR)
+    print(f"    工作目录：{run_dir}（输入 stop 或 Ctrl+C 停止）")
+    process = subprocess.Popen(command, cwd=run_dir)
     try:
         process.wait()
     except KeyboardInterrupt:

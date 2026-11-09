@@ -1,4 +1,7 @@
-# llm-chat
+# llm-chat（Fabric 热加载版）
+
+> **已移植到 Paper**：[plugins/llm-chat](../../plugins/llm-chat/README.md)，配置字段完全兼容。
+> 测试服已切换为 Paper，本目录只保留 Fabric 版本，不再随测试服部署。
 
 常驻聊天栏 NPC 热插件：玩家在聊天栏以 `@npc` 开头发言，插件异步请求 OpenAI 兼容接口，
 把模型回复广播回聊天栏。当前只做基础聊天（短期上下文、无工具调用、无实体）。

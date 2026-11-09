@@ -77,7 +77,8 @@ python scripts/deploy_paper.py
 ```
 
 `run_paper.py` 首次运行会把 Paper 核心下载到 `.local/thirdparty/`，世界与配置落在 `run-paper/`，
-并自动写入 `eula.txt`；控制台直接输入 `stop` 停止服务端。需要 Java 25，可用 `--java` 指定。
+并自动写入 `eula.txt`；控制台直接输入 `stop` 停止服务端。需要 Java 25，可用 `--java` 指定；
+要同时起第二个开发服（避免抢世界锁和端口）可用 `--dir <目录> -- --port 25566`。
 
 Fabric（历史）：
 
@@ -100,6 +101,17 @@ python scripts/new_datapack.py --id my-pack --name "我的数据包"
 Fabric 开发服（`runServer`）启动前会自动执行 `:datapacks:syncToRun`；
 Paper 开发服用 `python scripts/run_paper.py` 启动时会自动把 `datapacks/<id>/` 复制进 `run-paper/world/datapacks/`。
 本地改完数据包重启开发服（或游戏内 `/reload`）即可生效。
+
+## 内置插件（Paper 主线）
+
+- `plugins/demo`：最小示例，一条 `/demo` 命令，用于验证构建、部署与本地开发服链路。
+- `plugins/economy`：基础经济系统，支持余额查询、玩家转账、管理员余额管理及可扩展的服务 API，
+  详见 [plugins/economy/README.md](plugins/economy/README.md)。
+- `plugins/llm-chat`：聊天栏常驻 NPC（Fabric 版 `hotplugins/llm-chat` 的 Paper 移植），
+  `@npc <内容>` 调用大模型并广播回复；玩家进服发送欢迎语，公开聊天按概率触发 NPC 吐槽。
+  配置在服务器 `plugins/llm-chat/config.json`，详见 [plugins/llm-chat/README.md](plugins/llm-chat/README.md)。
+
+Fabric 时代的热加载方案（`mods/plugmc` + `hotplugins/`）保留在仓库中，见下一节。
 
 ## 热加载（Fabric 历史方案）
 
@@ -144,6 +156,7 @@ python scripts/deploy_hot.py --project demo   # 上传到测试服并触发热�
 | `.\gradlew :plugins:<id>:build` | 只构建指定 Paper 插件（`build/libs/` 下产出 jar 与 sources jar） |
 | `python scripts/run_paper.py` | 本地起 Paper 开发服（`run-paper/`），自动装入已构建插件 |
 | `python scripts/deploy_paper.py` | 构建并部署全部 Paper 插件到麦块联机测试服 |
+| `python scripts/deploy_paper.py --plugin llm-chat --upload-file llm-chat=.local/llm-chat/config.json` | 单插件部署并附带插件数据文件 |
 | `.\gradlew :datapacks:buildDatapacks` | 打包全部数据包 |
 | `.\gradlew :datapacks:syncToRun` | 把数据包同步到 `run/world/datapacks` |
 | `.\gradlew :mods:<id>:build` | 只构建指定 Fabric 插件（历史） |
@@ -182,6 +195,7 @@ Paper 开发服的运行目录是 `run-paper/`，Fabric 是 `run/`，两者互�
 然后重启实例并校验日志中的 `Enabling <插件名>`。
 
 - 默认部署全部插件；`--plugin <id>` 可重复指定，只部署其中几款。
+- `--upload-file <id>=<本地文件>` 可把插件数据文件传到 `plugins/<id>/`（如 llm-chat 的 `config.json`）。
 - `--skip-build` 复用已有产物，`--upload-only` 只上传不重启，`--check-only` 只读日志校验。
 - 凭据只从本地文件读取，不打印、不入库：`.local/minekuai.env`（`MINEKUAI_API_KEY`）与
   `.local/sftp.env`（SFTP 与实例配置，`MINEKUAI_PLUGINS_PATH` 可覆盖远程插件目录）。
@@ -189,6 +203,7 @@ Paper 开发服的运行目录是 `run-paper/`，Fabric 是 `run/`，两者互�
 ```powershell
 python scripts/deploy_paper.py
 python scripts/deploy_paper.py --plugin demo --skip-build
+python scripts/deploy_paper.py --plugin llm-chat --upload-file llm-chat=.local/llm-chat/config.json
 ```
 
 Fabric（历史）：`scripts/deploy_test.py` 会构建并上传 `mods/` 下的插件 jar（自动附带 Fabric API），

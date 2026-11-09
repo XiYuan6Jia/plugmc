@@ -1,0 +1,17 @@
+name: llm-chat
+version: '${version}'
+main: com.xiyuan.plugmc.llmchat.LlmChatPlugin
+api-version: '${api_version}'
+authors: [XiYuan6Jia]
+description: "聊天栏常驻大模型 NPC（Paper 版）"
+commands:
+  npc:
+    description: "LLM 聊天 NPC 管理命令"
+    usage: "/npc status|clear|chat <内容>|welcome <玩家>|banter <内容>|reload"
+permissions:
+  plugmc.npc:
+    description: "允许使用 /npc 基础子命令"
+    default: true
+  plugmc.npc.admin:
+    description: "允许 /npc reload、/npc welcome、/npc banter"
+    default: op
