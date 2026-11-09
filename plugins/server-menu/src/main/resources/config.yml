@@ -1,36 +1,87 @@
 menu:
   title: "&8服务器菜单"
-  rows: 3
+  rows: 5
   items:
-    "11":
-      material: GOLD_INGOT
-      name: "&6查看余额"
+    "10":
+      material: CHEST
+      name: "&6系统商店"
       lore:
-        - "&7当前余额：&e{balance}"
-        - "&8点击查看详细余额"
-      action: balance
-    "13":
-      material: BOOK
-      name: "&b服务器帮助"
+        - "&7买卖基础物资"
+        - "&8点击打开"
+      action: player_command
+      value: "shop"
+      permission: economy.shop.use
+    "12":
+      material: EMERALD
+      name: "&a玩家市场"
       lore:
-        - "&7查看常用经济命令"
-        - "&8点击查看"
-      action: message
-      value: "&e/money &7查看余额  &e/pay <玩家> <金额> &7转账"
-    "15":
+        - "&7玩家之间挂单买卖"
+        - "&8点击打开"
+      action: player_command
+      value: "market"
+      permission: economy.market.use
+    "14":
+      material: PAPER
+      name: "&f邮箱"
+      lore:
+        - "&7领取市场/交易退回的物品"
+        - "&8点击打开"
+      action: player_command
+      value: "mail"
+      permission: economy.mail.use
+    "16":
       material: CLOCK
       name: "&a金币 HUD：{hud_status}"
       lore:
         - "&7在屏幕右侧显示当前余额"
         - "&e点击切换"
       action: toggle_hud
+    "20":
+      material: GOLD_INGOT
+      name: "&6查看余额"
+      lore:
+        - "&7当前余额：&e{balance}"
+        - "&8点击查看详细余额"
+      action: balance
     "22":
-      material: BOOK
+      material: GOLDEN_CHESTPLATE
+      name: "&e拍卖行"
+      lore:
+        - "&7竞价与一口价拍卖"
+        - "&8即将开放"
+      action: message
+      value: "&e拍卖行即将开放，敬请期待。"
+    "24":
+      material: HOPPER
+      name: "&b收购订单"
+      lore:
+        - "&7发布求购，等待其他玩家交付"
+        - "&8即将开放"
+      action: message
+      value: "&e收购订单即将开放，敬请期待。"
+    "28":
+      material: PLAYER_HEAD
+      name: "&d直接交易"
+      lore:
+        - "&7与其他玩家面对面交换物品/金钱"
+        - "&8即将开放"
+      action: message
+      value: "&e直接交易即将开放，敬请期待。"
+    "31":
+      material: BOOKSHELF
       name: "&b插件列表"
       lore:
         - "&7查看已启用插件的功能和用法"
         - "&e点击浏览"
       action: plugin_list
+    "33":
+      material: BOOK
+      name: "&b服务器帮助"
+      lore:
+        - "&7常用经济命令"
+        - "&8点击查看"
+      action: message
+      value: "&e/money &7查看余额  &e/shop &7商店  &e/market &7市场  &e/mail &7邮箱"
 hud:
   enabled-by-default: true
   title: "&6&l经济"
