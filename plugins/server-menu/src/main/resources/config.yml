@@ -1,51 +1,32 @@
-config-version: 6
+config-version: 7
 menu:
   title: "&8服务器菜单"
-  rows: 5
+  rows: 6
+  filler:
+    material: BLACK_STAINED_GLASS_PANE
+    name: " "
   items:
-    "10":
-      material: CHEST
-      name: "&6系统商店"
+    # 头部信息
+    "4":
+      material: NETHER_STAR
+      name: "&6&l服务器菜单"
       lore:
-        - "&7买卖基础物资"
-        - "&8点击打开"
-      action: player_command
-      value: "shop"
-      permission: economy.shop.use
-    "12":
-      material: EMERALD
-      name: "&a玩家市场"
-      lore:
-        - "&7玩家之间挂单买卖"
-        - "&8点击打开"
-      action: player_command
-      value: "market"
-      permission: economy.market.use
-    "14":
-      material: PAPER
-      name: "&f邮箱"
-      lore:
-        - "&7领取市场/交易退回的物品"
-        - "&8点击打开"
-      action: player_command
-      value: "mail"
-      permission: economy.mail.use
-    "16":
-      material: CLOCK
-      name: "&a金币 HUD：{hud_status}"
-      lore:
-        - "&7在屏幕右侧显示当前余额"
-        - "&e点击切换"
-      action: toggle_hud
-    "20":
+        - "&7欢迎，&f{player}"
+        - "&7余额：&e{balance}"
+        - "&7签到：&f{daily_status}"
+        - "&7状态：{frozen_status}"
+      action: none
+
+    # 第一区：我的
+    "11":
       material: GOLD_INGOT
-      name: "&6查看余额"
+      name: "&6我的余额"
       lore:
         - "&7当前余额：&e{balance}"
         - "&7账户状态：{frozen_status}"
-        - "&8点击查看详细余额"
+        - "&8点击查看"
       action: balance
-    "26":
+    "13":
       material: SUNFLOWER
       name: "&e每日签到"
       lore:
@@ -54,7 +35,52 @@ menu:
         - "&8点击签到"
       action: daily
       permission: economy.reward.daily
+    "15":
+      material: PAPER
+      name: "&f邮箱"
+      lore:
+        - "&7领取市场/交易退回的物品"
+        - "&8点击打开"
+      action: player_command
+      value: "mail"
+      permission: economy.mail.use
+    "20":
+      material: CLOCK
+      name: "&a金币 HUD：{hud_status}"
+      lore:
+        - "&7在屏幕右侧显示当前余额"
+        - "&8点击切换"
+      action: toggle_hud
     "22":
+      material: GOLD_BLOCK
+      name: "&6余额排行"
+      lore:
+        - "&7查看服务器富豪榜"
+        - "&8点击打开"
+      action: player_command
+      value: "baltop"
+      permission: economy.balance.top
+
+    # 第二区：交易
+    "28":
+      material: CHEST
+      name: "&6系统商店"
+      lore:
+        - "&7官方定价买卖基础物资"
+        - "&8点击打开"
+      action: player_command
+      value: "shop"
+      permission: economy.shop.use
+    "30":
+      material: EMERALD
+      name: "&a玩家市场"
+      lore:
+        - "&7玩家之间挂单买卖"
+        - "&8点击打开"
+      action: player_command
+      value: "market"
+      permission: economy.market.use
+    "32":
       material: GOLDEN_CHESTPLATE
       name: "&e拍卖行"
       lore:
@@ -63,7 +89,7 @@ menu:
       action: player_command
       value: "auction"
       permission: economy.auction.use
-    "24":
+    "34":
       material: HOPPER
       name: "&b收购订单"
       lore:
@@ -72,7 +98,9 @@ menu:
       action: player_command
       value: "order"
       permission: economy.order.use
-    "28":
+
+    # 第三区：社交与信息
+    "39":
       material: PLAYER_HEAD
       name: "&d直接交易"
       lore:
@@ -81,38 +109,35 @@ menu:
       action: player_command
       value: "trade"
       permission: economy.trade.use
-    "31":
+    "41":
       material: BOOKSHELF
       name: "&b插件列表"
       lore:
         - "&7查看已启用插件的功能和用法"
-        - "&e点击浏览"
+        - "&8点击浏览"
       action: plugin_list
-    "33":
+    "43":
       material: BOOK
       name: "&b服务器帮助"
       lore:
-        - "&7常用经济命令"
+        - "&7常用经济命令一览"
         - "&8点击查看"
       action: message
       value: "&e/money &7余额  &e/shop &7商店  &e/market &7市场  &e/auction &7拍卖  &e/order &7收购  &e/mail &7邮箱  &e/daily &7签到"
-    "40":
-      material: GOLD_INGOT
-      name: "&6余额排行"
-      lore:
-        - "&7查看服务器富豪榜"
-        - "&8点击打开"
-      action: player_command
-      value: "baltop"
-      permission: economy.balance.top
-    "42":
+
+    # 底部：管理与关闭
+    "48":
       material: COMPARATOR
       name: "&c经济管理"
       lore:
-        - "&7账本自检、统计与演练"
+        - "&7统计、自检、财政与冻结"
         - "&8仅管理员可见"
       action: economy_admin
       permission: server-menu.admin
+    "50":
+      material: BARRIER
+      name: "&c关闭菜单"
+      action: close
 hud:
   enabled-by-default: true
   title: "&6&l经济"

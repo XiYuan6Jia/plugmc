@@ -27,10 +27,10 @@ import java.util.Set;
 public final class MenuManager {
 	private static final Set<String> ACTIONS = Set.of(
 		"balance", "toggle_hud", "message", "player_command", "console_command", "plugin_list",
-		"economy_admin", "prompt_command", "daily"
+		"economy_admin", "prompt_command", "daily", "none", "close"
 	);
 	private static final int PLUGIN_PAGE_CAPACITY = 45;
-	private static final int CONFIG_VERSION = 6;
+	private static final int CONFIG_VERSION = 7;
 	private static final int PREVIOUS_PAGE_SLOT = 45;
 	private static final int MAIN_PAGE_SLOT = 49;
 	private static final int NEXT_PAGE_SLOT = 53;
@@ -39,6 +39,7 @@ public final class MenuManager {
 	private final EconomyService economy;
 	private final ChatPrompt chatPrompt;
 	private Map<Integer, MenuButton> buttons = Map.of();
+	private ItemStack filler;
 	private int size;
 	private String title;
 
@@ -100,6 +101,25 @@ public final class MenuManager {
 		size = loadedSize;
 		title = loadedTitle;
 		buttons = Map.copyOf(loadedButtons);
+		filler = loadFiller();
+	}
+
+	private ItemStack loadFiller() {
+		String materialName = plugin.getConfig().getString("menu.filler.material", "");
+		if (materialName.isBlank()) {
+			return null;
+		}
+		Material material = Material.matchMaterial(materialName);
+		if (material == null || material.isAir()) {
+			throw new IllegalStateException("menu.filler.material 无效：" + materialName);
+		}
+		ItemStack item = new ItemStack(material);
+		ItemMeta meta = item.getItemMeta();
+		if (meta != null) {
+			meta.displayName(MenuText.component(plugin.getConfig().getString("menu.filler.name", " ")));
+			item.setItemMeta(meta);
+		}
+		return item;
 	}
 
 	private void mergeDefaultConfig() {
@@ -215,6 +235,11 @@ public final class MenuManager {
 
 	public void open(Player player) {
 		MenuHolder holder = new MenuHolder(size, title, buttons, MenuHolder.Page.MAIN, 0);
+		if (filler != null) {
+			for (int slot = 0; slot < size; slot++) {
+				holder.setButtonItem(slot, filler.clone());
+			}
+		}
 		for (Map.Entry<Integer, MenuButton> entry : buttons.entrySet()) {
 			holder.setButtonItem(entry.getKey(), createItem(player, entry.getValue()));
 		}
@@ -223,6 +248,11 @@ public final class MenuManager {
 
 	public void openAdminPanel(Player player) {
 		MenuHolder holder = new MenuHolder(54, "&8经济管理", Map.of(), MenuHolder.Page.ADMIN, 0);
+		if (filler != null) {
+			for (int slot = 0; slot < 54; slot++) {
+				holder.setButtonItem(slot, filler.clone());
+			}
+		}
 		EconomyAuditService audit = plugin.auditService();
 		if (audit == null) {
 			holder.setButtonItem(22, navigationItem(Material.BARRIER, "&c经济审计不可用（economy 未加载）"));
@@ -362,6 +392,11 @@ public final class MenuManager {
 			MenuHolder.Page.PLUGINS,
 			page
 		);
+		if (filler != null) {
+			for (int slot = 0; slot < 54; slot++) {
+				holder.setButtonItem(slot, filler.clone());
+			}
+		}
 		int start = page * PLUGIN_PAGE_CAPACITY;
 		int end = Math.min(start + PLUGIN_PAGE_CAPACITY, plugins.size());
 		for (int index = start; index < end; index++) {
@@ -428,6 +463,9 @@ public final class MenuManager {
 				open(player);
 			}
 			case "message" -> player.sendMessage(MenuText.component(value));
+			case "none" -> {
+			}
+			case "close" -> player.closeInventory();
 			case "plugin_list" -> openPluginList(player, 0);
 			case "economy_admin" -> openAdminPanel(player);
 			case "daily" -> {
