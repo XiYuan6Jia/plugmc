@@ -198,6 +198,8 @@ Paper 开发服的运行目录是 `run-paper/`，Fabric 是 `run/`，两者互�
 - 默认部署全部插件；`--plugin <id>` 可重复指定，只部署其中几款。
 - `--upload-file <id>=<本地文件>` 可把插件数据文件传到 `plugins/<id>/`（如 llm-chat 的 `config.json`）。
 - `--skip-build` 复用已有产物，`--upload-only` 只上传不重启，`--check-only` 只读日志校验。
+- 部署前会自动把线上 `plugins/<id>/` 数据目录下载到 `.local/backup/remote-<时间>/`，避免误覆盖线上数据；
+  加 `--no-remote-backup` 可跳过。
 - 凭据只从本地文件读取，不打印、不入库：`.local/minekuai.env`（`MINEKUAI_API_KEY`）与
   `.local/sftp.env`（SFTP 与实例配置，`MINEKUAI_PLUGINS_PATH` 可覆盖远程插件目录）。
 

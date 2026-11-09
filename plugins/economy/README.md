@@ -45,7 +45,7 @@ Paper 经济插件。当前版本使用**复式记账账本**：玩家余额、�
 | `/eco take <玩家> <金额>` | 扣除余额 | `economy.admin` |
 | `/eco set <玩家> <金额>` | 设置余额 | `economy.admin` |
 | `/eco stats` | 查看玩家余额、铸币、税收、财政、托管与事务序号 | `economy.admin` |
-| `/eco doctor` | 检查账本是否平衡、玩家/托管账户是否为负 | `economy.admin` |
+| `/eco doctor` | 检查账本是否平衡、玩家/托管账户是否为负、托管金额与未结束挂单是否一致 | `economy.admin` |
 | `/eco save` | 立即写快照并截断已应用的 journal | `economy.admin` |
 | `/eco backup` | 立即保存并生成一份状态备份 | `economy.admin` |
 

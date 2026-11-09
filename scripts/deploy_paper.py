@@ -256,6 +256,64 @@ def report(log: str, plugins: list[Plugin]) -> None:
     print("    插件加载校验 OK")
 
 
+def backup_remote_data(env: dict[str, str], plugin_ids: list[str]) -> pathlib.Path | None:
+    """部署前把线上插件数据目录下载到 .local/backup/remote-<时间>/，避免误覆盖线上数据。"""
+    import paramiko
+    import stat
+
+    host = dt.need(env, "MINEKUAI_SFTP_HOST")
+    port = int(dt.need(env, "MINEKUAI_SFTP_PORT"))
+    user = dt.need(env, "MINEKUAI_SFTP_USER")
+    secret = dt.need(env, "MINEKUAI_SFTP_PASSWORD")
+    plugins_path = (
+        env.get("MINEKUAI_PLUGINS_PATH", DEFAULT_PLUGINS_PATH).strip("/")
+        or DEFAULT_PLUGINS_PATH
+    )
+    stamp = time.strftime("%Y%m%d-%H%M%S")
+    root = dt.REPO_ROOT / ".local" / "backup" / f"remote-{stamp}"
+
+    transport = paramiko.Transport((host, port))
+    transport.banner_timeout = 30
+    transport.connect(username=user, password=secret)
+    downloaded = 0
+    try:
+        sftp = paramiko.SFTPClient.from_transport(transport)
+        try:
+            def download(remote_dir: str, local_dir: pathlib.Path) -> int:
+                count = 0
+                try:
+                    entries = sftp.listdir_attr(remote_dir)
+                except IOError:
+                    return 0
+                local_dir.mkdir(parents=True, exist_ok=True)
+                for entry in entries:
+                    remote = f"{remote_dir}/{entry.filename}"
+                    local = local_dir / entry.filename
+                    if stat.S_ISDIR(entry.st_mode):
+                        count += download(remote, local)
+                    else:
+                        sftp.get(remote, str(local))
+                        count += 1
+                return count
+
+            print(f"==> 备份线上插件数据到 {root}")
+            for plugin_id in plugin_ids:
+                count = download(f"{plugins_path}/{plugin_id}", root / plugin_id)
+                downloaded += count
+                if count:
+                    print(f"    {plugin_id}: {count} 个文件")
+                else:
+                    print(f"    {plugin_id}: 线上暂无数据目录")
+        finally:
+            sftp.close()
+    finally:
+        transport.close()
+
+    if not downloaded:
+        return None
+    return root
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="部署 plugins/ 下的 Paper 插件到麦块联机测试服")
     parser.add_argument(
@@ -273,6 +331,11 @@ def main() -> None:
         help="额外上传插件数据文件到 plugins/<ID>/，如 llm-chat=.local/llm-chat/config.json",
     )
     parser.add_argument("--skip-build", action="store_true", help="跳过 gradlew 构建")
+    parser.add_argument(
+        "--no-remote-backup",
+        action="store_true",
+        help="跳过部署前的线上插件数据备份（默认备份到 .local/backup/remote-<时间>/）",
+    )
     parser.add_argument("--upload-only", action="store_true", help="只上传，不重启")
     parser.add_argument("--check-only", action="store_true", help="只读日志校验，不上传")
     parser.add_argument("--timeout", type=int, default=300, help="等待就绪的秒数（默认 300）")
@@ -308,6 +371,9 @@ def main() -> None:
     jars = [plugin.jar() for plugin in targets]
     data_files = parse_upload_files(args.upload_file, set(by_id))
     print("==> 待部署：" + "、".join(f"{p.name} ({p.id})" for p in targets))
+
+    if not args.no_remote_backup:
+        backup_remote_data(env, [plugin.id for plugin in targets])
 
     uploaded = upload(
         env,
