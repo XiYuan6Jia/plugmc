@@ -19,7 +19,9 @@ public record AuctionListing(
 	BigDecimal highestBid,
 	long createdAt,
 	long expiresAt,
-	Status status
+	Status status,
+	int extensions,
+	int bidCount
 ) {
 	public enum Status {
 		ACTIVE,
@@ -48,7 +50,9 @@ public record AuctionListing(
 			new BigDecimal(dto.highestBid),
 			dto.createdAt,
 			dto.expiresAt,
-			Status.valueOf(dto.status)
+			Status.valueOf(dto.status),
+			dto.extensions,
+			dto.bidCount
 		);
 	}
 
@@ -66,6 +70,8 @@ public record AuctionListing(
 		dto.createdAt = createdAt;
 		dto.expiresAt = expiresAt;
 		dto.status = status.name();
+		dto.extensions = extensions;
+		dto.bidCount = bidCount;
 		return dto;
 	}
 
@@ -85,10 +91,28 @@ public record AuctionListing(
 		return buyoutPrice.signum() > 0;
 	}
 
-	public AuctionListing withBid(UUID bidder, String bidderName, BigDecimal amount) {
+	public AuctionListing withBid(
+		UUID bidder,
+		String bidderName,
+		BigDecimal amount,
+		long newExpiresAt,
+		int newExtensions
+	) {
 		return new AuctionListing(
-			id, seller, sellerName, item, startingPrice, buyoutPrice,
-			bidder, bidderName, amount, createdAt, expiresAt, status
+			id,
+			seller,
+			sellerName,
+			item,
+			startingPrice,
+			buyoutPrice,
+			bidder,
+			bidderName,
+			amount,
+			createdAt,
+			newExpiresAt,
+			status,
+			newExtensions,
+			bidCount + 1
 		);
 	}
 }

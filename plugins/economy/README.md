@@ -93,6 +93,11 @@ auction:
   slots: 5
   duration-hours: 48
   min-increment: "1.00"
+  min-increment-rate: 0.05
+  anti-snipe-seconds: 60
+  max-extensions: 5
+  listing-fee-rate: 0.02
+  listing-fee-min: "10.00"
   tax-rate: 0.03
 ```
 
@@ -157,12 +162,16 @@ items:
 
 - 上拍：主手物品作拍品，`/auction create <起拍价> [一口价|-] [数量|all]`，物品进入拍卖托管。
   也可以直接执行 `/auction` 打开拍卖行界面，点击「上拍主手物品」，按提示输入起拍价与一口价后选择数量。
-- 竞价：`/auction bid <编号> <金额>`，首次出价不低于起拍价，之后每次至少高出 `min-increment`。
+  上拍费 = `max(auction.listing-fee-min, 起拍价 × listing-fee-rate)`，从上拍者余额扣入税收账户，不退还。
+- 竞价：`/auction bid <编号> <金额>`，首次出价不低于起拍价；之后最小加价为
+  `max(auction.min-increment, 当前价 × min-increment-rate)`，出价越高加价幅度越大。
   出价金额立即从买家余额转入 `escrow:AUCTION`；被更高价超过时原额退回，余额不足无法出价。
+- 防狙击：截止前 `anti-snipe-seconds`（默认 60 秒）内出现新出价时，结束时间顺延到
+  “出价时刻 + anti-snipe-seconds”，最多顺延 `max-extensions`（默认 5）次；出价者与卖家都会收到提示。
 - 一口价：`/auction buy <编号>` 按一口价直接成交，当前最高出价者同时获得退款。
 - 结算：默认 48 小时后由定时任务处理——有出价则物品发给最高出价者、成交款扣税后支付卖家；
   无人出价则物品退回卖家邮箱。邮箱已满时保留拍卖，下一轮重试。
-- 撤拍：仅在无人出价时允许，物品退回卖家邮箱。
+- 撤拍：仅在无人出价时允许，物品退回卖家邮箱；上拍费不退。
 - 成交与退款全部走账本事务，`/eco doctor` 可校验 `escrow:AUCTION` 与总账平衡。
 - 到期提醒：拍卖结束前 10 分钟、收购订单到期前 60 分钟，若卖家/买家在线会收到一次提醒。
 

@@ -852,6 +852,8 @@ public final class EconomyStore implements LedgerStore {
 		public long createdAt;
 		public long expiresAt;
 		public String status = "ACTIVE";
+		public int extensions;
+		public int bidCount;
 	}
 
 	public static final class MailEntryDto {

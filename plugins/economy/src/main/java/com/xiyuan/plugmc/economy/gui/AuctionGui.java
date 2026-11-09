@@ -90,11 +90,15 @@ public final class AuctionGui {
 
 		boolean owner = listing.seller().equals(player.getUniqueId());
 		if (!owner) {
+			BigDecimal nextIncrement = service.config().minIncrementFor(
+				listing.highestBid(),
+				service.ledgerDecimals()
+			);
 			holder.set(20, item(Material.LIME_STAINED_GLASS_PANE, "&a出价", List.of(
 				"&7当前：" + (listing.hasBid()
 					? "&e" + service.format(listing.highestBid())
 					: "&e无人出价"),
-				"&7最低加价：&f" + service.format(service.config().minIncrement()),
+				"&7最低加价：&f" + service.format(nextIncrement),
 				"&8点击后输入金额"
 			)), p -> promptBid(p, id, backPage));
 			if (listing.hasBuyout()) {
@@ -127,7 +131,10 @@ public final class AuctionGui {
 			return;
 		}
 		BigDecimal minimum = listing.hasBid()
-			? listing.highestBid().add(service.config().minIncrement())
+			? listing.highestBid().add(service.config().minIncrementFor(
+				listing.highestBid(),
+				service.ledgerDecimals()
+			))
 			: listing.startingPrice();
 		chatPrompt.request(player, "请输入出价（至少 " + service.format(minimum) + "）：", input -> {
 			BigDecimal amount;
@@ -183,6 +190,7 @@ public final class AuctionGui {
 		holder.set(4, item(Material.PAPER, "&f" + hand.getType().name(), List.of(
 			"&7起拍价：&e" + service.format(start),
 			"&7一口价：" + (buyout.signum() > 0 ? "&e" + service.format(buyout) : "&f无"),
+			"&7上拍费：&e" + service.format(service.config().listingFee(start, service.ledgerDecimals())),
 			"&7主手数量：&f" + available
 		)), null);
 		holder.set(10, quantityButton(1, start, available), p -> create(p, start, buyout, 1, false));
@@ -221,7 +229,8 @@ public final class AuctionGui {
 					? "&7当前出价：&e" + service.format(listing.highestBid())
 					: "&7起拍价：&e" + service.format(listing.startingPrice()),
 				listing.hasBuyout() ? "&7一口价：&e" + service.format(listing.buyoutPrice()) : "&7一口价：&8无",
-				"&7截止：&f" + TIME.format(Instant.ofEpochMilli(listing.expiresAt())),
+				"&7截止：&f" + TIME.format(Instant.ofEpochMilli(listing.expiresAt()))
+					+ (listing.extensions() > 0 ? " &8(已延时 " + listing.extensions() + " 次)" : ""),
 				"&8点击查看详情"
 			)));
 			icon.setItemMeta(meta);

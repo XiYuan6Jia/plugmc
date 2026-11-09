@@ -17,6 +17,9 @@ import org.bukkit.scheduler.BukkitTask;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -29,6 +32,9 @@ import java.util.UUID;
  */
 public final class AuctionService {
 	private static final Gson GSON = new GsonBuilder().disableHtmlEscaping().create();
+	private static final DateTimeFormatter TIME = DateTimeFormatter
+		.ofPattern("MM-dd HH:mm:ss")
+		.withZone(ZoneId.systemDefault());
 
 	private final JavaPlugin plugin;
 	private final LedgerService ledger;
@@ -159,6 +165,10 @@ public final class AuctionService {
 		return ledger.format(amount);
 	}
 
+	public int ledgerDecimals() {
+		return ledger.decimalPlaces();
+	}
+
 	public int usedSlots(Player player) {
 		return (int) store.auctions().values().stream()
 			.filter(dto -> player.getUniqueId().toString().equals(dto.seller))
@@ -206,6 +216,12 @@ public final class AuctionService {
 		ItemStack escrow = hand.clone();
 		escrow.setAmount(amount);
 
+		BigDecimal fee = config.listingFee(start, ledger.decimalPlaces());
+		if (ledger.balance(player.getUniqueId()).compareTo(fee) < 0) {
+			player.sendMessage("余额不足，上拍费需要 " + ledger.format(fee) + "。");
+			return false;
+		}
+
 		long now = System.currentTimeMillis();
 		long id = store.nextAuctionId();
 		AuctionListing listing = new AuctionListing(
@@ -220,9 +236,18 @@ public final class AuctionService {
 			Money.zero(ledger.decimalPlaces()),
 			now,
 			now + config.durationHours() * 60L * 60L * 1000L,
-			AuctionListing.Status.ACTIVE
+			AuctionListing.Status.ACTIVE,
+			0,
+			0
 		);
-		if (!ledger.commitState(
+		List<JournalRecord.Entry> entries = fee.signum() > 0
+			? List.of(
+				new JournalRecord.Entry(LedgerService.playerKey(player.getUniqueId()), fee.negate()),
+				new JournalRecord.Entry(LedgerService.TAX, fee)
+			)
+			: List.of();
+		if (!ledger.commitEntries(
+			entries,
 			List.of(new JournalRecord.StateOp("AUCTION_ADD", Long.toString(id), GSON.toJson(listing.toDto()))),
 			"AUCTION_CREATE",
 			Long.toString(id)
@@ -242,7 +267,8 @@ public final class AuctionService {
 		player.sendMessage("已上拍 #" + id + "：" + amount + " 个 " + escrow.getType().name()
 			+ "，起拍价 " + ledger.format(start)
 			+ (buyout.signum() > 0 ? "，一口价 " + ledger.format(buyout) : "")
-			+ "，时长 " + config.durationHours() + " 小时。");
+			+ "，时长 " + config.durationHours() + " 小时"
+			+ (fee.signum() > 0 ? "，上拍费 " + ledger.format(fee) : "") + "。");
 		return true;
 	}
 
@@ -269,7 +295,7 @@ public final class AuctionService {
 			return false;
 		}
 		BigDecimal minimum = listing.hasBid()
-			? listing.highestBid().add(config.minIncrement())
+			? listing.highestBid().add(config.minIncrementFor(listing.highestBid(), ledger.decimalPlaces()))
 			: listing.startingPrice();
 		if (bid.compareTo(minimum) < 0) {
 			player.sendMessage("出价至少为 " + ledger.format(minimum) + "。");
@@ -294,7 +320,23 @@ public final class AuctionService {
 			entries.add(new JournalRecord.Entry(LedgerService.playerKey(previousBidder), previousBid));
 		}
 
-		AuctionListing updated = listing.withBid(player.getUniqueId(), player.getName(), bid);
+		// 最后 N 秒内出价时延长结束时间，避免被最后一秒狙击；最多延长固定次数。
+		long now = System.currentTimeMillis();
+		long expiresAt = listing.expiresAt();
+		int extensions = listing.extensions();
+		boolean extended = config.shouldExtend(now, expiresAt, extensions);
+		if (extended) {
+			expiresAt = config.extendedExpiry(now);
+			extensions++;
+		}
+
+		AuctionListing updated = listing.withBid(
+			player.getUniqueId(),
+			player.getName(),
+			bid,
+			expiresAt,
+			extensions
+		);
 		if (!ledger.commitEntries(
 			entries,
 			List.of(new JournalRecord.StateOp("AUCTION_UPDATE", Long.toString(id), GSON.toJson(updated.toDto()))),
@@ -305,11 +347,19 @@ public final class AuctionService {
 			return false;
 		}
 
-		player.sendMessage("已出价 " + ledger.format(bid) + " 竞拍 #" + id + "。");
+		player.sendMessage("已出价 " + ledger.format(bid) + " 竞拍 #" + id + "。"
+			+ (extended ? "拍卖已延长至 " + TIME.format(Instant.ofEpochMilli(expiresAt)) + "。" : ""));
 		if (previousBidder != null) {
 			Player previous = plugin.getServer().getPlayer(previousBidder);
 			if (previous != null) {
 				previous.sendMessage("你在拍卖 #" + id + " 的出价已被超过，" + ledger.format(previousBid) + " 已退回。");
+			}
+		}
+		if (extended) {
+			Player seller = plugin.getServer().getPlayer(listing.seller());
+			if (seller != null) {
+				seller.sendMessage("你的拍卖 #" + id + " 在最后阶段收到出价，结束时间已延长至 "
+					+ TIME.format(Instant.ofEpochMilli(expiresAt)) + "。");
 			}
 		}
 		return true;

@@ -33,4 +33,9 @@ auction:
   slots: 5
   duration-hours: 48
   min-increment: "1.00"
+  min-increment-rate: 0.05
+  anti-snipe-seconds: 60
+  max-extensions: 5
+  listing-fee-rate: 0.02
+  listing-fee-min: "10.00"
   tax-rate: 0.03
