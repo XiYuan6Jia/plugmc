@@ -27,6 +27,7 @@ public final class LedgerService {
 	private final LedgerStore store;
 	private final EconomyConfig config;
 	private final Object lock = new Object();
+	private volatile TransactionListener transactionListener = TransactionListener.noop();
 
 	public LedgerService(LedgerStore store, EconomyConfig config) {
 		this.store = Objects.requireNonNull(store, "store");
@@ -34,6 +35,10 @@ public final class LedgerService {
 		synchronized (lock) {
 			ensureSystemAccounts();
 		}
+	}
+
+	public void setTransactionListener(TransactionListener listener) {
+		this.transactionListener = listener == null ? TransactionListener.noop() : listener;
 	}
 
 	public EconomyConfig config() {
@@ -216,6 +221,12 @@ public final class LedgerService {
 				normalizedOps
 			);
 			store.commit(record);
+			transactionListener.onCommitted(
+				record.reason(),
+				record.ref(),
+				record.seq(),
+				normalizedEntries
+			);
 			return true;
 		}
 	}
@@ -311,6 +322,7 @@ public final class LedgerService {
 			)
 		);
 		store.commit(record);
+		transactionListener.onCommitted(record.reason(), record.ref(), record.seq(), record.entries());
 		return true;
 	}
 

@@ -3,7 +3,7 @@ version: '${version}'
 main: com.xiyuan.plugmc.llmchat.LlmChatPlugin
 api-version: '${api_version}'
 authors: [XiYuan6Jia]
-description: "聊天栏常驻大模型 NPC（Paper 版）"
+description: "聊天栏常驻大模型 NPC（@npc 对话 / 进服欢迎 / 随机吐槽）"
 commands:
   npc:
     description: "LLM 聊天 NPC 管理命令"

@@ -15,8 +15,9 @@ python scripts/new_datapack.py --id my-pack --name "我的数据包"
 
 ```powershell
 .\gradlew :datapacks:buildDatapacks   # 产出 datapacks/build/libs/<id>.zip（可分发给正式服）
-.\gradlew :datapacks:syncToRun        # 同步到 run/world/datapacks（开发服生效）
-.\gradlew :dev:runServer              # 启动开发服，启动前自动执行 syncToRun
+python scripts/run_paper.py           # Paper 开发服：启动前自动把数据包复制进 run-paper/world/datapacks
+.\gradlew :datapacks:syncToRun        # 同步到 run/world/datapacks（Fabric 历史开发服）
+.\gradlew :dev:runServer              # Fabric 开发服，启动前自动执行 syncToRun
 ```
 
 ## 约定

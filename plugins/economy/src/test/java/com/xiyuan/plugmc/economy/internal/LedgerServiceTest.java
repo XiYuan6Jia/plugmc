@@ -89,8 +89,27 @@ class LedgerServiceTest {
 	}
 
 	@Test
-	void setBalanceReplacesMissingAccountWithoutAddingStartingBalance() {
+	void transactionListenerReceivesCommittedEntries() {
 		FakeStore store = new FakeStore();
+		LedgerService ledger = new LedgerService(store, CONFIG);
+		UUID payer = UUID.randomUUID();
+		UUID payee = UUID.randomUUID();
+
+		var captured = new java.util.ArrayList<String>();
+		ledger.setTransactionListener((reason, ref, sequence, entries) -> captured.add(
+			reason + "|" + ref + "|" + sequence + "|" + entries.size()
+				+ "|" + TransactionListener.sumOf(entries).toPlainString()
+		));
+
+		assertTrue(ledger.transfer(payer, payee, new BigDecimal("25.00"), "PAY", "42"));
+		assertFalse(captured.isEmpty());
+		String last = captured.get(captured.size() - 1);
+		assertTrue(last.startsWith("PAY|42|"));
+		assertTrue(last.endsWith("|2|0.00"));
+	}
+
+	@Test
+	void setBalanceReplacesMissingAccountWithoutAddingStartingBalance() {		FakeStore store = new FakeStore();
 		LedgerService ledger = new LedgerService(store, CONFIG);
 		UUID player = UUID.randomUUID();
 

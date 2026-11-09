@@ -3,7 +3,7 @@ version: '${version}'
 main: com.xiyuan.plugmc.economy.EconomyPlugin
 api-version: '${api_version}'
 authors: [XiYuan6Jia]
-description: "复式记账经济系统（钱包/账本/备份）"
+description: "复式记账经济系统（钱包/账本/商店/市场/拍卖行/邮箱）"
 commands:
   money:
     description: "查看余额"

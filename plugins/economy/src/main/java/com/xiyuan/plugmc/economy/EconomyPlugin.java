@@ -1,6 +1,7 @@
 package com.xiyuan.plugmc.economy;
 
 import com.xiyuan.plugmc.economy.api.EconomyService;
+import com.xiyuan.plugmc.economy.api.EconomyTransactionEvent;
 import com.xiyuan.plugmc.economy.auction.AuctionCommand;
 import com.xiyuan.plugmc.economy.auction.AuctionConfig;
 import com.xiyuan.plugmc.economy.auction.AuctionService;
@@ -69,6 +70,16 @@ public final class EconomyPlugin extends JavaPlugin implements Listener {
 			config = EconomyConfig.load(getConfig());
 			store = new EconomyStore(this, config);
 			ledger = new LedgerService(store, config);
+			ledger.setTransactionListener((reason, ref, sequence, entries) ->
+				Bukkit.getPluginManager().callEvent(new EconomyTransactionEvent(
+					reason,
+					ref,
+					sequence,
+					entries.stream()
+						.map(entry -> new EconomyTransactionEvent.Entry(entry.account(), entry.delta()))
+						.toList()
+				))
+			);
 			economyService = new EconomyServiceImpl(ledger, config, store);
 			Bukkit.getServicesManager().register(
 				EconomyService.class,

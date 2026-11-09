@@ -225,6 +225,23 @@ if (economy != null) {
 操作同步、线程安全，并通过 journal 立即持久化；建议在主线程调用，避免磁盘 I/O 阻塞游戏线程。
 `server-menu` 已依赖本插件，升级后请整体重启服务器，不要使用 `/reload`。
 
+### 交易事件
+
+每次资金事务提交成功后都会触发 `EconomyTransactionEvent`（同步，主线程），可用于成就、统计、日志等联动：
+
+```java
+@EventHandler
+public void onEconomyTransaction(EconomyTransactionEvent event) {
+	if ("MARKET_BUY".equals(event.reason())) {
+		BigDecimal paid = event.playerDelta(playerId);
+	}
+}
+```
+
+事件包含 `reason`（如 `PAY`、`MARKET_BUY`、`AUCTION_SETTLE`）、`reference`（业务编号）、`sequence`（事务序号）
+以及全部账本分录；另有 `/baltop` 排行用的 `EconomyService#topBalances(int)`。
+不要在事件中再次发起经济操作，避免递归事务。
+
 ## 构建与部署
 
 ```powershell
