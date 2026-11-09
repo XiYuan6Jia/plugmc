@@ -26,6 +26,7 @@
 | 金币 HUD | 切换右侧余额侧栏 |
 | 查看余额 | `/money` |
 | 余额排行 | `/baltop` |
+| 经济管理 | 账本统计、自检、演练（`server-menu.admin`，默认 OP） |
 
 经济按钮通过 `menu.items.<slot>.action: player_command` 调用对应命令；权限分别使用
 `economy.shop.use`、`economy.market.use`、`economy.auction.use`、`economy.order.use`、

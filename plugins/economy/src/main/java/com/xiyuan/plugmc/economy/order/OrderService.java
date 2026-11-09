@@ -31,6 +31,7 @@ public final class OrderService {
 	private final JavaPlugin plugin;
 	private final LedgerService ledger;
 	private final EconomyStore store;
+	private final java.util.Set<Long> remindedExpiring = java.util.concurrent.ConcurrentHashMap.newKeySet();
 	private volatile OrderConfig config;
 
 	public OrderService(JavaPlugin plugin, LedgerService ledger, EconomyStore store, OrderConfig config) {
@@ -53,6 +54,36 @@ public final class OrderService {
 
 	public BukkitTask startExpiryTask() {
 		return plugin.getServer().getScheduler().runTaskTimer(plugin, this::expire, 20L * 20L, 20L * 20L);
+	}
+
+	public BukkitTask startReminderTask() {
+		return plugin.getServer().getScheduler().runTaskTimer(
+			plugin,
+			() -> notifyExpiringSoon(60),
+			20L * 60L,
+			20L * 60L
+		);
+	}
+
+	/**
+	 * 提醒在线买家：自己的收购订单即将到期，剩余托管资金将退回。同一订单只提醒一次。
+	 */
+	public void notifyExpiringSoon(int minutes) {
+		long now = System.currentTimeMillis();
+		long threshold = now + Math.max(1, minutes) * 60_000L;
+		for (BuyOrder order : orders()) {
+			if (order.expiresAt() > threshold) {
+				continue;
+			}
+			if (!remindedExpiring.add(order.id())) {
+				continue;
+			}
+			Player buyer = plugin.getServer().getPlayer(order.buyer());
+			if (buyer != null) {
+				buyer.sendMessage("你的收购订单 #" + order.id() + "（" + order.template().getType().name()
+					+ " ×" + order.remaining() + "）将在 " + minutes + " 分钟内到期，剩余托管资金会退回。");
+			}
+		}
 	}
 
 	public List<BuyOrder> orders() {

@@ -1,5 +1,6 @@
 package com.xiyuan.plugmc.servermenu;
 
+import com.xiyuan.plugmc.economy.api.EconomyAuditService;
 import com.xiyuan.plugmc.economy.api.EconomyService;
 import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
@@ -56,6 +57,11 @@ public final class ServerMenuPlugin extends JavaPlugin {
 
 	EconomyService getEconomy() {
 		return economy;
+	}
+
+	EconomyAuditService auditService() {
+		EconomyAuditService audit = Bukkit.getServicesManager().load(EconomyAuditService.class);
+		return audit;
 	}
 
 	boolean isHudEnabled(Player player) {

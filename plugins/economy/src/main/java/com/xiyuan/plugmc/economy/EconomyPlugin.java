@@ -1,5 +1,6 @@
 package com.xiyuan.plugmc.economy;
 
+import com.xiyuan.plugmc.economy.api.EconomyAuditService;
 import com.xiyuan.plugmc.economy.api.EconomyService;
 import com.xiyuan.plugmc.economy.api.EconomyTransactionEvent;
 import com.xiyuan.plugmc.economy.auction.AuctionCommand;
@@ -15,6 +16,7 @@ import com.xiyuan.plugmc.economy.gui.OrderGui;
 import com.xiyuan.plugmc.economy.gui.ShopGui;
 import com.xiyuan.plugmc.economy.gui.TradeGui;
 import com.xiyuan.plugmc.economy.internal.EconomyConfig;
+import com.xiyuan.plugmc.economy.internal.EconomyAuditServiceImpl;
 import com.xiyuan.plugmc.economy.internal.EconomyServiceImpl;
 import com.xiyuan.plugmc.economy.internal.EconomyStore;
 import com.xiyuan.plugmc.economy.internal.LedgerService;
@@ -52,6 +54,7 @@ public final class EconomyPlugin extends JavaPlugin implements Listener {
 	private EconomyStore store;
 	private LedgerService ledger;
 	private EconomyServiceImpl economyService;
+	private EconomyAuditServiceImpl auditService;
 	private MarketService marketService;
 	private MailService mailService;
 	private OrderService orderService;
@@ -62,6 +65,8 @@ public final class EconomyPlugin extends JavaPlugin implements Listener {
 	private BukkitTask mailTask;
 	private BukkitTask orderTask;
 	private BukkitTask auctionTask;
+	private BukkitTask auctionReminderTask;
+	private BukkitTask orderReminderTask;
 
 	@Override
 	public void onEnable() {
@@ -87,9 +92,16 @@ public final class EconomyPlugin extends JavaPlugin implements Listener {
 				this,
 				ServicePriority.Normal
 			);
+			auditService = new EconomyAuditServiceImpl(ledger, store, config);
+			Bukkit.getServicesManager().register(
+				EconomyAuditService.class,
+				auditService,
+				this,
+				ServicePriority.Normal
+			);
 			getServer().getPluginManager().registerEvents(this, this);
 
-			EconomyCommand command = new EconomyCommand(this, economyService, ledger, store, config);
+			EconomyCommand command = new EconomyCommand(this, economyService, ledger, store, config, auditService);
 			registerCommand("money", command);
 			registerCommand("pay", command);
 			registerCommand("eco", command);
@@ -130,7 +142,9 @@ public final class EconomyPlugin extends JavaPlugin implements Listener {
 			marketTask = marketService.startExpiryTask();
 			mailTask = mailService.startExpiryTask();
 			orderTask = orderService.startExpiryTask();
+			orderReminderTask = orderService.startReminderTask();
 			auctionTask = auctionService.startSettlementTask();
+			auctionReminderTask = auctionService.startReminderTask();
 
 			long interval = config.snapshotIntervalSeconds() * 20L;
 			snapshotTask = getServer().getScheduler().runTaskTimer(this, () -> {
@@ -170,6 +184,14 @@ public final class EconomyPlugin extends JavaPlugin implements Listener {
 			auctionTask.cancel();
 			auctionTask = null;
 		}
+		if (auctionReminderTask != null) {
+			auctionReminderTask.cancel();
+			auctionReminderTask = null;
+		}
+		if (orderReminderTask != null) {
+			orderReminderTask.cancel();
+			orderReminderTask = null;
+		}
 		if (tradeManager != null) {
 			tradeManager.closeAll();
 			tradeManager = null;
@@ -190,6 +212,10 @@ public final class EconomyPlugin extends JavaPlugin implements Listener {
 		if (economyService != null) {
 			Bukkit.getServicesManager().unregister(EconomyService.class, economyService);
 			economyService = null;
+		}
+		if (auditService != null) {
+			Bukkit.getServicesManager().unregister(EconomyAuditService.class, auditService);
+			auditService = null;
 		}
 		getLogger().info("经济系统 已停用");
 	}

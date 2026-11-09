@@ -1,5 +1,6 @@
 package com.xiyuan.plugmc.servermenu;
 
+import com.xiyuan.plugmc.economy.api.EconomyAuditService;
 import com.xiyuan.plugmc.economy.api.EconomyService;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -25,10 +26,10 @@ import java.util.Set;
 
 public final class MenuManager {
 	private static final Set<String> ACTIONS = Set.of(
-		"balance", "toggle_hud", "message", "player_command", "console_command", "plugin_list"
+		"balance", "toggle_hud", "message", "player_command", "console_command", "plugin_list", "economy_admin"
 	);
 	private static final int PLUGIN_PAGE_CAPACITY = 45;
-	private static final int CONFIG_VERSION = 4;
+	private static final int CONFIG_VERSION = 5;
 	private static final int PREVIOUS_PAGE_SLOT = 45;
 	private static final int MAIN_PAGE_SLOT = 49;
 	private static final int NEXT_PAGE_SLOT = 53;
@@ -217,8 +218,65 @@ public final class MenuManager {
 		player.openInventory(holder.getInventory());
 	}
 
-	public void openPluginList(Player player, int pageNumber) {
-		List<Plugin> plugins = java.util.Arrays.stream(Bukkit.getPluginManager().getPlugins())
+	public void openAdminPanel(Player player) {
+		MenuHolder holder = new MenuHolder(54, "&8经济管理", Map.of(), MenuHolder.Page.ADMIN, 0);
+		EconomyAuditService audit = plugin.auditService();
+		if (audit == null) {
+			holder.setButtonItem(22, navigationItem(Material.BARRIER, "&c经济审计不可用（economy 未加载）"));
+			holder.setButtonItem(45, navigationItem(Material.ARROW, "&e返回菜单"));
+			holder.setButtonItem(49, navigationItem(Material.BARRIER, "&c关闭"));
+			player.openInventory(holder.getInventory());
+			return;
+		}
+
+		List<String> stats = audit.statsLines();
+		holder.setButtonItem(4, adminItem(Material.PAPER, "&f经济统计", stats));
+
+		List<EconomyAuditService.Check> doctor = audit.doctorChecks();
+		boolean doctorOk = doctor.stream().allMatch(EconomyAuditService.Check::passed);
+		holder.setButtonItem(20, adminItem(
+			doctorOk ? Material.LIME_STAINED_GLASS_PANE : Material.RED_STAINED_GLASS_PANE,
+			doctorOk ? "&a账本自检通过" : "&c账本自检异常",
+			doctor.stream().map(this::formatCheck).toList()
+		));
+
+		List<String> reminders = audit.reminders();
+		holder.setButtonItem(24, adminItem(
+			reminders.isEmpty() ? Material.CLOCK : Material.BELL,
+			reminders.isEmpty() ? "&a无待处理事项" : "&e待处理事项",
+			reminders.isEmpty() ? List.of("&7没有到期未结算的挂单") : reminders
+		));
+
+		List<EconomyAuditService.Check> selfTest = audit.selfTestChecks();
+		long failed = selfTest.stream().filter(check -> !check.passed()).count();
+		holder.setButtonItem(31, adminItem(
+			failed == 0 ? Material.EMERALD_BLOCK : Material.REDSTONE_BLOCK,
+			failed == 0 ? "&a演练全部通过" : "&c演练存在失败项",
+			List.of("&7共 " + selfTest.size() + " 项，失败 " + failed + " 项")
+		));
+
+		holder.setButtonItem(45, navigationItem(Material.ARROW, "&e返回菜单"));
+		holder.setButtonItem(49, navigationItem(Material.BARRIER, "&c关闭"));
+		holder.setButtonItem(53, navigationItem(Material.COMPARATOR, "&b重新检测"));
+		player.openInventory(holder.getInventory());
+	}
+
+	private String formatCheck(EconomyAuditService.Check check) {
+		return (check.passed() ? "&a✔ " : "&c✘ ") + check.name() + " &8" + check.detail();
+	}
+
+	private ItemStack adminItem(Material material, String name, List<String> lore) {
+		ItemStack item = new ItemStack(material);
+		ItemMeta meta = item.getItemMeta();
+		if (meta != null) {
+			meta.displayName(MenuText.component(name));
+			meta.lore(lore.stream().map(MenuText::component).toList());
+			item.setItemMeta(meta);
+		}
+		return item;
+	}
+
+	public void openPluginList(Player player, int pageNumber) {		List<Plugin> plugins = java.util.Arrays.stream(Bukkit.getPluginManager().getPlugins())
 			.filter(Plugin::isEnabled)
 			.sorted((first, second) -> first.getName().compareToIgnoreCase(second.getName()))
 			.toList();
@@ -247,8 +305,17 @@ public final class MenuManager {
 	}
 
 	public void handleClick(Player player, MenuHolder holder, int slot) {
-		if (holder.getPage() == MenuHolder.Page.PLUGINS) {
+		if (holder.getPage() == MenuHolder.Page.ADMIN) {
 			switch (slot) {
+				case 45 -> open(player);
+				case 49 -> player.closeInventory();
+				case 53 -> openAdminPanel(player);
+				default -> {
+				}
+			}
+			return;
+		}
+		if (holder.getPage() == MenuHolder.Page.PLUGINS) {			switch (slot) {
 				case PREVIOUS_PAGE_SLOT -> openPluginList(player, holder.getPageNumber() - 1);
 				case MAIN_PAGE_SLOT -> open(player);
 				case NEXT_PAGE_SLOT -> openPluginList(player, holder.getPageNumber() + 1);
@@ -284,6 +351,7 @@ public final class MenuManager {
 			}
 			case "message" -> player.sendMessage(MenuText.component(value));
 			case "plugin_list" -> openPluginList(player, 0);
+			case "economy_admin" -> openAdminPanel(player);
 			case "player_command" -> player.performCommand(stripSlash(value));
 			case "console_command" -> plugin.getServer().dispatchCommand(
 				plugin.getServer().getConsoleSender(),

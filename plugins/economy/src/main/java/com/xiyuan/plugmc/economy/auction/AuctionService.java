@@ -34,6 +34,7 @@ public final class AuctionService {
 	private final LedgerService ledger;
 	private final EconomyStore store;
 	private final MailService mail;
+	private final java.util.Set<Long> remindedExpiring = java.util.concurrent.ConcurrentHashMap.newKeySet();
 	private volatile AuctionConfig config;
 
 	public AuctionService(
@@ -63,6 +64,39 @@ public final class AuctionService {
 
 	public BukkitTask startSettlementTask() {
 		return plugin.getServer().getScheduler().runTaskTimer(plugin, this::settleExpired, 20L * 20L, 20L * 20L);
+	}
+
+	public BukkitTask startReminderTask() {
+		return plugin.getServer().getScheduler().runTaskTimer(
+			plugin,
+			() -> notifyExpiringSoon(10),
+			20L * 60L,
+			20L * 60L
+		);
+	}
+
+	/**
+	 * 提醒在线卖家：自己的拍卖即将结束。同一场拍卖只提醒一次。
+	 */
+	public void notifyExpiringSoon(int minutes) {
+		long now = System.currentTimeMillis();
+		long threshold = now + Math.max(1, minutes) * 60_000L;
+		for (AuctionListing listing : listings()) {
+			if (listing.expiresAt() > threshold) {
+				continue;
+			}
+			if (!remindedExpiring.add(listing.id())) {
+				continue;
+			}
+			Player seller = plugin.getServer().getPlayer(listing.seller());
+			if (seller != null) {
+				seller.sendMessage("你的拍卖 #" + listing.id() + "（" + listing.item().getType().name()
+					+ "）将在 " + minutes + " 分钟内结束"
+					+ (listing.hasBid()
+						? "，当前最高出价 " + format(listing.highestBid()) + "。"
+						: "，暂无出价。"));
+			}
+		}
 	}
 
 	public List<AuctionListing> listings() {

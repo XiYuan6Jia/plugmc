@@ -164,6 +164,7 @@ items:
   无人出价则物品退回卖家邮箱。邮箱已满时保留拍卖，下一轮重试。
 - 撤拍：仅在无人出价时允许，物品退回卖家邮箱。
 - 成交与退款全部走账本事务，`/eco doctor` 可校验 `escrow:AUCTION` 与总账平衡。
+- 到期提醒：拍卖结束前 10 分钟、收购订单到期前 60 分钟，若卖家/买家在线会收到一次提醒。
 
 ### 直接交易
 
@@ -242,6 +243,18 @@ public void onEconomyTransaction(EconomyTransactionEvent event) {
 事件包含 `reason`（如 `PAY`、`MARKET_BUY`、`AUCTION_SETTLE`）、`reference`（业务编号）、`sequence`（事务序号）
 以及全部账本分录；另有 `/baltop` 排行用的 `EconomyService#topBalances(int)`。
 不要在事件中再次发起经济操作，避免递归事务。
+
+管理面板等只读展示可以加载 `EconomyAuditService`：
+
+```java
+EconomyAuditService audit = Bukkit.getServicesManager().load(EconomyAuditService.class);
+for (EconomyAuditService.Check check : audit.doctorChecks()) {
+	// check.passed() / check.name() / check.detail()
+}
+```
+
+它提供 `statsLines()`、`doctorChecks()`、`reminders()`、`selfTestChecks()`，不修改任何数据。
+`server-menu` 的「经济管理」页即基于该服务。
 
 ## 构建与部署
 

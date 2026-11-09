@@ -1,11 +1,11 @@
 package com.xiyuan.plugmc.economy;
 
+import com.xiyuan.plugmc.economy.api.EconomyAuditService;
 import com.xiyuan.plugmc.economy.api.EconomyService;
 import com.xiyuan.plugmc.economy.gui.LeaderboardGui;
 import com.xiyuan.plugmc.economy.internal.EconomyConfig;
 import com.xiyuan.plugmc.economy.internal.EconomyStore;
 import com.xiyuan.plugmc.economy.internal.EscrowAudit;
-import com.xiyuan.plugmc.economy.internal.LedgerSelfTest;
 import com.xiyuan.plugmc.economy.internal.LedgerService;
 import com.xiyuan.plugmc.economy.internal.Money;
 import org.bukkit.Bukkit;
@@ -33,19 +33,22 @@ public final class EconomyCommand implements CommandExecutor, TabCompleter {
 	private final LedgerService ledger;
 	private final EconomyStore store;
 	private final EconomyConfig config;
+	private final EconomyAuditService audit;
 
 	public EconomyCommand(
 		JavaPlugin plugin,
 		EconomyService economy,
 		LedgerService ledger,
 		EconomyStore store,
-		EconomyConfig config
+		EconomyConfig config,
+		EconomyAuditService audit
 	) {
 		this.plugin = plugin;
 		this.economy = economy;
 		this.ledger = ledger;
 		this.store = store;
 		this.config = config;
+		this.audit = audit;
 	}
 
 	@Override
@@ -231,37 +234,23 @@ public final class EconomyCommand implements CommandExecutor, TabCompleter {
 	}
 
 	private void stats(CommandSender sender) {
-		Map<String, BigDecimal> balances = ledger.balances();
-		long players = balances.keySet().stream().filter(key -> key.startsWith("player:")).count();
 		sender.sendMessage("经济统计：");
-		sender.sendMessage("- 玩家账户：" + players);
-		sender.sendMessage("- 玩家余额合计：" + economy.format(ledger.playerTotal()));
-		sender.sendMessage("- 铸币账户：" + ledger.accountBalance(LedgerService.MINT).toPlainString());
-		sender.sendMessage("- 税收账户：" + economy.format(ledger.accountBalance(LedgerService.TAX)));
-		sender.sendMessage("- 财政账户：" + economy.format(ledger.accountBalance(LedgerService.TREASURY)));
-		BigDecimal escrow = ledger.accountBalance(LedgerService.ESCROW_MARKET)
-			.add(ledger.accountBalance(LedgerService.ESCROW_AUCTION))
-			.add(ledger.accountBalance(LedgerService.ESCROW_ORDER))
-			.add(ledger.accountBalance(LedgerService.ESCROW_TRADE));
-		sender.sendMessage("- 托管合计：" + economy.format(escrow));
-		sender.sendMessage("- 事务序号：" + store.lastSeq());
+		for (String line : audit.statsLines()) {
+			sender.sendMessage("- " + line);
+		}
 	}
 
 	private void doctor(CommandSender sender) {
-		BigDecimal total = ledger.total();
 		List<String> issues = new ArrayList<>();
-		if (total.signum() != 0) {
-			issues.add("账本合计为 " + total.toPlainString() + "，应为 0");
-		}
-		for (Map.Entry<String, BigDecimal> entry : ledger.balances().entrySet()) {
-			if (entry.getKey().startsWith("player:") && entry.getValue().signum() < 0) {
-				issues.add("玩家账户为负：" + entry.getKey());
-			}
-			if (entry.getKey().startsWith("escrow:") && entry.getValue().signum() < 0) {
-				issues.add("托管账户为负：" + entry.getKey());
+		for (EconomyAuditService.Check check : audit.doctorChecks()) {
+			if (!check.passed()) {
+				issues.add(check.name() + "：" + check.detail());
 			}
 		}
-		checkEscrow(sender, issues);
+		List<String> reminders = audit.reminders();
+		for (String reminder : reminders) {
+			sender.sendMessage("[提示] " + reminder);
+		}
 		if (issues.isEmpty()) {
 			sender.sendMessage("经济自检通过：账本平衡，玩家/托管账户无负数，托管金额与挂单一致。");
 		} else {
@@ -273,51 +262,17 @@ public final class EconomyCommand implements CommandExecutor, TabCompleter {
 		sender.sendMessage("事务序号：" + store.lastSeq() + "，数据目录：" + store.dataDir());
 	}
 
-	/**
-	 * 校验托管账户余额与未结束的拍卖/收购订单金额是否一致，避免结算异常导致资金凭空增减。
-	 */	private void checkEscrow(CommandSender sender, List<String> issues) {
-		long now = System.currentTimeMillis();
-
-		BigDecimal auctionExpected = EscrowAudit.expectedAuctionEscrow(store.auctions().values());
-		BigDecimal auctionActual = ledger.accountBalance(LedgerService.ESCROW_AUCTION);
-		if (auctionExpected.compareTo(auctionActual) != 0) {
-			issues.add("拍卖托管不一致：记录 " + auctionExpected.toPlainString()
-				+ "，账户 " + auctionActual.toPlainString());
-		}
-
-		BigDecimal orderExpected = EscrowAudit.expectedOrderEscrow(store.orders().values());
-		BigDecimal orderActual = ledger.accountBalance(LedgerService.ESCROW_ORDER);
-		if (orderExpected.compareTo(orderActual) != 0) {
-			issues.add("收购托管不一致：记录 " + orderExpected.toPlainString()
-				+ "，账户 " + orderActual.toPlainString());
-		}
-
-		BigDecimal market = ledger.accountBalance(LedgerService.ESCROW_MARKET);
-		if (market.signum() != 0) {
-			issues.add("市场托管账户不为 0：" + market.toPlainString() + "（市场成交不走托管）");
-		}
-
-		int expiredAuctions = EscrowAudit.expiredAuctions(store.auctions().values(), now);
-		if (expiredAuctions > 0) {
-			sender.sendMessage("[提示] 有 " + expiredAuctions + " 个拍卖已到期待结算（邮箱满时会重试）");
-		}
-		int expiredOrders = EscrowAudit.expiredOrders(store.orders().values(), now);
-		if (expiredOrders > 0) {
-			sender.sendMessage("[提示] 有 " + expiredOrders + " 个收购订单已到期待退款");
-		}
-	}
-
 	private void selfTest(CommandSender sender) {
-		List<LedgerSelfTest.Check> checks = LedgerSelfTest.run();
+		List<EconomyAuditService.Check> checks = audit.selfTestChecks();
 		long failed = checks.stream().filter(check -> !check.passed()).count();
 		sender.sendMessage("经济演练（不接触真实数据）：");
-		for (LedgerSelfTest.Check check : checks) {
+		for (EconomyAuditService.Check check : checks) {
 			sender.sendMessage((check.passed() ? "  ✔ " : "  ✘ ") + check.name() + " [" + check.detail() + "]");
 		}
 		if (failed == 0) {
 			sender.sendMessage("演练全部通过：" + checks.size() + " 项。");
 		} else {
-			sender.sendMessage("演练失败 " + failed + " 项，请检查 settlements 与账本逻辑。");
+			sender.sendMessage("演练失败 " + failed + " 项，请检查结算与账本逻辑。");
 		}
 	}
 

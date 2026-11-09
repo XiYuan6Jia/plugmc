@@ -1,4 +1,4 @@
-config-version: 4
+config-version: 5
 menu:
   title: "&8服务器菜单"
   rows: 5
@@ -95,6 +95,14 @@ menu:
       action: player_command
       value: "baltop"
       permission: economy.balance.top
+    "42":
+      material: COMPARATOR
+      name: "&c经济管理"
+      lore:
+        - "&7账本自检、统计与演练"
+        - "&8仅管理员可见"
+      action: economy_admin
+      permission: server-menu.admin
 hud:
   enabled-by-default: true
   title: "&6&l经济"

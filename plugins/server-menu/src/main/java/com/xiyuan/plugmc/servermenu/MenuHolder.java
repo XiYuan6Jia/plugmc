@@ -10,7 +10,8 @@ import java.util.Map;
 public final class MenuHolder implements InventoryHolder {
 	public enum Page {
 		MAIN,
-		PLUGINS
+		PLUGINS,
+		ADMIN
 	}
 
 	private final Inventory inventory;
