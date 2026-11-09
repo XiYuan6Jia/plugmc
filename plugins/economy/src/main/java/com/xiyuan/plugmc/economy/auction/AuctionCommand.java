@@ -1,5 +1,6 @@
 package com.xiyuan.plugmc.economy.auction;
 
+import com.xiyuan.plugmc.economy.gui.AuctionGui;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -23,24 +24,36 @@ public final class AuctionCommand implements CommandExecutor, TabCompleter {
 		.withZone(ZoneId.systemDefault());
 
 	private final AuctionService service;
+	private final AuctionGui gui;
 
-	public AuctionCommand(AuctionService service) {
+	public AuctionCommand(AuctionService service, AuctionGui gui) {
 		this.service = service;
+		this.gui = gui;
 	}
 
 	@Override
 	public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
 		if (args.length == 0) {
-			list(sender, 1);
+			if (sender instanceof Player player) {
+				gui.openList(player, 0);
+			} else {
+				list(sender, 1);
+			}
 			return true;
 		}
 		switch (args[0].toLowerCase(Locale.ROOT)) {
+			case "mine" -> {
+				Player player = requirePlayer(sender);
+				if (player != null) {
+					gui.openMine(player);
+				}
+				return true;
+			}
 			case "create" -> create(sender, args);
 			case "bid" -> bid(sender, args);
 			case "buy" -> buy(sender, args);
 			case "cancel" -> cancel(sender, args);
 			case "list" -> list(sender, args.length > 1 ? parseInt(args[1]) : 1);
-			case "mine" -> mine(sender);
 			case "search" -> search(sender, args);
 			case "reload" -> reload(sender);
 			default -> usage(sender);

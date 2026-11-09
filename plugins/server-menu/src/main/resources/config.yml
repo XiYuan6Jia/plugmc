@@ -1,4 +1,4 @@
-config-version: 2
+config-version: 3
 menu:
   title: "&8服务器菜单"
   rows: 5
@@ -67,7 +67,7 @@ menu:
       name: "&d直接交易"
       lore:
         - "&7与其他玩家面对面交换物品"
-        - "&8点击后输入 /trade <玩家>"
+        - "&8点击选择在线玩家"
       action: player_command
       value: "trade"
       permission: economy.trade.use

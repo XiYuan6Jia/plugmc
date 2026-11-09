@@ -1,5 +1,6 @@
 package com.xiyuan.plugmc.economy.trade;
 
+import com.xiyuan.plugmc.economy.gui.TradeGui;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -15,9 +16,11 @@ public final class TradeCommand implements CommandExecutor, TabCompleter {
 	private static final List<String> SUBCOMMANDS = List.of("accept", "cancel");
 
 	private final TradeManager manager;
+	private final TradeGui gui;
 
-	public TradeCommand(TradeManager manager) {
+	public TradeCommand(TradeManager manager, TradeGui gui) {
 		this.manager = manager;
+		this.gui = gui;
 	}
 
 	@Override
@@ -31,7 +34,7 @@ public final class TradeCommand implements CommandExecutor, TabCompleter {
 			return true;
 		}
 		if (args.length == 0) {
-			player.sendMessage("用法：/trade <玩家> 或 /trade accept <玩家>");
+			gui.open(player);
 			return true;
 		}
 		if (args[0].equalsIgnoreCase("accept")) {

@@ -1,5 +1,6 @@
 package com.xiyuan.plugmc.economy.order;
 
+import com.xiyuan.plugmc.economy.gui.OrderGui;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -17,15 +18,21 @@ public final class OrderCommand implements CommandExecutor, TabCompleter {
 	);
 
 	private final OrderService service;
+	private final OrderGui gui;
 
-	public OrderCommand(OrderService service) {
+	public OrderCommand(OrderService service, OrderGui gui) {
 		this.service = service;
+		this.gui = gui;
 	}
 
 	@Override
 	public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
 		if (args.length == 0) {
-			list(sender, 1);
+			if (sender instanceof Player player) {
+				gui.openList(player, 0);
+			} else {
+				list(sender, 1);
+			}
 			return true;
 		}
 		switch (args[0].toLowerCase(Locale.ROOT)) {

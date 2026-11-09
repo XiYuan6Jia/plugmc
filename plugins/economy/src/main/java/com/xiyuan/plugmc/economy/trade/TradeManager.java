@@ -299,6 +299,13 @@ public final class TradeManager implements Listener {
 		return sessions.containsKey(player.getUniqueId());
 	}
 
+	public boolean hasPendingFrom(Player target, Player requester) {
+		PendingRequest request = requests.get(target.getUniqueId());
+		return request != null
+			&& request.from().equals(requester.getUniqueId())
+			&& request.expiresAt() >= System.currentTimeMillis();
+	}
+
 	private record PendingRequest(UUID from, String fromName, long expiresAt) {
 		private static PendingRequest create(UUID from, String fromName) {
 			return new PendingRequest(from, fromName, System.currentTimeMillis() + REQUEST_TIMEOUT_MS);

@@ -4,12 +4,15 @@ import com.xiyuan.plugmc.economy.api.EconomyService;
 import com.xiyuan.plugmc.economy.auction.AuctionCommand;
 import com.xiyuan.plugmc.economy.auction.AuctionConfig;
 import com.xiyuan.plugmc.economy.auction.AuctionService;
+import com.xiyuan.plugmc.economy.gui.AuctionGui;
 import com.xiyuan.plugmc.economy.gui.ChatPrompt;
 import com.xiyuan.plugmc.economy.gui.EconomyMenuHolder;
 import com.xiyuan.plugmc.economy.gui.MailGui;
 import com.xiyuan.plugmc.economy.gui.MarketGui;
 import com.xiyuan.plugmc.economy.gui.MenuListener;
+import com.xiyuan.plugmc.economy.gui.OrderGui;
 import com.xiyuan.plugmc.economy.gui.ShopGui;
+import com.xiyuan.plugmc.economy.gui.TradeGui;
 import com.xiyuan.plugmc.economy.internal.EconomyConfig;
 import com.xiyuan.plugmc.economy.internal.EconomyServiceImpl;
 import com.xiyuan.plugmc.economy.internal.EconomyStore;
@@ -97,7 +100,7 @@ public final class EconomyPlugin extends JavaPlugin implements Listener {
 			registerCommand("market", new MarketCommand(marketService, new MarketGui(marketService, chatPrompt)));
 			registerCommand("mail", new MailCommand(mailService, new MailGui(mailService)));
 			orderService = new OrderService(this, ledger, store, OrderConfig.load(getConfig(), config.decimalPlaces()));
-			registerCommand("order", new OrderCommand(orderService));
+			registerCommand("order", new OrderCommand(orderService, new OrderGui(orderService, chatPrompt)));
 			auctionService = new AuctionService(
 				this,
 				ledger,
@@ -105,10 +108,13 @@ public final class EconomyPlugin extends JavaPlugin implements Listener {
 				mailService,
 				AuctionConfig.load(getConfig(), config.decimalPlaces())
 			);
-			registerCommand("auction", new AuctionCommand(auctionService));
+			registerCommand("auction", new AuctionCommand(
+				auctionService,
+				new AuctionGui(auctionService, chatPrompt)
+			));
 			tradeManager = new TradeManager(this);
 			getServer().getPluginManager().registerEvents(tradeManager, this);
-			registerCommand("trade", new TradeCommand(tradeManager));
+			registerCommand("trade", new TradeCommand(tradeManager, new TradeGui(tradeManager)));
 			marketTask = marketService.startExpiryTask();
 			mailTask = mailService.startExpiryTask();
 			orderTask = orderService.startExpiryTask();
