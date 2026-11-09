@@ -26,6 +26,12 @@ file("mods").listFiles()
 	?.sortedBy { it.name }
 	?.forEach { include(":mods:${it.name}") }
 
+// plugins/<id>/ 下存在构建脚本即视为一个 Paper 插件工程
+file("plugins").listFiles()
+	?.filter { it.isDirectory && it.resolve("build.gradle.kts").isFile }
+	?.sortedBy { it.name }
+	?.forEach { include(":plugins:${it.name}") }
+
 // hotplugins/<id>/ 下存在构建脚本即视为一个热加载插件工程
 file("hotplugins").listFiles()
 	?.filter { it.isDirectory && it.resolve("build.gradle.kts").isFile }

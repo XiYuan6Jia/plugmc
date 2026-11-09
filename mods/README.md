@@ -1,5 +1,8 @@
 # mods/
 
+> **历史目录**：测试服已切换为 Paper，新插件请写到 [plugins/](../plugins/README.md)。
+> 本目录原样保留，用于继续构建/维护已有的 Fabric 版本。
+
 每款 Fabric 插件占一个子目录，目录名即模组 id（如 `mods/my-plugin/`），每个子目录都是独立的 Gradle 工程。
 
 > `mods/plugmc/` 是正式宿主插件，负责热加载 `plugmc-hot/` 下的功能 jar（见
@@ -8,7 +11,7 @@
 ## 新建插件
 
 ```powershell
-python scripts/new_plugin.py --id my-plugin --name "我的插件"
+python scripts/new_plugin.py --type fabric --id my-plugin --name "我的插件"
 ```
 
 脚本会从 `templates/fabric-plugin/` 生成完整工程（入口类、`fabric.mod.json`、`build.gradle.kts`），

@@ -1,5 +1,8 @@
 # hotplugins/
 
+> **历史方案**：热加载依赖 Fabric 宿主 `mods/plugmc`，测试服已切换为 Paper，本目录不再部署到测试服。
+> Paper 插件请写到 [plugins/](../plugins/README.md)，用 `scripts/deploy_paper.py` 部署（重启生效）。
+
 热加载插件源码目录。这里的工程编译成普通 jar（不是 Fabric 模组），由服务器上的
 `mods/plugmc` 宿主在运行时加载，可在不重启服务器的情况下新增、替换、卸载功能。
 

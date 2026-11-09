@@ -1,0 +1,39 @@
+# plugins/
+
+每款 **Paper / Bukkit 插件**占一个子目录，目录名即插件工程 id（如 `plugins/my-plugin/`），
+每个子目录都是独立的 Gradle 工程。产物是普通 Bukkit 插件 jar，放进服务端的 `plugins/` 目录即可运行。
+
+当前包含：
+
+- `demo/`：最小示例，注册一条命令，用于验证构建、部署与本地开发服链路。
+
+## 新建插件
+
+```powershell
+python scripts/new_plugin.py --id my-plugin --name "我的插件"
+```
+
+脚本默认从 `templates/paper-plugin/` 生成完整工程（入口类、`plugin.yml`、`build.gradle.kts`），
+并把占位符替换为实际的 id、包名与类名。新增目录会被 `settings.gradle.kts` 自动纳入构建。
+
+> 生成 Fabric 模组（历史）用 `python scripts/new_plugin.py --type fabric --id my-mod`。
+
+## 约定
+
+- 目录名只能包含小写字母、数字、`-`、`_`，且以字母开头；它同时是工程 id 与 jar 前缀。
+- Java 包名默认 `com.xiyuan.plugmc.<去分隔符的 id>`，可用 `--package` 覆盖。
+- 版本号默认 `0.1.0`，可在 `plugins/<id>/build.gradle.kts` 里单独调整。
+- `plugin.yml` 里支持 `${version}` 与 `${api_version}` 占位符，构建时由根脚本展开
+  （`api_version` 取自 `gradle.properties` 的 `paper_minecraft_version`），不要写死。
+- Paper 版本：`gradle.properties` 的 `paper_minecraft_version` / `paper_api_version` / `paper_build`，
+  paper-api 只在编译期引入，运行期由服务端提供。
+- 入口类保留一行 `getLogger().info("<名称> 已启用")`，部署脚本依靠它在服务端日志中校验加载结果。
+
+## 常用命令
+
+```powershell
+.\gradlew :plugins:<id>:build      # 只构建该插件
+.\gradlew build                    # 构建全部插件（含 Fabric 历史模块与数据包）
+python scripts/run_paper.py        # 本地 Paper 开发服（自动装入已构建插件）
+python scripts/deploy_paper.py     # 构建并部署到麦块联机测试服
+```

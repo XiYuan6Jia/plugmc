@@ -1,22 +1,34 @@
 # PlugMC
 
-面向原版 Minecraft 的 **Fabric 插件 / 数据包测试开发仓库**。一个仓库内可以并存多款插件与多个数据包：
-每款插件是独立的 Gradle 工程，每个数据包是纯数据文件夹，既能单独构建运行，也能通过联调工程一次性装进同一台开发服。
+面向 Minecraft 的 **Paper 插件 / 数据包测试开发仓库**。一个仓库内可以并存多款插件与多个数据包：
+每款插件是独立的 Gradle 工程，每个数据包是纯数据文件夹，既能单独构建运行，也能一次性装进同一台测试服。
 
-原版客户端 / 服务端安装 Fabric Loader 后即可加载插件，无需修改官方游戏文件。
+测试服已切换为 **Paper 26.3**，插件产物直接放进服务端 `plugins/` 目录即可加载，无需任何客户端模组。
+仓库早期基于 Fabric 的模组（[mods/](mods/README.md)）与热加载方案（[hotplugins/](hotplugins/README.md)）
+原样保留，仅作历史参考；新功能请写在 [plugins/](plugins/README.md) 下。
 
 ## 环境要求
 
 | 组件 | 版本 | 说明 |
 | --- | --- | --- |
-| Minecraft | 26.3 | `gradle.properties` 中的 `minecraft_version` |
+| Minecraft | 26.3 | `gradle.properties` 中的 `paper_minecraft_version` |
+| Paper | 26.3（build 229） | 测试服运行的核心，`paper_build` |
+| paper-api | 26.3.build.229-stable | 编译期依赖，`paper_api_version`（**不要**打进插件 jar） |
+| Java | 25 | Minecraft 26.3 / Paper 26.3 要求；缺失时由 Gradle 按 `gradle/gradle-daemon-jvm.properties` 自动获取 |
+| Gradle | 9.8.2 | 通过 `gradlew` 使用，无需本地安装 |
+
+<details>
+<summary>Fabric（历史）依赖</summary>
+
+| 组件 | 版本 | 说明 |
+| --- | --- | --- |
 | Fabric Loader | 0.20.1 | `loader_version` |
 | Fabric API | 0.165.2+26.3 | `fabric_api_version` |
-| Java | 25 | Minecraft 26.3 要求；缺失时由 Gradle 按 `gradle/gradle-daemon-jvm.properties` 自动获取 |
-| Gradle | 9.8.2 | 通过 `gradlew` 使用，无需本地安装 |
 | Fabric Loom | 1.19-SNAPSHOT | 统一在 `settings.gradle.kts` 声明 |
 
-> Minecraft 26.3 起 Fabric Loom 要求 **运行 Gradle 的 JVM 本身是 Java 25**，该要求已通过
+</details>
+
+> **Fabric（历史）**：Minecraft 26.3 起 Fabric Loom 要求 **运行 Gradle 的 JVM 本身是 Java 25**，该要求已通过
 > `gradle/gradle-daemon-jvm.properties`（`toolchainVersion=25`）固化，无需手动设置 `JAVA_HOME`。
 >
 > 当前环境提供的 Minecraft 26.3 与 Fabric API 制品已是 Mojang 命名（未混淆），因此
@@ -26,40 +38,55 @@
 ## 目录结构
 
 ```
-mods/<id>/                    每款 Fabric 插件一个独立 Gradle 工程（目录名 = 模组 id）
-hotplugins/<id>/              热加载插件：编译成普通 jar，服务器运行时可加载/卸载
+plugins/<id>/                 每款 Paper 插件一个独立 Gradle 工程（目录名 = 工程 id）
 datapacks/<id>/               每个数据包一个纯数据文件夹（pack.mcmeta + data/）
-templates/fabric-plugin/      新插件模板
+templates/paper-plugin/       新 Paper 插件模板
 templates/datapack/           新数据包模板
-scripts/new_plugin.py         从模板生成插件工程
+scripts/new_plugin.py         从模板生成插件工程（默认 Paper，--type fabric 生成 Fabric 模组）
 scripts/new_datapack.py       从模板生成数据包
-scripts/deploy_test.py        构建并部署插件到麦块联机测试服
-scripts/deploy_hot.py         上传热插件并触发热加载（无需重启）
-dev/                          联调工程：自动聚合 mods/ 下全部插件
-run/                          开发运行目录（客户端/服务端共用，已 gitignore）
+scripts/run_paper.py          本地起 Paper 开发服（自动下载核心并装入已构建插件）
+scripts/deploy_paper.py       构建并部署 Paper 插件到麦块联机测试服
+run-paper/                    Paper 开发服目录（世界、配置，已 gitignore）
+mods/<id>/                    Fabric 插件（历史，保留）
+hotplugins/<id>/              热加载插件（历史，需 Fabric 宿主）
+templates/fabric-plugin/      Fabric 模组模板（历史）
+scripts/deploy_test.py        构建并部署 Fabric 插件到麦块联机测试服（历史）
+scripts/deploy_hot.py         上传热插件并触发热加载（历史）
+dev/                          Fabric 联调工程：自动聚合 mods/ 下全部插件（历史）
+run/                          Fabric 开发运行目录（已 gitignore）
 ```
 
-- 根 [build.gradle.kts](build.gradle.kts) 统一注入 Minecraft / Loader / Fabric API 依赖、Java 25 工具链与版本展开。
-- [settings.gradle.kts](settings.gradle.kts) 自动扫描 `mods/` 下的工程目录，新增插件无需手改 include。
+- 根 [build.gradle.kts](build.gradle.kts) 统一注入 paper-api（`plugins/`）、Minecraft / Loader / Fabric API（`mods/`）依赖、Java 25 工具链与版本展开。
+- [settings.gradle.kts](settings.gradle.kts) 自动扫描 `plugins/`、`mods/`、`hotplugins/` 下的工程目录，新增插件无需手改 include。
 - [datapacks/build.gradle.kts](datapacks/build.gradle.kts) 自动扫描数据包，提供打包与同步任务。
 
 ## 快速开始
 
 ```powershell
-# 新建一款插件（生成 mods/my-plugin/）
+# 新建一款 Paper 插件（生成 plugins/my-plugin/）
 python scripts/new_plugin.py --id my-plugin --name "我的插件"
 
 # 构建全部插件 + 数据包
 .\gradlew build
 
-# 只跑这一款插件
-.\gradlew :mods:my-plugin:runServer
+# 本地起 Paper 开发服，自动装入 plugins/ 下已构建的插件
+python scripts/run_paper.py --build-plugins
 
-# 全部插件 + 全部数据包联调
-.\gradlew :dev:runServer
+# 构建并部署到测试服（上传到 plugins/ 后重启并校验日志）
+python scripts/deploy_paper.py
 ```
 
-首次执行 `runServer` 前需在 `run/eula.txt` 中写入 `eula=true`（目录会在首次运行时生成）。
+`run_paper.py` 首次运行会把 Paper 核心下载到 `.local/thirdparty/`，世界与配置落在 `run-paper/`，
+并自动写入 `eula.txt`；控制台直接输入 `stop` 停止服务端。需要 Java 25，可用 `--java` 指定。
+
+Fabric（历史）：
+
+```powershell
+.\gradlew :mods:my-mod:runServer      # 只跑某一款 Fabric 插件
+.\gradlew :dev:runServer              # 全部 Fabric 插件联调
+```
+
+首次执行 Fabric 的 `runServer` 前需在 `run/eula.txt` 中写入 `eula=true`（目录会在首次运行时生成）。
 
 ## 新建数据包
 
@@ -70,9 +97,14 @@ python scripts/new_datapack.py --id my-pack --name "我的数据包"
 .\gradlew :datapacks:syncToRun        # 同步到 run/world/datapacks
 ```
 
-`runServer` 启动前会自动执行 `:datapacks:syncToRun`，本地改完数据包重启开发服即可生效。
+Fabric 开发服（`runServer`）启动前会自动执行 `:datapacks:syncToRun`；
+Paper 开发服用 `python scripts/run_paper.py` 启动时会自动把 `datapacks/<id>/` 复制进 `run-paper/world/datapacks/`。
+本地改完数据包重启开发服（或游戏内 `/reload`）即可生效。
 
-## 热加载（不重启服务器）
+## 热加载（Fabric 历史方案）
+
+> 测试服已切换为 Paper，这一节只适用于 Fabric 服务端；Paper 插件请用
+> `python scripts/deploy_paper.py` 部署并重启。
 
 `mods/plugmc` 是正式宿主插件：服务器启动时扫描根目录的 `plugmc-hot/`（开发服为 `run/plugmc-hot/`），
 加载其中的热插件 jar。热插件可以注册命令与服务器 tick 回调，卸载时注册会被自动注销。
@@ -109,54 +141,72 @@ python scripts/deploy_hot.py --project demo   # 上传到测试服并触发热�
 | 命令 | 作用 |
 | --- | --- |
 | `.\gradlew build` | 构建全部插件与数据包 |
-| `.\gradlew :mods:<id>:build` | 只构建指定插件（`build/libs/` 下产出 jar 与 sources jar） |
-| `.\gradlew :mods:<id>:runClient` | 只带指定插件启动开发客户端 |
-| `.\gradlew :mods:<id>:runServer` | 只带指定插件启动开发服务端 |
-| `.\gradlew :dev:runServer` | 聚合全部插件启动开发服务端（联调） |
+| `.\gradlew :plugins:<id>:build` | 只构建指定 Paper 插件（`build/libs/` 下产出 jar 与 sources jar） |
+| `python scripts/run_paper.py` | 本地起 Paper 开发服（`run-paper/`），自动装入已构建插件 |
+| `python scripts/deploy_paper.py` | 构建并部署全部 Paper 插件到麦块联机测试服 |
 | `.\gradlew :datapacks:buildDatapacks` | 打包全部数据包 |
 | `.\gradlew :datapacks:syncToRun` | 把数据包同步到 `run/world/datapacks` |
-| `.\gradlew :hotplugins:<id>:build` | 构建指定热加载插件 |
-| `python scripts/deploy_test.py` | 构建并部署全部插件到麦块联机测试服 |
-| `python scripts/deploy_hot.py --project <id>` | 上传热插件并触发热加载 |
-| `python scripts/deploy_hot.py --project llm-chat --config run/plugmc-hot/llm-chat.json` | 同时上传 LLM 配置 |
+| `.\gradlew :mods:<id>:build` | 只构建指定 Fabric 插件（历史） |
+| `.\gradlew :mods:<id>:runClient` | 只带指定 Fabric 插件启动开发客户端（历史） |
+| `.\gradlew :mods:<id>:runServer` | 只带指定 Fabric 插件启动开发服务端（历史） |
+| `.\gradlew :dev:runServer` | 聚合全部 Fabric 插件启动开发服务端（历史） |
+| `.\gradlew :hotplugins:<id>:build` | 构建指定热加载插件（历史） |
+| `python scripts/deploy_test.py` | 构建并部署全部 Fabric 插件到测试服（历史） |
+| `python scripts/deploy_hot.py --project <id>` | 上传热插件并触发热加载（历史） |
 
-所有开发运行都复用根目录的 `run/`，客户端与服务端、各插件之间共享同一个世界与配置。
+Paper 开发服的运行目录是 `run-paper/`，Fabric 是 `run/`，两者互不影响。
 
 ## 版本管理
 
-- Minecraft / Loader / Fabric API / 统一默认版本：根目录 [gradle.properties](gradle.properties)。
-- Loom 插件版本：`settings.gradle.kts` 的 `pluginManagement.plugins`。
+- Paper / Minecraft 版本：根目录 [gradle.properties](gradle.properties) 的
+  `paper_minecraft_version`、`paper_api_version`、`paper_build`。
+- Fabric（历史）：同一文件的 `minecraft_version` / `loader_version` / `fabric_api_version`，
+  Loom 插件版本在 `settings.gradle.kts` 的 `pluginManagement.plugins`。
 - 单款插件可在自己的 `build.gradle.kts` 里用 `version = "x.y.z"` 覆盖默认版本。
-- 插件 `fabric.mod.json` 支持 `${version}`、`${minecraft_version}`、`${loader_version}` 占位符，构建时自动展开。
+- `plugin.yml` 支持 `${version}`、`${api_version}`，`fabric.mod.json` 支持
+  `${version}`、`${minecraft_version}`、`${loader_version}`，构建时自动展开。
 - 数据包格式版本：`gradle.properties` 的 `datapack_format`（26.3 为 `121`）。
 
-升级 Minecraft 时：
+升级 Paper / Minecraft 时：
 
-1. 在 [fabricmc.net/develop](https://fabricmc.net/develop) 查询目标版本对应的 Loader 与 Fabric API 版本；
-2. 更新 `gradle.properties` 中的版本号与 `datapack_format`；
-3. 检查 Loom 插件版本与 Java 要求是否同步变化；
+1. 在 [fill.papermc.io](https://fill.papermc.io/v3/projects/paper) 查询目标版本的构建号；
+2. 更新 `gradle.properties` 中的 `paper_minecraft_version` / `paper_api_version` / `paper_build`；
+3. 测试服的面板核心也要同步升级（整合包广场 → 纯净服务端 → Paper → 对应版本）；
 4. 执行 `.\gradlew build` 验证。
 
 ## 部署到测试服
 
-`scripts/deploy_test.py` 会构建并上传 `mods/` 下的插件 jar（自动附带 Fabric API），随后重启测试服并校验日志。
+测试服运行 Paper 26.3，插件目录为服务端根目录的 `plugins/`。
 
-- 默认部署全部插件；`--mod <id>` 可重复指定，只部署其中几款。
+`scripts/deploy_paper.py` 会构建 `plugins/` 下的全部插件，上传 jar 到测试服 `plugins/`，
+然后重启实例并校验日志中的 `Enabling <插件名>`。
+
+- 默认部署全部插件；`--plugin <id>` 可重复指定，只部署其中几款。
 - `--skip-build` 复用已有产物，`--upload-only` 只上传不重启，`--check-only` 只读日志校验。
 - 凭据只从本地文件读取，不打印、不入库：`.local/minekuai.env`（`MINEKUAI_API_KEY`）与
-  `.local/sftp.env`（SFTP 与实例配置）。
+  `.local/sftp.env`（SFTP 与实例配置，`MINEKUAI_PLUGINS_PATH` 可覆盖远程插件目录）。
 
 ```powershell
-python scripts/deploy_test.py
-python scripts/deploy_test.py --mod my-plugin --skip-build
+python scripts/deploy_paper.py
+python scripts/deploy_paper.py --plugin demo --skip-build
 ```
+
+Fabric（历史）：`scripts/deploy_test.py` 会构建并上传 `mods/` 下的插件 jar（自动附带 Fabric API），
+参数形式与上面一致（`--mod` 代替 `--plugin`）。
 
 ## 安装（正式服）
 
+Paper：
+
+1. 准备 Minecraft 26.3 的 [Paper](https://papermc.io/downloads/paper) 服务端；
+2. 把 `plugins/<id>/build/libs/<id>-<version>.jar` 放入服务端 `plugins/`；
+3. 数据包分发时使用 `datapacks/build/libs/<id>.zip`，放入世界的 `datapacks/` 目录。
+
+Fabric（历史）：
+
 1. 为 Minecraft 26.3 安装 [Fabric Loader](https://fabricmc.net/use/)；
 2. 将 [Fabric API](https://modrinth.com/mod/fabric-api) 与 `mods/<id>/build/libs/<id>-<version>.jar` 放入 `mods/`；
-3. 数据包分发时使用 `datapacks/build/libs/<id>.zip`，放入世界的 `datapacks/` 目录；
-4. 热加载功能 jar 放入服务器根目录的 `plugmc-hot/`，启动时自动加载，或用 `/plugmc reloadall` 热加载。
+3. 热加载功能 jar 放入服务器根目录的 `plugmc-hot/`，启动时自动加载，或用 `/plugmc reloadall` 热加载。
 
 ## 许可
 

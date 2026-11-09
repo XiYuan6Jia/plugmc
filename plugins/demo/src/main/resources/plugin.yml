@@ -1,0 +1,10 @@
+name: demo
+version: '${version}'
+main: com.xiyuan.plugmc.demo.Demo
+api-version: '${api_version}'
+authors: [XiYuan6Jia]
+description: "最小 Paper 插件示例"
+commands:
+  demo:
+    description: "最小 Paper 插件示例"
+    usage: /demo

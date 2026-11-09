@@ -1,0 +1,10 @@
+name: __MOD_ID__
+version: '${version}'
+main: __PACKAGE__.__MAIN_CLASS__
+api-version: '${api_version}'
+authors: [__AUTHOR__]
+description: "__DESCRIPTION__"
+commands:
+  __MOD_ID__:
+    description: "__DESCRIPTION__"
+    usage: /__MOD_ID__
