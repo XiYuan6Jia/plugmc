@@ -4,6 +4,7 @@ import com.xiyuan.plugmc.economy.api.EconomyService;
 import com.xiyuan.plugmc.economy.auction.AuctionCommand;
 import com.xiyuan.plugmc.economy.auction.AuctionConfig;
 import com.xiyuan.plugmc.economy.auction.AuctionService;
+import com.xiyuan.plugmc.economy.gui.ChatPrompt;
 import com.xiyuan.plugmc.economy.gui.EconomyMenuHolder;
 import com.xiyuan.plugmc.economy.gui.MailGui;
 import com.xiyuan.plugmc.economy.gui.MarketGui;
@@ -26,6 +27,8 @@ import com.xiyuan.plugmc.economy.shop.GoodsConfig;
 import com.xiyuan.plugmc.economy.shop.ShopCommand;
 import com.xiyuan.plugmc.economy.shop.ShopConfig;
 import com.xiyuan.plugmc.economy.shop.ShopService;
+import com.xiyuan.plugmc.economy.trade.TradeCommand;
+import com.xiyuan.plugmc.economy.trade.TradeManager;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.TabCompleter;
@@ -49,6 +52,7 @@ public final class EconomyPlugin extends JavaPlugin implements Listener {
 	private MailService mailService;
 	private OrderService orderService;
 	private AuctionService auctionService;
+	private TradeManager tradeManager;
 	private BukkitTask snapshotTask;
 	private BukkitTask marketTask;
 	private BukkitTask mailTask;
@@ -83,11 +87,14 @@ public final class EconomyPlugin extends JavaPlugin implements Listener {
 			getServer().getPluginManager().registerEvents(new MenuListener(), this);
 			registerCommand("shop", new ShopCommand(shopService, shopGui));
 
+			ChatPrompt chatPrompt = new ChatPrompt(this);
+			getServer().getPluginManager().registerEvents(chatPrompt, this);
+
 			MailConfig mailConfig = MailConfig.load(getConfig());
 			mailService = new MailService(this, store, ledger, mailConfig);
 			MarketConfig marketConfig = MarketConfig.load(getConfig(), config.decimalPlaces());
 			marketService = new MarketService(this, ledger, store, mailService, marketConfig);
-			registerCommand("market", new MarketCommand(marketService, new MarketGui(marketService)));
+			registerCommand("market", new MarketCommand(marketService, new MarketGui(marketService, chatPrompt)));
 			registerCommand("mail", new MailCommand(mailService, new MailGui(mailService)));
 			orderService = new OrderService(this, ledger, store, OrderConfig.load(getConfig(), config.decimalPlaces()));
 			registerCommand("order", new OrderCommand(orderService));
@@ -99,6 +106,9 @@ public final class EconomyPlugin extends JavaPlugin implements Listener {
 				AuctionConfig.load(getConfig(), config.decimalPlaces())
 			);
 			registerCommand("auction", new AuctionCommand(auctionService));
+			tradeManager = new TradeManager(this);
+			getServer().getPluginManager().registerEvents(tradeManager, this);
+			registerCommand("trade", new TradeCommand(tradeManager));
 			marketTask = marketService.startExpiryTask();
 			mailTask = mailService.startExpiryTask();
 			orderTask = orderService.startExpiryTask();
@@ -141,6 +151,10 @@ public final class EconomyPlugin extends JavaPlugin implements Listener {
 		if (auctionTask != null) {
 			auctionTask.cancel();
 			auctionTask = null;
+		}
+		if (tradeManager != null) {
+			tradeManager.closeAll();
+			tradeManager = null;
 		}
 		for (Player player : Bukkit.getOnlinePlayers()) {
 			if (player.getOpenInventory().getTopInventory().getHolder(false) instanceof EconomyMenuHolder) {

@@ -35,6 +35,9 @@ commands:
     description: "拍卖行"
     usage: /auction [create <起拍价> [一口价|-] [数量|all] | bid <编号> <金额> | buy <编号> | cancel <编号> | list | mine | search <关键词> | reload]
     aliases: [ah, auctions]
+  trade:
+    description: "直接交易"
+    usage: /trade <玩家> | /trade accept <玩家>
 permissions:
   economy.balance.others:
     description: "查看其他玩家余额"
@@ -69,3 +72,6 @@ permissions:
   economy.auction.admin:
     description: "重载拍卖行配置"
     default: op
+  economy.trade.use:
+    description: "使用直接交易"
+    default: true

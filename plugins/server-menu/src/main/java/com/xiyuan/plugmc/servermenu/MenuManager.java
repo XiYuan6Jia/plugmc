@@ -28,6 +28,7 @@ public final class MenuManager {
 		"balance", "toggle_hud", "message", "player_command", "console_command", "plugin_list"
 	);
 	private static final int PLUGIN_PAGE_CAPACITY = 45;
+	private static final int CONFIG_VERSION = 2;
 	private static final int PREVIOUS_PAGE_SLOT = 45;
 	private static final int MAIN_PAGE_SLOT = 49;
 	private static final int NEXT_PAGE_SLOT = 53;
@@ -110,6 +111,7 @@ public final class MenuManager {
 		}
 
 		ensurePluginListButton(defaults);
+		migrateConfigVersion(defaults);
 		plugin.saveConfig();
 	}
 
@@ -163,6 +165,48 @@ public final class MenuManager {
 
 		plugin.getConfig().set("menu.items." + slot, pluginListButton.getValues(false));
 		plugin.getLogger().info("已将默认插件列表按钮合并到菜单位置 " + slot);
+	}
+
+	/**
+	 * 旧版本配置里“即将开放”的占位按钮不会随插件更新自动生效，
+	 * 这里直接把 v1 配置升级为当前默认布局（升级前备份原文件）。
+	 */
+	private void migrateConfigVersion(YamlConfiguration defaults) {
+		int currentVersion = plugin.getConfig().getInt("config-version", 1);
+		if (currentVersion >= CONFIG_VERSION) {
+			return;
+		}
+
+		backupConfig(currentVersion);
+		plugin.getConfig().set("menu.rows", defaults.getInt("menu.rows", 5));
+		plugin.getConfig().set("menu.items", null);
+		ConfigurationSection defaultButtons = defaults.getConfigurationSection("menu.items");
+		if (defaultButtons != null) {
+			for (String key : defaultButtons.getKeys(false)) {
+				plugin.getConfig().set("menu.items." + key, defaultButtons.get(key));
+			}
+		}
+		plugin.getConfig().set("config-version", CONFIG_VERSION);
+		plugin.saveConfig();
+		plugin.getLogger().info("菜单配置已从 v" + currentVersion + " 升级到 v" + CONFIG_VERSION
+			+ "，原配置已备份");
+	}
+
+	private void backupConfig(int version) {
+		java.io.File source = new java.io.File(plugin.getDataFolder(), "config.yml");
+		if (!source.isFile()) {
+			return;
+		}
+		java.io.File backup = new java.io.File(plugin.getDataFolder(), "config-v" + version + ".backup.yml");
+		try {
+			java.nio.file.Files.copy(
+				source.toPath(),
+				backup.toPath(),
+				java.nio.file.StandardCopyOption.REPLACE_EXISTING
+			);
+		} catch (java.io.IOException exception) {
+			plugin.getLogger().warning("备份菜单配置失败：" + exception.getMessage());
+		}
 	}
 
 	public void open(Player player) {

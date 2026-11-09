@@ -20,9 +20,11 @@ public final class MarketGui {
 	private static final int PAGE_SIZE = 45;
 
 	private final MarketService service;
+	private final ChatPrompt chatPrompt;
 
-	public MarketGui(MarketService service) {
+	public MarketGui(MarketService service, ChatPrompt chatPrompt) {
 		this.service = service;
+		this.chatPrompt = chatPrompt;
 	}
 
 	public void openMain(Player player) {
@@ -74,6 +76,10 @@ public final class MarketGui {
 		}
 		holder.set(48, GuiNavigation.backButton(), GuiNavigation::back);
 		holder.set(49, button(Material.BARRIER, "&c关闭", List.of()), Player::closeInventory);
+		holder.set(50, button(Material.EMERALD, "&a上架主手物品", List.of(
+			"&7把主手物品挂到市场出售",
+			"&8点击后输入单价"
+		)), this::startListing);
 		if (current + 1 < pageCount) {
 			holder.set(53, button(Material.ARROW, "&e下一页", List.of()), p ->
 				openList(p, title, listings, current + 1, query)
@@ -137,8 +143,70 @@ public final class MarketGui {
 		player.openInventory(holder.getInventory());
 	}
 
-	private ItemStack icon(MarketListing listing) {
-		ItemStack icon = listing.item().clone();
+	private void startListing(Player player) {
+		var hand = player.getInventory().getItemInMainHand();
+		if (hand.getType().isAir() || hand.getAmount() <= 0) {
+			player.sendMessage("请先把要上架的物品拿在主手。");
+			return;
+		}
+		chatPrompt.request(player, "请输入「" + hand.getType().name() + "」的单价：", input -> {
+			BigDecimal price;
+			try {
+				price = new BigDecimal(input);
+			} catch (NumberFormatException exception) {
+				player.sendMessage("单价无效：" + input);
+				return;
+			}
+			if (price.signum() <= 0) {
+				player.sendMessage("单价必须大于 0。");
+				return;
+			}
+			openQuantity(player, price);
+		});
+	}
+
+	private void openQuantity(Player player, BigDecimal price) {
+		var hand = player.getInventory().getItemInMainHand();
+		if (hand.getType().isAir() || hand.getAmount() <= 0) {
+			player.sendMessage("主手已经空了，上架取消。");
+			openMain(player);
+			return;
+		}
+		int available = hand.getAmount();
+		EconomyMenuHolder holder = new EconomyMenuHolder(3, "&8上架数量");
+		holder.fill(filler());
+		holder.set(4, button(Material.PAPER, "&f" + hand.getType().name(), List.of(
+			"&7单价：&e" + service.format(price),
+			"&7主手数量：&f" + available
+		)), null);
+		holder.set(10, quantityButton(1, price, available), p -> list(p, price, 1, false));
+		holder.set(12, quantityButton(16, price, available), p -> list(p, price, 16, false));
+		holder.set(14, quantityButton(64, price, available), p -> list(p, price, 64, false));
+		holder.set(16, button(Material.CHEST, "&a全部上架 &7(" + available + ")", List.of(
+			"&7总价：&e" + service.format(price.multiply(BigDecimal.valueOf(available)))
+		)), p -> list(p, price, available, true));
+		holder.set(22, button(Material.ARROW, "&e返回市场", List.of()), this::openMain);
+		player.openInventory(holder.getInventory());
+	}
+
+	private void list(Player player, BigDecimal price, int amount, boolean all) {
+		player.closeInventory();
+		if (service.create(player, price, amount, all)) {
+			openOwn(player);
+		} else {
+			openMain(player);
+		}
+	}
+
+	private ItemStack quantityButton(int amount, BigDecimal price, int available) {
+		int actual = Math.min(amount, available);
+		return button(Material.LIME_STAINED_GLASS_PANE, "&a上架 " + actual + " 个", List.of(
+			"&7单价：&e" + service.format(price),
+			"&7总价：&e" + service.format(price.multiply(BigDecimal.valueOf(actual)))
+		));
+	}
+
+	private ItemStack icon(MarketListing listing) {		ItemStack icon = listing.item().clone();
 		ItemMeta meta = icon.getItemMeta();
 		if (meta != null) {
 			meta.displayName(MenuText.component("&f#" + listing.id() + " &7· &e"

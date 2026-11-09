@@ -1,3 +1,4 @@
+config-version: 2
 menu:
   title: "&8服务器菜单"
   rows: 5
@@ -65,10 +66,11 @@ menu:
       material: PLAYER_HEAD
       name: "&d直接交易"
       lore:
-        - "&7与其他玩家面对面交换物品/金钱"
-        - "&8即将开放"
-      action: message
-      value: "&e直接交易即将开放，敬请期待。"
+        - "&7与其他玩家面对面交换物品"
+        - "&8点击后输入 /trade <玩家>"
+      action: player_command
+      value: "trade"
+      permission: economy.trade.use
     "31":
       material: BOOKSHELF
       name: "&b插件列表"
