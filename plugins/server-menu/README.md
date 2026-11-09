@@ -23,14 +23,34 @@
 | 收购订单 | `/order`（界面内可发布、交付、取消） |
 | 直接交易 | `/trade`（界面展示在线玩家头颅，点击申请/接受交易） |
 | 邮箱 | `/mail` |
+| 每日签到 | `/daily`（按钮显示 `{daily_status}`） |
 | 金币 HUD | 切换右侧余额侧栏 |
-| 查看余额 | `/money` |
+| 查看余额 | `/money`（显示 `{frozen_status}` 账户状态） |
 | 余额排行 | `/baltop` |
-| 经济管理 | 账本统计、自检、演练（`server-menu.admin`，默认 OP） |
+| 经济管理 | 统计、自检、演练、财政注入/发放、冻结/解冻、流水查询（`server-menu.admin`，默认 OP） |
 
 经济按钮通过 `menu.items.<slot>.action: player_command` 调用对应命令；权限分别使用
 `economy.shop.use`、`economy.market.use`、`economy.auction.use`、`economy.order.use`、
-`economy.trade.use`、`economy.mail.use`。
+`economy.trade.use`、`economy.mail.use`、`economy.reward.daily`。
+
+### 经济管理面板
+
+点击「经济管理」进入 6 行管理界面（`server-menu.admin`）：
+
+| 槽位 | 内容 | 操作 |
+| --- | --- | --- |
+| 4 | 经济统计 | 只读 |
+| 11 | 财政账户余额 | 只读 |
+| 13 | 财政注入 | 点击后聊天栏输入金额 |
+| 15 | 财政发放 | 依次输入玩家名与金额 |
+| 20 | 账本自检 | 只读 |
+| 24 | 待处理事项 | 只读 |
+| 29 / 33 | 冻结 / 解冻玩家 | 输入玩家名 |
+| 31 | 资金演练 | 只读 |
+| 37 | 查询流水 | 输入玩家名，输出最近账本流水 |
+| 45 / 49 / 53 | 返回 / 关闭 / 重新检测 | 导航 |
+
+输入类操作使用聊天栏提示（30 秒有效，输入 `cancel` 取消），执行完自动回到管理面板。
 
 ### 配置升级
 
@@ -53,8 +73,24 @@
 | `player_command` | 以玩家身份执行命令 |
 | `console_command` | 以控制台身份执行命令 |
 | `plugin_list` | 显示已启用插件列表及其命令用法 |
+| `daily` | 调用 `/daily` 签到并刷新菜单 |
+| `prompt_command` | 关闭菜单后让玩家在聊天栏输入，再把 `{input}` 代入 `value` 执行命令 |
+| `economy_admin` | 打开经济管理面板 |
 
-名称、描述和文字支持 `&` 颜色代码，以及 `{player}`、`{balance}`、`{hud_status}` 占位符。命令动作支持相同占位符；控制台命令只应由可信服务器管理员配置。
+名称、描述和文字支持 `&` 颜色代码，以及 `{player}`、`{balance}`、`{hud_status}`、
+`{daily_status}`、`{frozen_status}`、`{treasury}` 占位符。命令动作支持相同占位符；
+控制台命令只应由可信服务器管理员配置。
+
+`prompt_command` 示例（管理员财政注入）：
+
+```yaml
+"13":
+  material: DIAMOND
+  name: "&a财政注入"
+  action: prompt_command
+  value: "eco treasury fund {input} menu"
+  permission: server-menu.admin
+```
 
 ```yaml
 menu:

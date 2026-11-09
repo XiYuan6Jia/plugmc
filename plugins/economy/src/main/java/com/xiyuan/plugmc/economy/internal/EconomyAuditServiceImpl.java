@@ -6,6 +6,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 public final class EconomyAuditServiceImpl implements EconomyAuditService {
 	private final LedgerService ledger;
@@ -99,6 +100,25 @@ public final class EconomyAuditServiceImpl implements EconomyAuditService {
 			checks.add(new Check(check.name(), check.passed(), check.detail()));
 		}
 		return List.copyOf(checks);
+	}
+
+	@Override
+	public String dailyStatus(UUID playerId) {
+		String today = java.time.LocalDate.now().toString();
+		if (today.equals(store.lastDailyDate(playerId))) {
+			return "今日已签到（连续 " + store.dailyStreak(playerId) + " 天）";
+		}
+		return "今日未签到";
+	}
+
+	@Override
+	public boolean isFrozen(UUID playerId) {
+		return store.isFrozen(playerId);
+	}
+
+	@Override
+	public BigDecimal treasuryBalance() {
+		return ledger.accountBalance(LedgerService.TREASURY);
 	}
 
 	public EconomyConfig config() {

@@ -26,23 +26,26 @@ import java.util.Set;
 
 public final class MenuManager {
 	private static final Set<String> ACTIONS = Set.of(
-		"balance", "toggle_hud", "message", "player_command", "console_command", "plugin_list", "economy_admin"
+		"balance", "toggle_hud", "message", "player_command", "console_command", "plugin_list",
+		"economy_admin", "prompt_command", "daily"
 	);
 	private static final int PLUGIN_PAGE_CAPACITY = 45;
-	private static final int CONFIG_VERSION = 5;
+	private static final int CONFIG_VERSION = 6;
 	private static final int PREVIOUS_PAGE_SLOT = 45;
 	private static final int MAIN_PAGE_SLOT = 49;
 	private static final int NEXT_PAGE_SLOT = 53;
 
 	private final ServerMenuPlugin plugin;
 	private final EconomyService economy;
+	private final ChatPrompt chatPrompt;
 	private Map<Integer, MenuButton> buttons = Map.of();
 	private int size;
 	private String title;
 
-	public MenuManager(ServerMenuPlugin plugin, EconomyService economy) {
+	public MenuManager(ServerMenuPlugin plugin, EconomyService economy, ChatPrompt chatPrompt) {
 		this.plugin = plugin;
 		this.economy = economy;
+		this.chatPrompt = chatPrompt;
 	}
 
 	public void reload() {
@@ -255,10 +258,80 @@ public final class MenuManager {
 			List.of("&7共 " + selfTest.size() + " 项，失败 " + failed + " 项")
 		));
 
+		holder.setButtonItem(11, adminItem(Material.GOLD_BLOCK, "&6财政账户", List.of(
+			"&7当前余额：&e" + economy.format(audit.treasuryBalance()),
+			"&8税收与上架费的主要去向"
+		)));
+		holder.setButtonItem(13, adminItem(Material.DIAMOND, "&a财政注入", List.of(
+			"&7向财政注入活动预算",
+			"&e点击后输入金额"
+		)));
+		holder.setButtonItem(15, adminItem(Material.EMERALD, "&a财政发放", List.of(
+			"&7从财政向玩家发放奖励",
+			"&e点击后依次输入玩家名与金额"
+		)));
+		holder.setButtonItem(29, adminItem(Material.ICE, "&b冻结玩家", List.of(
+			"&7冻结后该玩家无法支出",
+			"&e点击后输入玩家名"
+		)));
+		holder.setButtonItem(33, adminItem(Material.PACKED_ICE, "&b解冻玩家", List.of(
+			"&7恢复该玩家的支出",
+			"&e点击后输入玩家名"
+		)));
+		holder.setButtonItem(37, adminItem(Material.WRITABLE_BOOK, "&e查询流水", List.of(
+			"&7查看玩家最近账本流水",
+			"&e点击后输入玩家名"
+		)));
+
 		holder.setButtonItem(45, navigationItem(Material.ARROW, "&e返回菜单"));
 		holder.setButtonItem(49, navigationItem(Material.BARRIER, "&c关闭"));
 		holder.setButtonItem(53, navigationItem(Material.COMPARATOR, "&b重新检测"));
 		player.openInventory(holder.getInventory());
+	}
+
+	private void promptTreasuryFund(Player player) {
+		chatPrompt.request(player, "&e请输入要注入财政的金额：", input -> {
+			if (!player.isOnline()) {
+				return;
+			}
+			player.performCommand("eco treasury fund " + input + " menu");
+			openAdminPanel(player);
+		});
+	}
+
+	private void promptTreasuryPay(Player player) {
+		chatPrompt.request(player, "&e请输入要发放奖励的玩家名：", name -> {
+			if (!player.isOnline()) {
+				return;
+			}
+			chatPrompt.request(player, "&e请输入发放金额：", amount -> {
+				if (!player.isOnline()) {
+					return;
+				}
+				player.performCommand("eco treasury pay " + name + " " + amount + " menu");
+				openAdminPanel(player);
+			});
+		});
+	}
+
+	private void promptFreeze(Player player, boolean frozen) {
+		chatPrompt.request(player, "&e请输入要" + (frozen ? "冻结" : "解冻") + "的玩家名：", name -> {
+			if (!player.isOnline()) {
+				return;
+			}
+			player.performCommand("eco " + (frozen ? "freeze " : "unfreeze ") + name);
+			openAdminPanel(player);
+		});
+	}
+
+	private void promptAudit(Player player) {
+		chatPrompt.request(player, "&e请输入要查询流水的玩家名：", name -> {
+			if (!player.isOnline()) {
+				return;
+			}
+			player.performCommand("eco audit " + name);
+			openAdminPanel(player);
+		});
 	}
 
 	private String formatCheck(EconomyAuditService.Check check) {
@@ -307,6 +380,11 @@ public final class MenuManager {
 	public void handleClick(Player player, MenuHolder holder, int slot) {
 		if (holder.getPage() == MenuHolder.Page.ADMIN) {
 			switch (slot) {
+				case 13 -> promptTreasuryFund(player);
+				case 15 -> promptTreasuryPay(player);
+				case 29 -> promptFreeze(player, true);
+				case 33 -> promptFreeze(player, false);
+				case 37 -> promptAudit(player);
 				case 45 -> open(player);
 				case 49 -> player.closeInventory();
 				case 53 -> openAdminPanel(player);
@@ -352,6 +430,32 @@ public final class MenuManager {
 			case "message" -> player.sendMessage(MenuText.component(value));
 			case "plugin_list" -> openPluginList(player, 0);
 			case "economy_admin" -> openAdminPanel(player);
+			case "daily" -> {
+				player.performCommand("daily");
+				open(player);
+			}
+			case "prompt_command" -> {
+				if (value.isBlank()) {
+					player.sendMessage(MenuText.component("&c该按钮缺少命令模板。"));
+					return;
+				}
+				chatPrompt.request(player, "&e请输入：", input -> {
+					if (!player.isOnline()) {
+						return;
+					}
+					if (input.isBlank()) {
+						player.sendMessage(MenuText.component("&c输入不能为空。"));
+						open(player);
+						return;
+					}
+					if (value.contains("{input}")) {
+						player.performCommand(stripSlash(value.replace("{input}", input)));
+					} else {
+						player.performCommand(stripSlash(value) + " " + input);
+					}
+					open(player);
+				});
+			}
 			case "player_command" -> player.performCommand(stripSlash(value));
 			case "console_command" -> plugin.getServer().dispatchCommand(
 				plugin.getServer().getConsoleSender(),
@@ -418,10 +522,17 @@ public final class MenuManager {
 
 	private String replacePlaceholders(Player player, String text) {
 		String status = plugin.isHudEnabled(player) ? "&a开启" : "&c关闭";
+		EconomyAuditService audit = plugin.auditService();
+		String daily = audit == null ? "&8不可用" : audit.dailyStatus(player.getUniqueId());
+		String frozen = audit != null && audit.isFrozen(player.getUniqueId()) ? "&c已冻结" : "&a正常";
+		String treasury = audit == null ? "&8不可用" : economy.format(audit.treasuryBalance());
 		return text
 			.replace("{player}", player.getName())
 			.replace("{balance}", economy.format(economy.getBalance(player.getUniqueId())))
-			.replace("{hud_status}", status);
+			.replace("{hud_status}", status)
+			.replace("{daily_status}", daily)
+			.replace("{frozen_status}", frozen)
+			.replace("{treasury}", treasury);
 	}
 
 	private String stripSlash(String command) {

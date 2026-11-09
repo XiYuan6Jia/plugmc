@@ -20,6 +20,7 @@ import java.util.UUID;
 public final class ServerMenuPlugin extends JavaPlugin {
 	private EconomyService economy;
 	private MenuManager menuManager;
+	private ChatPrompt chatPrompt;
 	private NamespacedKey hudPreferenceKey;
 	private BukkitTask hudTask;
 	private final Map<UUID, Scoreboard> originalScoreboards = new HashMap<>();
@@ -34,7 +35,9 @@ public final class ServerMenuPlugin extends JavaPlugin {
 		}
 
 		hudPreferenceKey = new NamespacedKey(this, "money_hud_enabled");
-		menuManager = new MenuManager(this, economy);
+		chatPrompt = new ChatPrompt(this);
+		getServer().getPluginManager().registerEvents(chatPrompt, this);
+		menuManager = new MenuManager(this, economy, chatPrompt);
 		menuManager.reload();
 		getServer().getPluginManager().registerEvents(new MenuListener(this, menuManager), this);
 		MenuCommand command = new MenuCommand(this, menuManager);
