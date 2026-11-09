@@ -1,0 +1,24 @@
+name: economy
+version: '${version}'
+main: com.xiyuan.plugmc.economy.EconomyPlugin
+api-version: '${api_version}'
+authors: [XiYuan6Jia]
+description: "可扩展的基础经济系统"
+commands:
+  money:
+    description: "查看余额"
+    usage: /money [玩家]
+    aliases: [balance, bal]
+  pay:
+    description: "向其他玩家转账"
+    usage: /pay <玩家> <金额>
+  eco:
+    description: "管理玩家余额"
+    usage: /eco <give|take|set> <玩家> <金额>
+permissions:
+  economy.balance.others:
+    description: "查看其他玩家余额"
+    default: op
+  economy.admin:
+    description: "管理玩家余额"
+    default: op

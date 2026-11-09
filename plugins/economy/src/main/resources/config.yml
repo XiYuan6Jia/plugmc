@@ -1,0 +1,5 @@
+currency:
+  name: 金币
+  symbol: $
+  decimal-places: 2
+starting-balance: "100.00"
