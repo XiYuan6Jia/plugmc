@@ -1,6 +1,9 @@
 package com.xiyuan.plugmc.economy;
 
 import com.xiyuan.plugmc.economy.api.EconomyService;
+import com.xiyuan.plugmc.economy.auction.AuctionCommand;
+import com.xiyuan.plugmc.economy.auction.AuctionConfig;
+import com.xiyuan.plugmc.economy.auction.AuctionService;
 import com.xiyuan.plugmc.economy.gui.EconomyMenuHolder;
 import com.xiyuan.plugmc.economy.gui.MailGui;
 import com.xiyuan.plugmc.economy.gui.MarketGui;
@@ -45,10 +48,12 @@ public final class EconomyPlugin extends JavaPlugin implements Listener {
 	private MarketService marketService;
 	private MailService mailService;
 	private OrderService orderService;
+	private AuctionService auctionService;
 	private BukkitTask snapshotTask;
 	private BukkitTask marketTask;
 	private BukkitTask mailTask;
 	private BukkitTask orderTask;
+	private BukkitTask auctionTask;
 
 	@Override
 	public void onEnable() {
@@ -86,9 +91,18 @@ public final class EconomyPlugin extends JavaPlugin implements Listener {
 			registerCommand("mail", new MailCommand(mailService, new MailGui(mailService)));
 			orderService = new OrderService(this, ledger, store, OrderConfig.load(getConfig(), config.decimalPlaces()));
 			registerCommand("order", new OrderCommand(orderService));
+			auctionService = new AuctionService(
+				this,
+				ledger,
+				store,
+				mailService,
+				AuctionConfig.load(getConfig(), config.decimalPlaces())
+			);
+			registerCommand("auction", new AuctionCommand(auctionService));
 			marketTask = marketService.startExpiryTask();
 			mailTask = mailService.startExpiryTask();
 			orderTask = orderService.startExpiryTask();
+			auctionTask = auctionService.startSettlementTask();
 
 			long interval = config.snapshotIntervalSeconds() * 20L;
 			snapshotTask = getServer().getScheduler().runTaskTimer(this, () -> {
@@ -123,6 +137,10 @@ public final class EconomyPlugin extends JavaPlugin implements Listener {
 		if (orderTask != null) {
 			orderTask.cancel();
 			orderTask = null;
+		}
+		if (auctionTask != null) {
+			auctionTask.cancel();
+			auctionTask = null;
 		}
 		for (Player player : Bukkit.getOnlinePlayers()) {
 			if (player.getOpenInventory().getTopInventory().getHolder(false) instanceof EconomyMenuHolder) {

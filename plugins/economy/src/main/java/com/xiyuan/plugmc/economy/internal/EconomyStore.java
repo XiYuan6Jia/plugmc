@@ -186,6 +186,18 @@ public final class EconomyStore implements LedgerStore {
 		return data.orderNextId++;
 	}
 
+	public synchronized long nextAuctionId() {
+		return data.auctionNextId++;
+	}
+
+	public synchronized Map<String, AuctionDto> auctions() {
+		return Map.copyOf(data.auctions);
+	}
+
+	public synchronized AuctionDto auction(String id) {
+		return data.auctions.get(id);
+	}
+
 	public synchronized Map<String, OrderDto> orders() {
 		return Map.copyOf(data.orders);
 	}
@@ -335,15 +347,20 @@ public final class EconomyStore implements LedgerStore {
 		if (snapshot.orders == null) {
 			snapshot.orders = new LinkedHashMap<>();
 		}
+		if (snapshot.auctions == null) {
+			snapshot.auctions = new LinkedHashMap<>();
+		}
 		if (snapshot.mail == null) {
 			snapshot.mail = new LinkedHashMap<>();
 		}
 		snapshot.players.entrySet().removeIf(entry -> entry.getValue() == null);
 		snapshot.marketListings.entrySet().removeIf(entry -> entry.getValue() == null);
 		snapshot.orders.entrySet().removeIf(entry -> entry.getValue() == null);
+		snapshot.auctions.entrySet().removeIf(entry -> entry.getValue() == null);
 		snapshot.mail.entrySet().removeIf(entry -> entry.getValue() == null);
 		snapshot.marketNextId = Math.max(1L, snapshot.marketNextId);
 		snapshot.orderNextId = Math.max(1L, snapshot.orderNextId);
+		snapshot.auctionNextId = Math.max(1L, snapshot.auctionNextId);
 		snapshot.mailNextId = Math.max(1L, snapshot.mailNextId);
 		for (String id : snapshot.marketListings.keySet()) {
 			try {
@@ -354,6 +371,12 @@ public final class EconomyStore implements LedgerStore {
 		for (String id : snapshot.orders.keySet()) {
 			try {
 				snapshot.orderNextId = Math.max(snapshot.orderNextId, Long.parseLong(id) + 1L);
+			} catch (NumberFormatException ignored) {
+			}
+		}
+		for (String id : snapshot.auctions.keySet()) {
+			try {
+				snapshot.auctionNextId = Math.max(snapshot.auctionNextId, Long.parseLong(id) + 1L);
 			} catch (NumberFormatException ignored) {
 			}
 		}
@@ -467,6 +490,18 @@ public final class EconomyStore implements LedgerStore {
 				bumpOrderId(order.id);
 			}
 			case "ORDER_REMOVE" -> data.orders.remove(op.id());
+			case "AUCTION_ADD", "AUCTION_UPDATE" -> {
+				if (op.payload() == null || op.payload().isBlank()) {
+					throw new IllegalStateException("拍卖状态操作缺少 payload");
+				}
+				AuctionDto auction = GSON.fromJson(op.payload(), AuctionDto.class);
+				if (auction == null || auction.id == null) {
+					throw new IllegalStateException("拍卖状态操作数据无效");
+				}
+				data.auctions.put(auction.id, auction);
+				bumpAuctionId(auction.id);
+			}
+			case "AUCTION_REMOVE" -> data.auctions.remove(op.id());
 			case "MAIL_ADD" -> {
 				if (op.payload() == null || op.payload().isBlank()) {
 					throw new IllegalStateException("邮箱状态操作缺少 payload");
@@ -500,6 +535,13 @@ public final class EconomyStore implements LedgerStore {
 	private void bumpOrderId(String rawId) {
 		try {
 			data.orderNextId = Math.max(data.orderNextId, Long.parseLong(rawId) + 1L);
+		} catch (NumberFormatException ignored) {
+		}
+	}
+
+	private void bumpAuctionId(String rawId) {
+		try {
+			data.auctionNextId = Math.max(data.auctionNextId, Long.parseLong(rawId) + 1L);
 		} catch (NumberFormatException ignored) {
 		}
 	}
@@ -765,9 +807,11 @@ public final class EconomyStore implements LedgerStore {
 		Map<String, Integer> dailyLimits = new LinkedHashMap<>();
 		Map<String, MarketListingDto> marketListings = new LinkedHashMap<>();
 		Map<String, OrderDto> orders = new LinkedHashMap<>();
+		Map<String, AuctionDto> auctions = new LinkedHashMap<>();
 		Map<String, MailEntryDto> mail = new LinkedHashMap<>();
 		long marketNextId = 1L;
 		long orderNextId = 1L;
+		long auctionNextId = 1L;
 		long mailNextId = 1L;
 	}
 
@@ -790,6 +834,21 @@ public final class EconomyStore implements LedgerStore {
 		public String item;
 		public String unitPrice = "0.00";
 		public int remaining;
+		public long createdAt;
+		public long expiresAt;
+		public String status = "ACTIVE";
+	}
+
+	public static final class AuctionDto {
+		public String id;
+		public String seller;
+		public String sellerName = "";
+		public String item;
+		public String startingPrice = "0.00";
+		public String buyoutPrice = "0.00";
+		public String highestBidder = "";
+		public String highestBidderName = "";
+		public String highestBid = "0.00";
 		public long createdAt;
 		public long expiresAt;
 		public String status = "ACTIVE";

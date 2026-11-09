@@ -31,6 +31,10 @@ commands:
     description: "收购订单"
     usage: /order [create <单价> <数量|all> | fill <编号> [数量|all] | cancel <编号> | list | mine | search <关键词> | reload]
     aliases: [buyorder, orders]
+  auction:
+    description: "拍卖行"
+    usage: /auction [create <起拍价> [一口价|-] [数量|all] | bid <编号> <金额> | buy <编号> | cancel <编号> | list | mine | search <关键词> | reload]
+    aliases: [ah, auctions]
 permissions:
   economy.balance.others:
     description: "查看其他玩家余额"
@@ -58,4 +62,10 @@ permissions:
     default: true
   economy.order.admin:
     description: "重载收购订单配置"
+    default: op
+  economy.auction.use:
+    description: "使用拍卖行"
+    default: true
+  economy.auction.admin:
+    description: "重载拍卖行配置"
     default: op

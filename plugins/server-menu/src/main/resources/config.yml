@@ -48,9 +48,10 @@ menu:
       name: "&e拍卖行"
       lore:
         - "&7竞价与一口价拍卖"
-        - "&8即将开放"
-      action: message
-      value: "&e拍卖行即将开放，敬请期待。"
+        - "&8点击打开"
+      action: player_command
+      value: "auction"
+      permission: economy.auction.use
     "24":
       material: HOPPER
       name: "&b收购订单"
@@ -82,7 +83,7 @@ menu:
         - "&7常用经济命令"
         - "&8点击查看"
       action: message
-      value: "&e/money &7查看余额  &e/shop &7商店  &e/market &7市场  &e/order &7收购  &e/mail &7邮箱"
+      value: "&e/money &7余额  &e/shop &7商店  &e/market &7市场  &e/auction &7拍卖  &e/order &7收购  &e/mail &7邮箱"
 hud:
   enabled-by-default: true
   title: "&6&l经济"

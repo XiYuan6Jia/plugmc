@@ -28,3 +28,9 @@ orders:
   listing-fee-rate: 0.01
   listing-fee-min: "2.00"
   tax-rate: 0.03
+auction:
+  enabled: true
+  slots: 5
+  duration-hours: 48
+  min-increment: "1.00"
+  tax-rate: 0.03

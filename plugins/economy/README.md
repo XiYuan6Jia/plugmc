@@ -32,6 +32,13 @@ Paper 经济插件。当前版本使用**复式记账账本**：玩家余额、�
 | `/order cancel <编号>` | 取消自己的收购订单，托管资金退回 | `economy.order.use` |
 | `/order list [页]` / `/order mine` / `/order search <关键词>` | 浏览、查看自己的、搜索收购订单 | `economy.order.use` |
 | `/order reload` | 重载收购订单配置 | `economy.order.admin` |
+| `/auction` | 列出进行中的拍卖 | `economy.auction.use`（默认所有玩家） |
+| `/auction create <起拍价> [一口价\|-] [数量\|all]` | 手持物品上拍，`-` 表示不设一口价 | `economy.auction.use` |
+| `/auction bid <编号> <金额>` | 竞价，出价资金进入托管，被超过时自动退回 | `economy.auction.use` |
+| `/auction buy <编号>` | 一口价拍下 | `economy.auction.use` |
+| `/auction cancel <编号>` | 撤拍（仅限无人出价） | `economy.auction.use` |
+| `/auction list [页]` / `mine` / `search <关键词>` | 浏览、查看自己的、搜索拍卖 | `economy.auction.use` |
+| `/auction reload` | 重载拍卖行配置 | `economy.auction.admin` |
 | `/eco give <玩家> <金额>` | 增加余额 | `economy.admin`（默认 OP） |
 | `/eco take <玩家> <金额>` | 扣除余额 | `economy.admin` |
 | `/eco set <玩家> <金额>` | 设置余额 | `economy.admin` |
@@ -76,6 +83,12 @@ orders:
   duration-hours: 168
   listing-fee-rate: 0.01
   listing-fee-min: "2.00"
+  tax-rate: 0.03
+auction:
+  enabled: true
+  slots: 5
+  duration-hours: 48
+  min-increment: "1.00"
   tax-rate: 0.03
 ```
 
@@ -134,11 +147,22 @@ items:
 - 买家不能交付自己的订单；单个玩家同时进行的订单数受 `orders.slots` 限制。
 - 托管资金的每一次进出都记入账本，`/eco doctor` 可校验 `escrow:ORDER` 与总账平衡。
 
+### 拍卖行
+
+- 上拍：主手物品作拍品，`/auction create <起拍价> [一口价|-] [数量|all]`，物品进入拍卖托管。
+- 竞价：`/auction bid <编号> <金额>`，首次出价不低于起拍价，之后每次至少高出 `min-increment`。
+  出价金额立即从买家余额转入 `escrow:AUCTION`；被更高价超过时原额退回，余额不足无法出价。
+- 一口价：`/auction buy <编号>` 按一口价直接成交，当前最高出价者同时获得退款。
+- 结算：默认 48 小时后由定时任务处理——有出价则物品发给最高出价者、成交款扣税后支付卖家；
+  无人出价则物品退回卖家邮箱。邮箱已满时保留拍卖，下一轮重试。
+- 撤拍：仅在无人出价时允许，物品退回卖家邮箱。
+- 成交与退款全部走账本事务，`/eco doctor` 可校验 `escrow:AUCTION` 与总账平衡。
+
 ## 数据文件
 
 | 文件/目录 | 说明 |
 | --- | --- |
-| `state.json` | 最近一次快照：玩家/系统/托管余额、玩家名称与时间戳、商店每日限额、市场挂单、收购订单、邮箱、事务序号 |
+| `state.json` | 最近一次快照：玩家/系统/托管余额、玩家名称与时间戳、商店每日限额、市场挂单、收购订单、拍卖、邮箱、事务序号 |
 | `journal.jsonl` | 已提交但尚未进入快照的事务；启动时自动回放 |
 | `ledger/YYYY-MM.jsonl` | 按月切分的审计账本，只追加 |
 | `backup/` | 自动状态备份，默认保留 14 份；迁移前也会备份旧账户文件 |
