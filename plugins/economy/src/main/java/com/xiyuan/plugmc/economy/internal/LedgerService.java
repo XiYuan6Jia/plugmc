@@ -101,9 +101,19 @@ public final class LedgerService {
 	}
 
 	public boolean withdraw(UUID playerId, BigDecimal amount, String reason, String ref) {
+		return withdraw(playerId, amount, reason, ref, false);
+	}
+
+	/**
+	 * 管理员扣款可绕过冻结；普通业务（{@code forced=false}）在账户冻结时直接失败。
+	 */
+	public boolean withdraw(UUID playerId, BigDecimal amount, String reason, String ref, boolean forced) {
 		BigDecimal normalized = Money.positive(amount, config.decimalPlaces());
 		synchronized (lock) {
 			String key = playerKey(playerId);
+			if (!forced && store.isAccountFrozen(key)) {
+				return false;
+			}
 			BigDecimal current = store.balance(key);
 			if (current == null) {
 				if (config.startingBalance().compareTo(normalized) < 0) {
@@ -115,6 +125,26 @@ public final class LedgerService {
 		}
 	}
 
+	public boolean isFrozen(UUID playerId) {
+		return store.isAccountFrozen(playerKey(playerId));
+	}
+
+	/**
+	 * 冻结/解冻玩家账户，只限制支出；入账与管理员操作不受影响。
+	 */
+	public void setFrozen(UUID playerId, boolean frozen, String actor) {
+		String key = playerKey(playerId);
+		commitState(
+			List.of(new JournalRecord.StateOp(
+				"PLAYER_FROZEN",
+				playerId.toString(),
+				frozen ? "1" : "0"
+			)),
+			frozen ? "ACCOUNT_FREEZE" : "ACCOUNT_UNFREEZE",
+			actor
+		);
+	}
+
 	public boolean transfer(UUID fromPlayerId, UUID toPlayerId, BigDecimal amount, String reason, String ref) {
 		BigDecimal normalized = Money.positive(amount, config.decimalPlaces());
 		if (requirePlayerId(fromPlayerId).equals(requirePlayerId(toPlayerId))) {
@@ -122,6 +152,9 @@ public final class LedgerService {
 		}
 		synchronized (lock) {
 			String fromKey = playerKey(fromPlayerId);
+			if (store.isAccountFrozen(fromKey)) {
+				return false;
+			}
 			BigDecimal fromBalance = store.balance(fromKey);
 			if (fromBalance == null) {
 				if (config.startingBalance().compareTo(normalized) < 0) {
@@ -192,6 +225,12 @@ public final class LedgerService {
 			}
 			if (sum.signum() != 0) {
 				throw new IllegalArgumentException("账本分录合计必须为 0");
+			}
+
+			for (Map.Entry<String, BigDecimal> total : totals.entrySet()) {
+				if (total.getValue().signum() < 0 && store.isAccountFrozen(total.getKey())) {
+					return false;
+				}
 			}
 
 			for (Map.Entry<String, BigDecimal> total : totals.entrySet()) {

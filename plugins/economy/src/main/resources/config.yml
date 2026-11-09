@@ -39,3 +39,15 @@ auction:
   listing-fee-rate: 0.02
   listing-fee-min: "10.00"
   tax-rate: 0.03
+rewards:
+  enabled: true
+  daily:
+    enabled: true
+    base: "100.00"
+    streak-bonus: "20.00"
+    streak-max-days: 7
+  playtime:
+    enabled: true
+    minutes: 10
+    amount: "20.00"
+    max-per-day: 6

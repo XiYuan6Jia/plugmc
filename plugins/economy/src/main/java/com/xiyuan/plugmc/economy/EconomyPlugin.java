@@ -29,6 +29,9 @@ import com.xiyuan.plugmc.economy.market.MarketService;
 import com.xiyuan.plugmc.economy.order.OrderCommand;
 import com.xiyuan.plugmc.economy.order.OrderConfig;
 import com.xiyuan.plugmc.economy.order.OrderService;
+import com.xiyuan.plugmc.economy.reward.RewardCommand;
+import com.xiyuan.plugmc.economy.reward.RewardConfig;
+import com.xiyuan.plugmc.economy.reward.RewardService;
 import com.xiyuan.plugmc.economy.shop.GoodsConfig;
 import com.xiyuan.plugmc.economy.shop.ShopCommand;
 import com.xiyuan.plugmc.economy.shop.ShopConfig;
@@ -67,6 +70,7 @@ public final class EconomyPlugin extends JavaPlugin implements Listener {
 	private BukkitTask auctionTask;
 	private BukkitTask auctionReminderTask;
 	private BukkitTask orderReminderTask;
+	private BukkitTask rewardTask;
 
 	@Override
 	public void onEnable() {
@@ -101,11 +105,28 @@ public final class EconomyPlugin extends JavaPlugin implements Listener {
 			);
 			getServer().getPluginManager().registerEvents(this, this);
 
-			EconomyCommand command = new EconomyCommand(this, economyService, ledger, store, config, auditService);
+			RewardService rewardService = new RewardService(
+				this,
+				ledger,
+				store,
+				RewardConfig.load(getConfig(), config.decimalPlaces())
+			);
+			rewardTask = rewardService.startTask();
+
+			EconomyCommand command = new EconomyCommand(
+				this,
+				economyService,
+				ledger,
+				store,
+				config,
+				auditService,
+				rewardService
+			);
 			registerCommand("money", command);
 			registerCommand("pay", command);
 			registerCommand("eco", command);
 			registerCommand("baltop", command);
+			registerCommand("daily", new RewardCommand(rewardService, ledger));
 
 			ShopConfig shopConfig = ShopConfig.load(getConfig());
 			GoodsConfig goodsConfig = GoodsConfig.load(this, shopConfig, config.decimalPlaces());
@@ -191,6 +212,10 @@ public final class EconomyPlugin extends JavaPlugin implements Listener {
 		if (orderReminderTask != null) {
 			orderReminderTask.cancel();
 			orderReminderTask = null;
+		}
+		if (rewardTask != null) {
+			rewardTask.cancel();
+			rewardTask = null;
 		}
 		if (tradeManager != null) {
 			tradeManager.closeAll();

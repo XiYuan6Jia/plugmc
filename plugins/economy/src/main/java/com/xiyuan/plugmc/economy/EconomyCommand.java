@@ -6,8 +6,10 @@ import com.xiyuan.plugmc.economy.gui.LeaderboardGui;
 import com.xiyuan.plugmc.economy.internal.EconomyConfig;
 import com.xiyuan.plugmc.economy.internal.EconomyStore;
 import com.xiyuan.plugmc.economy.internal.EscrowAudit;
+import com.xiyuan.plugmc.economy.internal.LedgerQuery;
 import com.xiyuan.plugmc.economy.internal.LedgerService;
 import com.xiyuan.plugmc.economy.internal.Money;
+import com.xiyuan.plugmc.economy.reward.RewardService;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.command.Command;
@@ -25,7 +27,8 @@ import java.util.Map;
 
 public final class EconomyCommand implements CommandExecutor, TabCompleter {
 	private static final List<String> ADMIN_ACTIONS = List.of(
-		"give", "take", "set", "stats", "doctor", "save", "backup", "selftest"
+		"give", "take", "set", "stats", "doctor", "save", "backup", "selftest",
+		"audit", "treasury", "freeze", "unfreeze"
 	);
 
 	private final JavaPlugin plugin;
@@ -34,6 +37,7 @@ public final class EconomyCommand implements CommandExecutor, TabCompleter {
 	private final EconomyStore store;
 	private final EconomyConfig config;
 	private final EconomyAuditService audit;
+	private final RewardService rewards;
 
 	public EconomyCommand(
 		JavaPlugin plugin,
@@ -41,7 +45,8 @@ public final class EconomyCommand implements CommandExecutor, TabCompleter {
 		LedgerService ledger,
 		EconomyStore store,
 		EconomyConfig config,
-		EconomyAuditService audit
+		EconomyAuditService audit,
+		RewardService rewards
 	) {
 		this.plugin = plugin;
 		this.economy = economy;
@@ -49,6 +54,7 @@ public final class EconomyCommand implements CommandExecutor, TabCompleter {
 		this.store = store;
 		this.config = config;
 		this.audit = audit;
+		this.rewards = rewards;
 	}
 
 	@Override
@@ -87,7 +93,12 @@ public final class EconomyCommand implements CommandExecutor, TabCompleter {
 		}
 	}
 
-	private void showBalance(CommandSender sender, String[] args) {		if (args.length == 0 && sender instanceof Player player) {
+	private void showBalance(CommandSender sender, String[] args) {
+		if (args.length == 1 && args[0].equalsIgnoreCase("daily") && sender instanceof Player player) {
+			rewards.claimDaily(player);
+			return;
+		}
+		if (args.length == 0 && sender instanceof Player player) {
 			sender.sendMessage("你的余额：" + economy.format(economy.getBalance(player.getUniqueId())));
 			return;
 		}
@@ -196,6 +207,18 @@ public final class EconomyCommand implements CommandExecutor, TabCompleter {
 					: "经济数据已备份：" + backup);
 				return;
 			}
+			case "audit" -> {
+				audit(sender, args);
+				return;
+			}
+			case "treasury" -> {
+				treasury(sender, args);
+				return;
+			}
+			case "freeze", "unfreeze" -> {
+				freeze(sender, args, action.equals("freeze"));
+				return;
+			}
 			default -> {
 			}
 		}
@@ -217,7 +240,7 @@ public final class EconomyCommand implements CommandExecutor, TabCompleter {
 		switch (action) {
 			case "give" -> ledger.deposit(target.getUniqueId(), amount, "ADMIN_GIVE", sender.getName());
 			case "take" -> {
-				if (!ledger.withdraw(target.getUniqueId(), amount, "ADMIN_TAKE", sender.getName())) {
+				if (!ledger.withdraw(target.getUniqueId(), amount, "ADMIN_TAKE", sender.getName(), true)) {
 					sender.sendMessage("余额不足，当前余额：" + economy.format(economy.getBalance(target.getUniqueId())));
 					return;
 				}
@@ -278,7 +301,132 @@ public final class EconomyCommand implements CommandExecutor, TabCompleter {
 
 	private void usage(CommandSender sender) {
 		sender.sendMessage("用法：/eco <give|take|set> <玩家> <金额>");
-		sender.sendMessage("管理：/eco stats | /eco doctor | /eco selftest | /eco save | /eco backup");
+		sender.sendMessage("管理：/eco stats | /eco doctor | /eco selftest | /eco audit <玩家> [页]");
+		sender.sendMessage("资金：/eco treasury pay <玩家> <金额> <原因> | /eco freeze|unfreeze <玩家>");
+		sender.sendMessage("数据：/eco save | /eco backup");
+	}
+
+	private void audit(CommandSender sender, String[] args) {
+		if (args.length < 2 || args.length > 3) {
+			sender.sendMessage("用法：/eco audit <玩家> [页]");
+			return;
+		}
+		OfflinePlayer target = findPlayer(args[1]);
+		if (target == null) {
+			sender.sendMessage("找不到该玩家；对方需要至少加入过一次服务器。");
+			return;
+		}
+		int page = 1;
+		if (args.length == 3) {
+			try {
+				page = Math.max(1, Integer.parseInt(args[2]));
+			} catch (NumberFormatException exception) {
+				sender.sendMessage("页码必须是数字。");
+				return;
+			}
+		}
+		int pageSize = 10;
+		String account = LedgerService.playerKey(target.getUniqueId());
+		LedgerQuery query = new LedgerQuery(store.ledgerDir());
+		int total = query.totalEntries(account);
+		if (total == 0) {
+			sender.sendMessage(target.getName() + " 还没有账本流水。");
+			return;
+		}
+		int pageCount = Math.max(1, (total + pageSize - 1) / pageSize);
+		int current = Math.min(page, pageCount);
+		int skip = (current - 1) * pageSize;
+		List<LedgerQuery.Entry> entries = query.forAccount(account, skip + pageSize);
+		List<LedgerQuery.Entry> pageEntries = entries.subList(
+			Math.min(skip, entries.size()),
+			entries.size()
+		);
+		sender.sendMessage(target.getName() + " 的流水（第 " + current + "/" + pageCount
+			+ " 页，共 " + total + " 笔）：");
+		for (LedgerQuery.Entry entry : pageEntries) {
+			boolean income = entry.delta().signum() >= 0;
+			sender.sendMessage("#" + entry.seq() + " " + entry.reason()
+				+ " " + (income ? "+" : "-") + economy.format(entry.delta().abs())
+				+ (entry.ref() == null || entry.ref().isBlank() ? "" : " [" + entry.ref() + "]"));
+		}
+	}
+
+	private void treasury(CommandSender sender, String[] args) {
+		if (args.length >= 3 && args[1].equalsIgnoreCase("fund")) {
+			BigDecimal amount = parseAmount(sender, args[2]);
+			if (amount == null) {
+				return;
+			}
+			String reason = args.length > 3
+				? String.join(" ", java.util.Arrays.copyOfRange(args, 3, args.length))
+				: "TREASURY_FUND";
+			boolean funded = ledger.transferAccount(
+				LedgerService.MINT,
+				LedgerService.TREASURY,
+				amount,
+				"TREASURY_FUND",
+				reason
+			);
+			if (!funded) {
+				sender.sendMessage("财政拨款失败，请检查账本状态。");
+				return;
+			}
+			sender.sendMessage("已向财政注入 " + economy.format(amount) + "，当前财政："
+				+ economy.format(ledger.accountBalance(LedgerService.TREASURY))
+				+ "，原因：" + reason + "。");
+			return;
+		}
+		if (args.length < 4 || !args[1].equalsIgnoreCase("pay")) {
+			sender.sendMessage("用法：/eco treasury pay <玩家> <金额> <原因>");
+			sender.sendMessage("　　　/eco treasury fund <金额> [原因]");
+			return;
+		}
+		OfflinePlayer target = findPlayer(args[2]);
+		if (target == null) {
+			sender.sendMessage("找不到该玩家；对方需要至少加入过一次服务器。");
+			return;
+		}
+		BigDecimal amount = parseAmount(sender, args[3]);
+		if (amount == null) {
+			return;
+		}
+		String reason = String.join(" ", java.util.Arrays.copyOfRange(args, 4, args.length));
+		if (reason.isBlank()) {
+			reason = "TREASURY_PAY";
+		}
+		boolean paid = ledger.transferAccount(
+			LedgerService.TREASURY,
+			LedgerService.playerKey(target.getUniqueId()),
+			amount,
+			"TREASURY_PAY",
+			reason
+		);
+		if (!paid) {
+			sender.sendMessage("财政余额不足，当前财政："
+				+ economy.format(ledger.accountBalance(LedgerService.TREASURY)));
+			return;
+		}
+		sender.sendMessage("已从财政向 " + target.getName() + " 发放 " + economy.format(amount)
+			+ "，原因：" + reason + "。");
+		if (target.isOnline()) {
+			target.getPlayer().sendMessage("你收到了服务器财政发放的 " + economy.format(amount)
+				+ "（" + reason + "）。");
+		}
+	}
+
+	private void freeze(CommandSender sender, String[] args, boolean frozen) {
+		if (args.length != 2) {
+			sender.sendMessage("用法：/eco " + (frozen ? "freeze" : "unfreeze") + " <玩家>");
+			return;
+		}
+		OfflinePlayer target = findPlayer(args[1]);
+		if (target == null) {
+			sender.sendMessage("找不到该玩家；对方需要至少加入过一次服务器。");
+			return;
+		}
+		ledger.setFrozen(target.getUniqueId(), frozen, sender.getName());
+		sender.sendMessage("已" + (frozen ? "冻结" : "解冻") + " " + target.getName()
+			+ " 的支出" + (frozen ? "，入账不受影响。" : "。"));
 	}
 
 	private BigDecimal parseAmount(CommandSender sender, String raw) {
@@ -306,11 +454,25 @@ public final class EconomyCommand implements CommandExecutor, TabCompleter {
 				.filter(option -> option.startsWith(args[0].toLowerCase()))
 				.toList();
 		}
-		if ((command.getName().equalsIgnoreCase("money") && args.length == 1 && sender.hasPermission("economy.balance.others"))
+		if (args.length == 2 && command.getName().equalsIgnoreCase("eco")
+			&& args[0].equalsIgnoreCase("treasury")) {
+			String prefix = args[1].toLowerCase();
+			return List.of("pay", "fund").stream()
+				.filter(option -> option.startsWith(prefix))
+				.toList();
+		}
+		boolean playerArg = (command.getName().equalsIgnoreCase("money")
+				&& args.length == 1
+				&& sender.hasPermission("economy.balance.others"))
 			|| (command.getName().equalsIgnoreCase("pay") && args.length == 1)
 			|| (command.getName().equalsIgnoreCase("eco") && args.length == 2
-				&& List.of("give", "take", "set").contains(args[0].toLowerCase())
-				&& sender.hasPermission("economy.admin"))) {
+				&& List.of("give", "take", "set", "audit", "freeze", "unfreeze")
+					.contains(args[0].toLowerCase())
+				&& sender.hasPermission("economy.admin"))
+			|| (command.getName().equalsIgnoreCase("eco") && args.length == 3
+				&& args[0].equalsIgnoreCase("treasury")
+				&& sender.hasPermission("economy.admin"));
+		if (playerArg) {
 			String prefix = args[args.length - 1].toLowerCase();
 			List<String> names = new ArrayList<>();
 			for (Player player : Bukkit.getOnlinePlayers()) {

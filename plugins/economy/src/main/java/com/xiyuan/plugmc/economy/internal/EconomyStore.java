@@ -86,6 +86,10 @@ public final class EconomyStore implements LedgerStore {
 		return dataDir;
 	}
 
+	public Path ledgerDir() {
+		return ledgerDir;
+	}
+
 	public synchronized long lastSeq() {
 		return lastSeq;
 	}
@@ -108,6 +112,30 @@ public final class EconomyStore implements LedgerStore {
 	public synchronized String playerName(UUID playerId) {
 		PlayerMeta meta = data.players.get(playerId.toString());
 		return meta == null ? "" : meta.name;
+	}
+
+	public synchronized boolean isFrozen(UUID playerId) {
+		PlayerMeta meta = data.players.get(playerId.toString());
+		return meta != null && meta.frozen;
+	}
+
+	public synchronized int dailyStreak(UUID playerId) {
+		PlayerMeta meta = data.players.get(playerId.toString());
+		return meta == null ? 0 : meta.dailyStreak;
+	}
+
+	public synchronized String lastDailyDate(UUID playerId) {
+		PlayerMeta meta = data.players.get(playerId.toString());
+		return meta == null ? "" : meta.lastDailyDate;
+	}
+
+	@Override
+	public synchronized boolean isAccountFrozen(String account) {
+		if (account == null || !account.startsWith("player:")) {
+			return false;
+		}
+		PlayerMeta meta = data.players.get(account.substring("player:".length()));
+		return meta != null && meta.frozen;
 	}
 
 	@Override
@@ -514,6 +542,30 @@ public final class EconomyStore implements LedgerStore {
 				bumpMailId(entry.id);
 			}
 			case "MAIL_REMOVE" -> data.mail.remove(op.id());
+			case "PLAYER_FROZEN" -> {
+				if (op.id() == null || op.id().isBlank()) {
+					throw new IllegalStateException("冻结状态操作缺少玩家 UUID");
+				}
+				PlayerMeta meta = data.players.computeIfAbsent(op.id(), ignored -> new PlayerMeta());
+				meta.frozen = "1".equals(op.payload());
+			}
+			case "PLAYER_DAILY" -> {
+				if (op.id() == null || op.id().isBlank()) {
+					throw new IllegalStateException("签到状态操作缺少玩家 UUID");
+				}
+				PlayerMeta meta = data.players.computeIfAbsent(op.id(), ignored -> new PlayerMeta());
+				String payload = op.payload() == null ? "" : op.payload();
+				int split = payload.indexOf('|');
+				if (split <= 0) {
+					throw new IllegalStateException("签到状态数据无效");
+				}
+				try {
+					meta.dailyStreak = Integer.parseInt(payload.substring(0, split));
+				} catch (NumberFormatException exception) {
+					throw new IllegalStateException("签到连签天数无效", exception);
+				}
+				meta.lastDailyDate = payload.substring(split + 1);
+			}
 			default -> throw new IllegalStateException("未知状态操作：" + op.type());
 		}
 	}
@@ -872,5 +924,7 @@ public final class EconomyStore implements LedgerStore {
 		long createdAt;
 		long lastSeen;
 		boolean frozen;
+		int dailyStreak;
+		String lastDailyDate = "";
 	}
 }

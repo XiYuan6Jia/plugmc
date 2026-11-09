@@ -42,10 +42,17 @@ Paper 经济插件。当前版本使用**复式记账账本**：玩家余额、�
 | `/auction reload` | 重载拍卖行配置 | `economy.auction.admin` |
 | `/trade <玩家>` | 发起直接交易请求（60 秒有效） | `economy.trade.use`（默认所有玩家） |
 | `/trade accept <玩家>` | 接受交易请求并打开交易窗口 | `economy.trade.use` |
+| `/daily` | 领取每日签到奖励（连签递增） | `economy.reward.daily` |
+| `/daily status` | 查看今日签到状态 | `economy.reward.daily` |
+| `/daily reload` | 重载奖励配置 | `economy.reward.admin` |
 | `/eco give <玩家> <金额>` | 增加余额 | `economy.admin`（默认 OP） |
 | `/eco take <玩家> <金额>` | 扣除余额 | `economy.admin` |
 | `/eco set <玩家> <金额>` | 设置余额 | `economy.admin` |
 | `/eco stats` | 查看玩家余额、铸币、税收、财政、托管与事务序号 | `economy.admin` |
+| `/eco audit <玩家> [页]` | 按时间倒序查看该玩家的审计流水（每页 10 笔） | `economy.admin` |
+| `/eco treasury pay <玩家> <金额> <原因>` | 从服务器财政账户发放资金 | `economy.admin` |
+| `/eco treasury fund <金额> [原因]` | 由管理员向财政账户注入预算（记入审计） | `economy.admin` |
+| `/eco freeze <玩家>` / `/eco unfreeze <玩家>` | 冻结/解冻支出（入账不受影响） | `economy.admin` |
 | `/eco doctor` | 检查账本是否平衡、玩家/托管账户是否为负、托管金额与未结束挂单是否一致 | `economy.admin` |
 | `/eco selftest` | 用内存账本演练「出价→超价退款→结算抽税→超额扣款拒绝」，不触碰真实数据 | `economy.admin` |
 | `/eco save` | 立即写快照并截断已应用的 journal | `economy.admin` |
@@ -99,6 +106,18 @@ auction:
   listing-fee-rate: 0.02
   listing-fee-min: "10.00"
   tax-rate: 0.03
+rewards:
+  enabled: true
+  daily:
+    enabled: true
+    base: "100.00"
+    streak-bonus: "20.00"
+    streak-max-days: 7
+  playtime:
+    enabled: true
+    minutes: 10
+    amount: "20.00"
+    max-per-day: 6
 ```
 
 `decimal-places` 范围为 0 到 6。已有账户数据时不能直接修改小数位，否则插件会拒绝启动；
@@ -184,6 +203,23 @@ items:
 - 双方都点击确认后才交换物品；任一方关闭窗口、点取消或掉线，双方物品立即退回各自背包。
 - 交换前会校验双方背包空间，空间不足时自动重置确认状态，不会吞物品。
 - 交易不涉及金钱，金钱往来请使用 `/pay`。
+
+### 奖励、财政与冻结
+
+- 签到：`/daily`（也可 `/money daily`），每日一次。连签奖励 =
+  `base + streak-bonus × (连签天数 - 1)`，超过 `streak-max-days` 后封顶；
+  中断一天后从第 1 天重新开始。
+- 在线奖励：每在线 `playtime.minutes` 分钟发放一次 `playtime.amount`，
+  每人每天最多 `playtime.max-per-day` 次；在线时长统计在内存中，重启后重新累计。
+- 签到和在线奖励都写账本（`REWARD_DAILY` / `REWARD_PLAYTIME`），是货币投放的主要来源。
+- `/eco treasury pay <玩家> <金额> <原因>`：从服务器财政账户（税收收入）发放活动奖励，
+  资金不足会直接拒绝；发放记录写入审计账本。
+- `/eco treasury fund <金额> [原因]`：管理员向财政注入预算（从铸币账户划入），用于活动或补贴；
+  同样写入审计账本，`/eco stats` 可看到财政余额变化。
+- `/eco freeze <玩家>`：冻结该玩家的所有支出（转账、购买、上架费、出价等），入账不受影响；
+  `/eco unfreeze <玩家>` 恢复。管理员 `take`/`set` 仍可操作冻结账户。
+- `/eco audit <玩家> [页]`：按时间倒序读取月度审计账本，每页 10 笔，显示事务号、原因、
+  收支方向与关联单号。
 
 ## 数据文件
 

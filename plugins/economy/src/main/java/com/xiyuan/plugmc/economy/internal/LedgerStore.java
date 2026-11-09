@@ -18,4 +18,11 @@ public interface LedgerStore {
 	void commit(JournalRecord record);
 
 	Map<String, BigDecimal> balances();
+
+	/**
+	 * 账户是否被冻结（仅限制支出）。默认不冻结。
+	 */
+	default boolean isAccountFrozen(String account) {
+		return false;
+	}
 }

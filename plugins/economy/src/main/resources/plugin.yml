@@ -18,7 +18,7 @@ commands:
     usage: /pay <玩家> <金额>
   eco:
     description: "管理玩家余额与经济数据"
-    usage: /eco <give|take|set> <玩家> <金额> | /eco stats|doctor|save|backup
+    usage: /eco <give|take|set> <玩家> <金额> | /eco stats|doctor|selftest|audit|treasury|freeze|save|backup
   shop:
     description: "系统商店"
     usage: /shop [buy <商品> [数量] | sell [数量|all] | price [商品] | search <关键词> | reload]
@@ -42,6 +42,10 @@ commands:
   trade:
     description: "直接交易"
     usage: /trade <玩家> | /trade accept <玩家>
+  daily:
+    description: "每日签到与在线奖励"
+    usage: /daily [status|reload]
+    aliases: [qiandao]
 permissions:
   economy.balance.others:
     description: "查看其他玩家余额"
@@ -82,3 +86,9 @@ permissions:
   economy.trade.use:
     description: "使用直接交易"
     default: true
+  economy.reward.daily:
+    description: "领取每日签到奖励"
+    default: true
+  economy.reward.admin:
+    description: "重载奖励配置"
+    default: op
