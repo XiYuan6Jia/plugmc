@@ -5,6 +5,7 @@ import com.xiyuan.plugmc.economy.gui.LeaderboardGui;
 import com.xiyuan.plugmc.economy.internal.EconomyConfig;
 import com.xiyuan.plugmc.economy.internal.EconomyStore;
 import com.xiyuan.plugmc.economy.internal.EscrowAudit;
+import com.xiyuan.plugmc.economy.internal.LedgerSelfTest;
 import com.xiyuan.plugmc.economy.internal.LedgerService;
 import com.xiyuan.plugmc.economy.internal.Money;
 import org.bukkit.Bukkit;
@@ -24,7 +25,7 @@ import java.util.Map;
 
 public final class EconomyCommand implements CommandExecutor, TabCompleter {
 	private static final List<String> ADMIN_ACTIONS = List.of(
-		"give", "take", "set", "stats", "doctor", "save", "backup"
+		"give", "take", "set", "stats", "doctor", "save", "backup", "selftest"
 	);
 
 	private final JavaPlugin plugin;
@@ -164,6 +165,14 @@ public final class EconomyCommand implements CommandExecutor, TabCompleter {
 				doctor(sender);
 				return;
 			}
+			case "selftest" -> {
+				if (args.length != 1) {
+					usage(sender);
+					return;
+				}
+				selfTest(sender);
+				return;
+			}
 			case "save" -> {
 				if (args.length != 1) {
 					usage(sender);
@@ -266,8 +275,7 @@ public final class EconomyCommand implements CommandExecutor, TabCompleter {
 
 	/**
 	 * 校验托管账户余额与未结束的拍卖/收购订单金额是否一致，避免结算异常导致资金凭空增减。
-	 */
-	private void checkEscrow(CommandSender sender, List<String> issues) {
+	 */	private void checkEscrow(CommandSender sender, List<String> issues) {
 		long now = System.currentTimeMillis();
 
 		BigDecimal auctionExpected = EscrowAudit.expectedAuctionEscrow(store.auctions().values());
@@ -299,9 +307,23 @@ public final class EconomyCommand implements CommandExecutor, TabCompleter {
 		}
 	}
 
+	private void selfTest(CommandSender sender) {
+		List<LedgerSelfTest.Check> checks = LedgerSelfTest.run();
+		long failed = checks.stream().filter(check -> !check.passed()).count();
+		sender.sendMessage("经济演练（不接触真实数据）：");
+		for (LedgerSelfTest.Check check : checks) {
+			sender.sendMessage((check.passed() ? "  ✔ " : "  ✘ ") + check.name() + " [" + check.detail() + "]");
+		}
+		if (failed == 0) {
+			sender.sendMessage("演练全部通过：" + checks.size() + " 项。");
+		} else {
+			sender.sendMessage("演练失败 " + failed + " 项，请检查 settlements 与账本逻辑。");
+		}
+	}
+
 	private void usage(CommandSender sender) {
 		sender.sendMessage("用法：/eco <give|take|set> <玩家> <金额>");
-		sender.sendMessage("管理：/eco stats | /eco doctor | /eco save | /eco backup");
+		sender.sendMessage("管理：/eco stats | /eco doctor | /eco selftest | /eco save | /eco backup");
 	}
 
 	private BigDecimal parseAmount(CommandSender sender, String raw) {
