@@ -140,13 +140,13 @@ public final class ShopGui {
 		EconomyMenuHolder holder = new EconomyMenuHolder(5, "&8商品：" + item.id());
 		holder.fill(filler());
 		holder.set(13, itemIcon(item), null);
-		holder.set(
-			4,
-			button(Material.GOLD_INGOT, "&6余额", List.of(
-				"&e" + service.format(service.balance(player))
-			)),
-			null
-		);
+		holder.set(4, button(Material.GOLD_INGOT, "&6余额", List.of(
+			"&e" + service.format(service.balance(player))
+		)), null);
+		holder.set(12, button(Material.CHEST, "&f背包中的数量", List.of(
+			"&e" + service.countInInventory(player, item) + " &7个 " + item.id(),
+			"&8出售会从背包（含快捷栏）扣除"
+		)), null);
 
 		int buyRemaining = service.remainingBuy(player, item);
 		int sellRemaining = service.remainingSell(player, item);
@@ -165,15 +165,15 @@ public final class ShopGui {
 		});
 
 		holder.set(29, sellButton(item, 1, sellRemaining), p -> {
-			service.sell(p, 1, false);
+			service.sellFromInventory(p, item, 1, false);
 			openItem(p, item, page, back);
 		});
 		holder.set(30, sellButton(item, 16, sellRemaining), p -> {
-			service.sell(p, 16, false);
+			service.sellFromInventory(p, item, 16, false);
 			openItem(p, item, page, back);
 		});
 		holder.set(31, sellButton(item, -1, sellRemaining), p -> {
-			service.sell(p, 0, true);
+			service.sellFromInventory(p, item, 0, true);
 			openItem(p, item, page, back);
 		});
 
@@ -215,8 +215,9 @@ public final class ShopGui {
 	}
 
 	private ItemStack sellButton(ShopItem item, int amount, int remaining) {
-		String label = amount < 0 ? "出售全部手持" : "出售 " + amount + " 个";
+		String label = amount < 0 ? "出售背包内全部" : "出售 " + amount + " 个";
 		return button(Material.RED_STAINED_GLASS_PANE, "&c" + label, List.of(
+			"&7从背包（含快捷栏）扣除",
 			"&7单价：&e" + service.format(item.sellPrice()),
 			"&7今日剩余：&f" + remainingText(remaining)
 		));

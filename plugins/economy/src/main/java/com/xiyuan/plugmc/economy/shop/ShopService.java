@@ -223,6 +223,88 @@ public final class ShopService {
 		return soldTotal > 0;
 	}
 
+	public int countInInventory(Player player, ShopItem item) {
+		int total = 0;
+		for (ItemStack stack : player.getInventory().getStorageContents()) {
+			if (stack == null || stack.getType().isAir()) {
+				continue;
+			}
+			if (goods.match(stack, settings.allowCustomItems()) == item) {
+				total += stack.getAmount();
+			}
+		}
+		return total;
+	}
+
+	/**
+	 * 出售指定商品：从背包（快捷栏 + 主背包）扣除，而不是只看主手。
+	 */
+	public boolean sellFromInventory(Player player, ShopItem item, int requestedAmount, boolean all) {
+		if (!checkAvailable(player)) {
+			return false;
+		}
+		ItemStack[] contents = player.getInventory().getStorageContents();
+		int available = 0;
+		for (ItemStack stack : contents) {
+			if (stack == null || stack.getType().isAir()) {
+				continue;
+			}
+			if (goods.match(stack, settings.allowCustomItems()) == item) {
+				available += stack.getAmount();
+			}
+		}
+		if (available <= 0) {
+			player.sendMessage("背包里没有可回收的 " + item.id() + "。");
+			return false;
+		}
+
+		int limit = settings.effectiveSellLimit(item.dailySellLimit());
+		int limitRemaining = dailyLimits.remaining(player, "sell", item.id(), limit);
+		if (limitRemaining <= 0) {
+			player.sendMessage("今日回收限额已用完（" + item.id() + "）。");
+			return false;
+		}
+		int amount = all
+			? Math.min(available, limitRemaining)
+			: Math.min(Math.min(requestedAmount, available), limitRemaining);
+		if (amount <= 0) {
+			player.sendMessage("可回收数量不足。");
+			return false;
+		}
+
+		ItemStack[] snapshot = player.getInventory().getStorageContents();
+		int remaining = amount;
+		for (int slot = 0; slot < contents.length && remaining > 0; slot++) {
+			ItemStack stack = contents[slot];
+			if (stack == null || stack.getType().isAir()
+				|| goods.match(stack, settings.allowCustomItems()) != item) {
+				continue;
+			}
+			int take = Math.min(stack.getAmount(), remaining);
+			ItemStack left = stack.clone();
+			left.setAmount(stack.getAmount() - take);
+			player.getInventory().setItem(slot, left.getAmount() <= 0 ? new ItemStack(Material.AIR) : left);
+			remaining -= take;
+		}
+
+		BigDecimal total = total(item.sellPrice(), amount);
+		try {
+			ledger.deposit(player.getUniqueId(), total, "SHOP_SELL", item.id());
+		} catch (RuntimeException exception) {
+			player.getInventory().setStorageContents(snapshot);
+			throw exception;
+		}
+
+		dailyLimits.consume(player, "sell", item.id(), amount);
+		player.sendMessage("已出售 " + amount + " 个 " + item.id() + "（背包扣除），获得 "
+			+ ledger.format(total) + "，余额 " + ledger.format(ledger.balance(player.getUniqueId())) + "。");
+		if (amount < available) {
+			player.sendMessage("背包中还有 " + (available - amount) + " 个未出售"
+				+ (limitRemaining <= amount ? "（今日限额已用完）" : "") + "。");
+		}
+		return true;
+	}
+
 	public void price(Player player) {
 		ItemStack hand = player.getInventory().getItemInMainHand();
 		if (hand.getType().isAir() || hand.getAmount() <= 0) {
