@@ -10,6 +10,7 @@ Paper 经济插件。当前版本使用**复式记账账本**：玩家余额、�
 | --- | --- | --- |
 | `/money`、`/balance`、`/bal` | 查看自己的余额 | 所有玩家 |
 | `/money <玩家>` | 查看其他玩家余额 | `economy.balance.others`（默认 OP） |
+| `/baltop` | 打开余额排行界面（控制台输出前 10 名） | `economy.balance.top`（默认所有玩家） |
 | `/pay <玩家> <金额>` | 向已加入过服务器的玩家转账 | 所有玩家 |
 | `/shop` | 打开系统商店 GUI | `economy.shop.use`（默认所有玩家） |
 | `/shop buy <商品> [数量]` | 购买商品 | `economy.shop.use` |

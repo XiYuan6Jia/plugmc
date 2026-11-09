@@ -7,6 +7,7 @@ import com.xiyuan.plugmc.economy.internal.ItemCodec;
 import com.xiyuan.plugmc.economy.internal.JournalRecord;
 import com.xiyuan.plugmc.economy.internal.LedgerService;
 import com.xiyuan.plugmc.economy.internal.Money;
+import com.xiyuan.plugmc.economy.internal.Settlement;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -250,8 +251,9 @@ public final class OrderService {
 
 	private boolean paySeller(Player seller, BuyOrder order, int amount) {
 		BigDecimal gross = total(order.unitPrice(), amount);
-		BigDecimal tax = config.tax(gross, ledger.decimalPlaces());
-		BigDecimal net = gross.subtract(tax).setScale(ledger.decimalPlaces(), java.math.RoundingMode.UNNECESSARY);
+		Settlement settlement = Settlement.of(gross, config.taxRate(), ledger.decimalPlaces());
+		BigDecimal tax = settlement.tax();
+		BigDecimal net = settlement.net();
 
 		List<JournalRecord.Entry> entries = new ArrayList<>();
 		entries.add(new JournalRecord.Entry(LedgerService.ESCROW_ORDER, gross.negate()));
@@ -273,8 +275,7 @@ public final class OrderService {
 
 	private BigDecimal netAmount(BigDecimal unitPrice, int amount) {
 		BigDecimal gross = total(unitPrice, amount);
-		BigDecimal tax = config.tax(gross, ledger.decimalPlaces());
-		return gross.subtract(tax).setScale(ledger.decimalPlaces(), java.math.RoundingMode.UNNECESSARY);
+		return Settlement.of(gross, config.taxRate(), ledger.decimalPlaces()).net();
 	}
 
 	private void refund(BuyOrder order, String reason) {

@@ -9,6 +9,10 @@ commands:
     description: "查看余额"
     usage: /money [玩家]
     aliases: [balance, bal]
+  baltop:
+    description: "余额排行"
+    usage: /baltop
+    aliases: [balancetop, rich]
   pay:
     description: "向其他玩家转账"
     usage: /pay <玩家> <金额>
@@ -42,6 +46,9 @@ permissions:
   economy.balance.others:
     description: "查看其他玩家余额"
     default: op
+  economy.balance.top:
+    description: "查看余额排行"
+    default: true
   economy.admin:
     description: "管理玩家余额"
     default: op

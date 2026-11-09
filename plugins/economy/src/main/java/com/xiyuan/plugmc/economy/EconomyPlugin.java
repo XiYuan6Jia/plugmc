@@ -69,7 +69,7 @@ public final class EconomyPlugin extends JavaPlugin implements Listener {
 			config = EconomyConfig.load(getConfig());
 			store = new EconomyStore(this, config);
 			ledger = new LedgerService(store, config);
-			economyService = new EconomyServiceImpl(ledger, config);
+			economyService = new EconomyServiceImpl(ledger, config, store);
 			Bukkit.getServicesManager().register(
 				EconomyService.class,
 				economyService,
@@ -82,6 +82,7 @@ public final class EconomyPlugin extends JavaPlugin implements Listener {
 			registerCommand("money", command);
 			registerCommand("pay", command);
 			registerCommand("eco", command);
+			registerCommand("baltop", command);
 
 			ShopConfig shopConfig = ShopConfig.load(getConfig());
 			GoodsConfig goodsConfig = GoodsConfig.load(this, shopConfig, config.decimalPlaces());

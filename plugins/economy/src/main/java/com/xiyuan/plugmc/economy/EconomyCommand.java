@@ -1,6 +1,7 @@
 package com.xiyuan.plugmc.economy;
 
 import com.xiyuan.plugmc.economy.api.EconomyService;
+import com.xiyuan.plugmc.economy.gui.LeaderboardGui;
 import com.xiyuan.plugmc.economy.internal.EconomyConfig;
 import com.xiyuan.plugmc.economy.internal.EconomyStore;
 import com.xiyuan.plugmc.economy.internal.EscrowAudit;
@@ -52,6 +53,7 @@ public final class EconomyCommand implements CommandExecutor, TabCompleter {
 			case "money" -> showBalance(sender, args);
 			case "pay" -> pay(sender, args);
 			case "eco" -> manageBalance(sender, args);
+			case "baltop" -> showTop(sender);
 			default -> {
 				return false;
 			}
@@ -59,8 +61,29 @@ public final class EconomyCommand implements CommandExecutor, TabCompleter {
 		return true;
 	}
 
-	private void showBalance(CommandSender sender, String[] args) {
-		if (args.length == 0 && sender instanceof Player player) {
+	private void showTop(CommandSender sender) {
+		if (!sender.hasPermission("economy.balance.top")) {
+			sender.sendMessage("你没有权限查看余额排行。");
+			return;
+		}
+		if (sender instanceof Player player) {
+			new LeaderboardGui(economy).open(player, 0);
+			return;
+		}
+		List<EconomyService.BalanceEntry> entries = economy.topBalances(10);
+		if (entries.isEmpty()) {
+			sender.sendMessage("暂无排行数据。");
+			return;
+		}
+		sender.sendMessage("余额排行（前 " + entries.size() + " 名）：");
+		for (int index = 0; index < entries.size(); index++) {
+			EconomyService.BalanceEntry entry = entries.get(index);
+			sender.sendMessage("#" + (index + 1) + " " + entry.name()
+				+ "：" + economy.format(entry.balance()));
+		}
+	}
+
+	private void showBalance(CommandSender sender, String[] args) {		if (args.length == 0 && sender instanceof Player player) {
 			sender.sendMessage("你的余额：" + economy.format(economy.getBalance(player.getUniqueId())));
 			return;
 		}

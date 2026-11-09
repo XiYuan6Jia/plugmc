@@ -3,6 +3,10 @@ package com.xiyuan.plugmc.economy.internal;
 import com.xiyuan.plugmc.economy.api.EconomyService;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -12,10 +16,12 @@ import java.util.UUID;
 public final class EconomyServiceImpl implements EconomyService {
 	private final LedgerService ledger;
 	private final EconomyConfig config;
+	private final EconomyStore store;
 
-	public EconomyServiceImpl(LedgerService ledger, EconomyConfig config) {
+	public EconomyServiceImpl(LedgerService ledger, EconomyConfig config, EconomyStore store) {
 		this.ledger = Objects.requireNonNull(ledger, "ledger");
 		this.config = Objects.requireNonNull(config, "config");
+		this.store = store;
 	}
 
 	public LedgerService ledger() {
@@ -70,5 +76,33 @@ public final class EconomyServiceImpl implements EconomyService {
 	@Override
 	public int getDecimalPlaces() {
 		return config.decimalPlaces();
+	}
+
+	@Override
+	public List<BalanceEntry> topBalances(int limit) {
+		Map<UUID, BigDecimal> playerBalances = new LinkedHashMap<>();
+		for (Map.Entry<String, BigDecimal> entry : ledger.balances().entrySet()) {
+			if (!entry.getKey().startsWith("player:")) {
+				continue;
+			}
+			try {
+				playerBalances.put(
+					UUID.fromString(entry.getKey().substring("player:".length())),
+					entry.getValue()
+				);
+			} catch (IllegalArgumentException ignored) {
+			}
+		}
+
+		List<BalanceEntry> result = new ArrayList<>();
+		for (Map.Entry<UUID, BigDecimal> entry : Leaderboard.top(playerBalances, limit)) {
+			String name = store == null ? "" : store.playerName(entry.getKey());
+			result.add(new BalanceEntry(
+				entry.getKey(),
+				name == null || name.isBlank() ? "未知玩家" : name,
+				entry.getValue()
+			));
+		}
+		return result;
 	}
 }

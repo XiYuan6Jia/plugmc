@@ -7,6 +7,7 @@ import com.xiyuan.plugmc.economy.internal.ItemCodec;
 import com.xiyuan.plugmc.economy.internal.JournalRecord;
 import com.xiyuan.plugmc.economy.internal.LedgerService;
 import com.xiyuan.plugmc.economy.internal.Money;
+import com.xiyuan.plugmc.economy.internal.Settlement;
 import com.xiyuan.plugmc.economy.mail.MailService;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -300,8 +301,9 @@ public final class AuctionService {
 		}
 
 		BigDecimal price = listing.buyoutPrice();
-		BigDecimal tax = config.tax(price, ledger.decimalPlaces());
-		BigDecimal sellerNet = price.subtract(tax).setScale(ledger.decimalPlaces(), RoundingMode.UNNECESSARY);
+		Settlement settlement = Settlement.of(price, config.taxRate(), ledger.decimalPlaces());
+		BigDecimal tax = settlement.tax();
+		BigDecimal sellerNet = settlement.net();
 
 		List<JournalRecord.Entry> entries = new ArrayList<>();
 		entries.add(new JournalRecord.Entry(LedgerService.playerKey(player.getUniqueId()), price.negate()));
@@ -400,8 +402,9 @@ public final class AuctionService {
 			return;
 		}
 		BigDecimal price = listing.highestBid();
-		BigDecimal tax = config.tax(price, ledger.decimalPlaces());
-		BigDecimal sellerNet = price.subtract(tax).setScale(ledger.decimalPlaces(), RoundingMode.UNNECESSARY);
+		Settlement settlement = Settlement.of(price, config.taxRate(), ledger.decimalPlaces());
+		BigDecimal tax = settlement.tax();
+		BigDecimal sellerNet = settlement.net();
 
 		MailService.PreparedMail prepared = mail.prepareItem(winnerId, listing.item(), "AUCTION_WIN");
 		List<JournalRecord.Entry> entries = new ArrayList<>();

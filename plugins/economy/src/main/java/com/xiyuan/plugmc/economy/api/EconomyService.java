@@ -1,6 +1,7 @@
 package com.xiyuan.plugmc.economy.api;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -43,5 +44,15 @@ public interface EconomyService {
 	 */
 	default int getDecimalPlaces() {
 		return 2;
+	}
+
+	/**
+	 * 余额排行，按余额降序返回最多 limit 名玩家；不支持排行的实现返回空列表。
+	 */
+	default List<BalanceEntry> topBalances(int limit) {
+		return List.of();
+	}
+
+	record BalanceEntry(UUID playerId, String name, BigDecimal balance) {
 	}
 }
