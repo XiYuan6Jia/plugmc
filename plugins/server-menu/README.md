@@ -19,13 +19,14 @@
 | --- | --- |
 | 系统商店 | `/shop` |
 | 玩家市场 | `/market` |
+| 收购订单 | `/order` |
 | 邮箱 | `/mail` |
 | 金币 HUD | 切换右侧余额侧栏 |
 | 查看余额 | `/money` |
-| 拍卖行 / 收购订单 / 直接交易 | 当前为“即将开放”提示，功能上线后改成 `player_command` 即可 |
+| 拍卖行 / 直接交易 | 当前为“即将开放”提示，功能上线后改成 `player_command` 即可 |
 
 经济按钮通过 `menu.items.<slot>.action: player_command` 调用对应命令；权限分别使用
-`economy.shop.use`、`economy.market.use`、`economy.mail.use`。
+`economy.shop.use`、`economy.market.use`、`economy.order.use`、`economy.mail.use`。
 
 金币 HUD 默认开启，在屏幕右侧记分板侧栏显示余额；玩家的开关状态写入 Minecraft 玩家数据，重连后仍保留。HUD 使用玩家专属记分板侧栏，关闭时会恢复进入 HUD 前的记分板；如果同时使用其他会修改记分板的插件，需要协调侧栏显示。
 

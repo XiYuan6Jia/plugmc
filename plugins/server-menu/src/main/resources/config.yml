@@ -56,9 +56,10 @@ menu:
       name: "&b收购订单"
       lore:
         - "&7发布求购，等待其他玩家交付"
-        - "&8即将开放"
-      action: message
-      value: "&e收购订单即将开放，敬请期待。"
+        - "&8点击打开"
+      action: player_command
+      value: "order"
+      permission: economy.order.use
     "28":
       material: PLAYER_HEAD
       name: "&d直接交易"
@@ -81,7 +82,7 @@ menu:
         - "&7常用经济命令"
         - "&8点击查看"
       action: message
-      value: "&e/money &7查看余额  &e/shop &7商店  &e/market &7市场  &e/mail &7邮箱"
+      value: "&e/money &7查看余额  &e/shop &7商店  &e/market &7市场  &e/order &7收购  &e/mail &7邮箱"
 hud:
   enabled-by-default: true
   title: "&6&l经济"

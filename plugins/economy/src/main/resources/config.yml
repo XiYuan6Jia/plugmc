@@ -21,3 +21,10 @@ market:
 mail:
   capacity: 50
   expire-days: 30
+orders:
+  enabled: true
+  slots: 8
+  duration-hours: 168
+  listing-fee-rate: 0.01
+  listing-fee-min: "2.00"
+  tax-rate: 0.03

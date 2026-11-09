@@ -182,6 +182,18 @@ public final class EconomyStore implements LedgerStore {
 		return data.marketListings.get(id);
 	}
 
+	public synchronized long nextOrderId() {
+		return data.orderNextId++;
+	}
+
+	public synchronized Map<String, OrderDto> orders() {
+		return Map.copyOf(data.orders);
+	}
+
+	public synchronized OrderDto order(String id) {
+		return data.orders.get(id);
+	}
+
 	public synchronized Map<String, MailEntryDto> mailEntries() {
 		return Map.copyOf(data.mail);
 	}
@@ -320,17 +332,28 @@ public final class EconomyStore implements LedgerStore {
 		if (snapshot.marketListings == null) {
 			snapshot.marketListings = new LinkedHashMap<>();
 		}
+		if (snapshot.orders == null) {
+			snapshot.orders = new LinkedHashMap<>();
+		}
 		if (snapshot.mail == null) {
 			snapshot.mail = new LinkedHashMap<>();
 		}
 		snapshot.players.entrySet().removeIf(entry -> entry.getValue() == null);
 		snapshot.marketListings.entrySet().removeIf(entry -> entry.getValue() == null);
+		snapshot.orders.entrySet().removeIf(entry -> entry.getValue() == null);
 		snapshot.mail.entrySet().removeIf(entry -> entry.getValue() == null);
 		snapshot.marketNextId = Math.max(1L, snapshot.marketNextId);
+		snapshot.orderNextId = Math.max(1L, snapshot.orderNextId);
 		snapshot.mailNextId = Math.max(1L, snapshot.mailNextId);
 		for (String id : snapshot.marketListings.keySet()) {
 			try {
 				snapshot.marketNextId = Math.max(snapshot.marketNextId, Long.parseLong(id) + 1L);
+			} catch (NumberFormatException ignored) {
+			}
+		}
+		for (String id : snapshot.orders.keySet()) {
+			try {
+				snapshot.orderNextId = Math.max(snapshot.orderNextId, Long.parseLong(id) + 1L);
 			} catch (NumberFormatException ignored) {
 			}
 		}
@@ -432,6 +455,18 @@ public final class EconomyStore implements LedgerStore {
 				bumpMarketId(listing.id);
 			}
 			case "MARKET_REMOVE" -> data.marketListings.remove(op.id());
+			case "ORDER_ADD", "ORDER_UPDATE" -> {
+				if (op.payload() == null || op.payload().isBlank()) {
+					throw new IllegalStateException("收购订单状态操作缺少 payload");
+				}
+				OrderDto order = GSON.fromJson(op.payload(), OrderDto.class);
+				if (order == null || order.id == null) {
+					throw new IllegalStateException("收购订单状态操作数据无效");
+				}
+				data.orders.put(order.id, order);
+				bumpOrderId(order.id);
+			}
+			case "ORDER_REMOVE" -> data.orders.remove(op.id());
 			case "MAIL_ADD" -> {
 				if (op.payload() == null || op.payload().isBlank()) {
 					throw new IllegalStateException("邮箱状态操作缺少 payload");
@@ -458,6 +493,13 @@ public final class EconomyStore implements LedgerStore {
 	private void bumpMailId(String rawId) {
 		try {
 			data.mailNextId = Math.max(data.mailNextId, Long.parseLong(rawId) + 1L);
+		} catch (NumberFormatException ignored) {
+		}
+	}
+
+	private void bumpOrderId(String rawId) {
+		try {
+			data.orderNextId = Math.max(data.orderNextId, Long.parseLong(rawId) + 1L);
 		} catch (NumberFormatException ignored) {
 		}
 	}
@@ -722,8 +764,10 @@ public final class EconomyStore implements LedgerStore {
 		Map<String, PlayerMeta> players = new LinkedHashMap<>();
 		Map<String, Integer> dailyLimits = new LinkedHashMap<>();
 		Map<String, MarketListingDto> marketListings = new LinkedHashMap<>();
+		Map<String, OrderDto> orders = new LinkedHashMap<>();
 		Map<String, MailEntryDto> mail = new LinkedHashMap<>();
 		long marketNextId = 1L;
+		long orderNextId = 1L;
 		long mailNextId = 1L;
 	}
 
@@ -737,6 +781,18 @@ public final class EconomyStore implements LedgerStore {
 		public long expiresAt;
 		public String status = "ACTIVE";
 		public boolean escrowPending;
+	}
+
+	public static final class OrderDto {
+		public String id;
+		public String buyer;
+		public String buyerName = "";
+		public String item;
+		public String unitPrice = "0.00";
+		public int remaining;
+		public long createdAt;
+		public long expiresAt;
+		public String status = "ACTIVE";
 	}
 
 	public static final class MailEntryDto {

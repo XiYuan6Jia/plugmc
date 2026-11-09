@@ -26,6 +26,12 @@ Paper 经济插件。当前版本使用**复式记账账本**：玩家余额、�
 | `/market reload` | 重载市场配置 | `economy.market.admin` |
 | `/mail` | 打开邮箱 GUI | `economy.mail.use`（默认所有玩家） |
 | `/mail claim <id\|all>` | 领取邮件 | `economy.mail.use` |
+| `/order` | 列出进行中的收购订单 | `economy.order.use`（默认所有玩家） |
+| `/order create <单价> <数量\|all>` | 手持物品作为样本，托管资金发布收购订单 | `economy.order.use` |
+| `/order fill <编号> [数量\|all]` | 用背包中的物品交付收购订单 | `economy.order.use` |
+| `/order cancel <编号>` | 取消自己的收购订单，托管资金退回 | `economy.order.use` |
+| `/order list [页]` / `/order mine` / `/order search <关键词>` | 浏览、查看自己的、搜索收购订单 | `economy.order.use` |
+| `/order reload` | 重载收购订单配置 | `economy.order.admin` |
 | `/eco give <玩家> <金额>` | 增加余额 | `economy.admin`（默认 OP） |
 | `/eco take <玩家> <金额>` | 扣除余额 | `economy.admin` |
 | `/eco set <玩家> <金额>` | 设置余额 | `economy.admin` |
@@ -64,6 +70,13 @@ market:
 mail:
   capacity: 50
   expire-days: 30
+orders:
+  enabled: true
+  slots: 8
+  duration-hours: 168
+  listing-fee-rate: 0.01
+  listing-fee-min: "2.00"
+  tax-rate: 0.03
 ```
 
 `decimal-places` 范围为 0 到 6。已有账户数据时不能直接修改小数位，否则插件会拒绝启动；
@@ -106,11 +119,21 @@ items:
 - 邮箱默认容量 50、30 天过期；`/mail` 打开分页邮件列表，支持单封领取和全部领取。
 - 市场挂单、邮箱内容与每日限额都保存在 `state.json`，正常重启不会丢失。
 
+### 收购订单
+
+- 发布：主手拿一件目标物品作为样本，执行 `/order create <单价> <数量|all>`。
+  托管金额 = 单价 × 数量，另收挂单费；资金立即从买家余额转入 `escrow:ORDER`。
+- 交付：卖方用 `/order fill <编号> [数量|all]`，系统从背包按顺序扣除匹配物品
+  （与原版 `isSimilar` 一致），买家托管资金即时结算给卖方，成交税从卖方所得扣除。
+- 取消或过期时，未成交部分的托管资金原额退回买家余额；订单不会产生负数账户。
+- 买家不能交付自己的订单；单个玩家同时进行的订单数受 `orders.slots` 限制。
+- 托管资金的每一次进出都记入账本，`/eco doctor` 可校验 `escrow:ORDER` 与总账平衡。
+
 ## 数据文件
 
 | 文件/目录 | 说明 |
 | --- | --- |
-| `state.json` | 最近一次快照：玩家/系统/托管余额、玩家名称与时间戳、商店每日限额、市场挂单、邮箱、事务序号 |
+| `state.json` | 最近一次快照：玩家/系统/托管余额、玩家名称与时间戳、商店每日限额、市场挂单、收购订单、邮箱、事务序号 |
 | `journal.jsonl` | 已提交但尚未进入快照的事务；启动时自动回放 |
 | `ledger/YYYY-MM.jsonl` | 按月切分的审计账本，只追加 |
 | `backup/` | 自动状态备份，默认保留 14 份；迁移前也会备份旧账户文件 |
