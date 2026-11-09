@@ -72,14 +72,13 @@ public final class MarketGui {
 				openList(p, title, listings, current - 1, query)
 			);
 		}
+		holder.set(48, GuiNavigation.backButton(), GuiNavigation::back);
+		holder.set(49, button(Material.BARRIER, "&c关闭", List.of()), Player::closeInventory);
 		if (current + 1 < pageCount) {
 			holder.set(53, button(Material.ARROW, "&e下一页", List.of()), p ->
 				openList(p, title, listings, current + 1, query)
 			);
-		} else {
-			holder.set(53, button(Material.BARRIER, "&c关闭", List.of()), Player::closeInventory);
 		}
-		holder.set(49, button(Material.BARRIER, "&c关闭", List.of()), Player::closeInventory);
 		player.openInventory(holder.getInventory());
 	}
 

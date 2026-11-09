@@ -69,7 +69,8 @@ public final class ShopGui {
 			)),
 			p -> p.sendMessage("用法：/shop search <关键词>")
 		);
-		holder.set(40, button(Material.BARRIER, "&c关闭", List.of()), Player::closeInventory);
+		holder.set(36, GuiNavigation.backButton(), GuiNavigation::back);
+		holder.set(44, button(Material.BARRIER, "&c关闭", List.of()), Player::closeInventory);
 		player.openInventory(holder.getInventory());
 	}
 

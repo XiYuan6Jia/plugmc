@@ -61,6 +61,7 @@ public final class MailGui {
 			open(p, current);
 		});
 		holder.set(49, button(Material.BARRIER, "&c关闭", List.of()), Player::closeInventory);
+		holder.set(50, GuiNavigation.backButton(), GuiNavigation::back);
 		if (current + 1 < pageCount) {
 			holder.set(53, button(Material.ARROW, "&e下一页", List.of()), p -> open(p, current + 1));
 		}
