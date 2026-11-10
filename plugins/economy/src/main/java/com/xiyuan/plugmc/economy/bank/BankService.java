@@ -372,6 +372,129 @@ public final class BankService {
 	}
 
 	/**
+	 * 把背包里所有可存入的建材一次性存入银行。
+	 */
+	public int depositInventory(Player player) {
+		if (!enabled()) {
+			player.sendMessage("建材银行未开启。");
+			return 0;
+		}
+		ItemStack[] contents = player.getInventory().getStorageContents();
+		int remaining = config.maxPerOperation();
+		long gain = 0;
+		int count = 0;
+		Map<String, Integer> detail = new LinkedHashMap<>();
+		for (int slot = 0; slot < contents.length && remaining > 0; slot++) {
+			ItemStack stack = contents[slot];
+			if (stack == null || stack.getAmount() <= 0) {
+				continue;
+			}
+			Optional<ShopItem> matched = match(stack);
+			if (matched.isEmpty() || !BankItems.isPlain(matched.get(), stack)) {
+				continue;
+			}
+			ShopItem item = matched.get();
+			long unit = valueOf(item);
+			if (unit <= 0) {
+				continue;
+			}
+			int take = Math.min(stack.getAmount(), remaining);
+			if (take >= stack.getAmount()) {
+				player.getInventory().setItem(slot, null);
+			} else {
+				ItemStack left = stack.clone();
+				left.setAmount(stack.getAmount() - take);
+				player.getInventory().setItem(slot, left);
+			}
+			gain += gain(unit, take);
+			count += take;
+			remaining -= take;
+			detail.merge(item.id(), take, Integer::sum);
+		}
+		if (count <= 0) {
+			player.sendMessage("背包里没有可存入的建材。");
+			return 0;
+		}
+		addCredit(player, gain);
+		save();
+		player.sendMessage("已批量存入 " + detail.size() + " 种共 " + count + " 个建材"
+			+ summary(detail) + "，获得额度 " + format(gain) + "，当前额度 "
+			+ format(creditOf(player.getUniqueId())) + "。");
+		return count;
+	}
+
+	/**
+	 * 把界面里放入的整批物品存入银行，无法存入的放进 leftovers。
+	 */
+	public int depositBatch(Player player, List<ItemStack> offered, List<ItemStack> leftovers) {
+		if (!enabled()) {
+			player.sendMessage("建材银行未开启。");
+			return 0;
+		}
+		int remaining = config.maxPerOperation();
+		long gain = 0;
+		int count = 0;
+		Map<String, Integer> detail = new LinkedHashMap<>();
+		for (ItemStack stack : offered) {
+			if (remaining <= 0) {
+				leftovers.add(stack);
+				continue;
+			}
+			Optional<ShopItem> matched = match(stack);
+			if (matched.isEmpty() || !BankItems.isPlain(matched.get(), stack)) {
+				leftovers.add(stack);
+				continue;
+			}
+			ShopItem item = matched.get();
+			long unit = valueOf(item);
+			if (unit <= 0) {
+				leftovers.add(stack);
+				continue;
+			}
+			int take = Math.min(stack.getAmount(), remaining);
+			if (take < stack.getAmount()) {
+				ItemStack rest = stack.clone();
+				rest.setAmount(stack.getAmount() - take);
+				leftovers.add(rest);
+			}
+			gain += gain(unit, take);
+			count += take;
+			remaining -= take;
+			detail.merge(item.id(), take, Integer::sum);
+		}
+		if (count <= 0) {
+			player.sendMessage("没有可以存入的建材，物品已退回。");
+			return 0;
+		}
+		addCredit(player, gain);
+		save();
+		player.sendMessage("已批量存入 " + detail.size() + " 种共 " + count + " 个建材"
+			+ summary(detail) + "，获得额度 " + format(gain) + "，当前额度 "
+			+ format(creditOf(player.getUniqueId())) + "。");
+		return count;
+	}
+
+	private String summary(Map<String, Integer> detail) {
+		if (detail.isEmpty()) {
+			return "";
+		}
+		StringBuilder builder = new StringBuilder("（");
+		int shown = 0;
+		for (Map.Entry<String, Integer> entry : detail.entrySet()) {
+			if (shown == 5) {
+				builder.append("…");
+				break;
+			}
+			if (shown > 0) {
+				builder.append("、");
+			}
+			builder.append(entry.getKey()).append('x').append(entry.getValue());
+			shown++;
+		}
+		return builder.append('）').toString();
+	}
+
+	/**
 	 * 把主手物品存入银行；requested 为 0 表示整组。
 	 */
 	public int depositHand(Player player, int requested) {

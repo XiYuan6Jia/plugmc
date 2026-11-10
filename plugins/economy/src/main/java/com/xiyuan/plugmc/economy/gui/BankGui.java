@@ -18,9 +18,11 @@ import java.util.List;
  */
 public final class BankGui {
 	private final BankService bank;
+	private final BankDepositGui depositGui;
 
 	public BankGui(BankService bank) {
 		this.bank = bank;
+		this.depositGui = new BankDepositGui(bank, this);
 	}
 
 	public void openMain(Player player) {
@@ -43,6 +45,11 @@ public final class BankGui {
 			bank.depositHand(p, click.isShiftClick() ? 1 : 0);
 			openMain(p);
 		});
+		holder.set(22, button(Material.CHEST_MINECART, "&a批量存入", List.of(
+			"&7打开批量存入页，放入多种建材一键存入",
+			"&7也可以直接执行 &e/bank depositall",
+			"&7把背包里所有可存建材一次存入"
+		)), p -> depositGui.open(p));
 		holder.set(24, button(Material.BOOK, "&b兑换规则", List.of(
 			"&7· 存入 1 个石砖可获得石砖的额度",
 			"&7· 同价值建材可互相兑换，例如石砖 ↔ 裂纹石砖",

@@ -50,6 +50,13 @@ public final class BankCommand implements CommandExecutor, TabCompleter {
 				int amount = parseAmount(args.length > 1 ? args[1] : null);
 				bank.depositHand(player, amount);
 			}
+			case "depositall", "deposit-all", "all", "全部", "存全部" -> {
+				if (!(sender instanceof Player player)) {
+					sender.sendMessage("只有玩家可以存入物品。");
+					return true;
+				}
+				bank.depositInventory(player);
+			}
 			case "withdraw", "take", "out", "取" -> {
 				if (!(sender instanceof Player player)) {
 					sender.sendMessage("只有玩家可以取出物品。");
@@ -109,7 +116,7 @@ public final class BankCommand implements CommandExecutor, TabCompleter {
 					+ String.join("、", bank.acceptedCategoryIds()));
 			}
 			default -> {
-				sender.sendMessage("用法：/bank [deposit [数量|all] | withdraw <商品> [数量] "
+				sender.sendMessage("用法：/bank [deposit [数量|all] | depositall | withdraw <商品> [数量] "
 					+ "| value <商品> | balance | reload]");
 			}
 		}
@@ -136,7 +143,7 @@ public final class BankCommand implements CommandExecutor, TabCompleter {
 	) {
 		if (args.length == 1) {
 			return filter(
-				List.of("deposit", "withdraw", "value", "balance", "reload"),
+				List.of("deposit", "depositall", "withdraw", "value", "balance", "reload"),
 				args[0]
 			);
 		}

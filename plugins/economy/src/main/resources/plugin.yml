@@ -44,7 +44,7 @@ commands:
     usage: /trade <玩家> | /trade accept <玩家>
   bank:
     description: "建材银行：存入建材换算额度，取出同类建材或抵扣商店消费"
-    usage: /bank [deposit [数量|all] | withdraw <商品> [数量] | value <商品> | balance | reload]
+    usage: /bank [deposit [数量|all] | depositall | withdraw <商品> [数量] | value <商品> | balance | reload]
     aliases: [matbank, jiancai]
     permission: economy.bank.use
   daily:

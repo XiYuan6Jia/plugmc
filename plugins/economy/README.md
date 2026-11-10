@@ -21,6 +21,7 @@ Paper 经济插件。当前版本使用**复式记账账本**：玩家余额、�
 | `/shop reload` | 重载 `goods.yml` 与商店配置 | `economy.shop.admin` |
 | `/bank` | 打开建材银行界面：存入建材换算额度、兑换同类建材 | `economy.bank.use`（默认所有玩家） |
 | `/bank deposit [数量\|all]` | 把主手建材存入银行 | `economy.bank.use` |
+| `/bank depositall` | 一键存入背包里所有可存建材 | `economy.bank.use` |
 | `/bank withdraw <商品> [数量\|all]` | 用额度取出/兑换建材 | `economy.bank.use` |
 | `/bank value [商品]` | 查看主手或指定商品的建材银行估值 | `economy.bank.use` |
 | `/bank balance` | 查看当前建材银行额度 | `economy.bank.use` |
@@ -195,10 +196,14 @@ items:
 | --- | --- |
 | `/bank` | 打开建材银行界面 |
 | `/bank deposit [数量\|all]` | 把主手建材存入银行（默认整组） |
+| `/bank depositall` | 一键把背包里所有可存入的建材批量存入 |
 | `/bank withdraw <商品> [数量\|all]` | 用额度取出/兑换建材 |
 | `/bank value [商品]` | 查看主手或指定商品的估值 |
 | `/bank balance` | 查看当前额度 |
 | `/bank reload` | 重载估值与配置（`economy.bank.admin`） |
+
+批量存入：`/bank depositall` 一次存入背包内所有可存建材；也可以在 `/bank` 主界面点「批量存入」，
+把多种建材放进上方 27 格后点「一键全部存入」，不支持的物品会留在格子里，关界面时退回背包。
 
 估值规则（参考开源等价交换 ProjectE 的思路）：
 
