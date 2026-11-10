@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import argparse
 import fnmatch
+import json
 import pathlib
 import re
 import subprocess
@@ -236,6 +237,47 @@ def wait_ready_after_restart(api: "dt.Api", before: str, timeout: int) -> str:
     sys.exit("服务端未在限定时间内就绪")
 
 
+def announce_restart(api: "dt.Api", seconds: int) -> None:
+    """重启前用 tellraw @a 发全服倒计时公告。"""
+    print(f"==> 全服公告：{seconds} 秒后重启")
+    marks: list[int] = []
+    remaining = seconds
+    while remaining > 0:
+        marks.append(remaining)
+        if remaining > 60:
+            remaining -= 30
+        elif remaining > 30:
+            remaining -= 15
+        elif remaining > 10:
+            remaining -= 5
+        else:
+            remaining -= 1
+    marks.append(0)
+
+    started = time.time()
+    for mark in marks:
+        delay = (seconds - mark) - (time.time() - started)
+        if delay > 0:
+            time.sleep(delay)
+        if mark == 0:
+            text = "§c[服务器]§f 服务器即将重启…"
+        elif mark == seconds:
+            text = (
+                f"§e[服务器]§f 服务器将在 §e{mark}§f 秒后重启，更新插件与配置，"
+                "请及时回到安全位置。"
+            )
+        elif mark <= 10:
+            text = f"§c[服务器]§f §e{mark}§f 秒后重启…"
+        else:
+            text = f"§e[服务器]§f 服务器将在 §e{mark}§f 秒后重启。"
+        command = "tellraw @a " + json.dumps({"text": text}, ensure_ascii=False)
+        try:
+            api.request("POST", "/command", json={"command": command})
+        except SystemExit as exc:
+            print(f"    公告发送失败：{exc}")
+        print(f"    [{mark}s] 已发送公告")
+
+
 def report(log: str, plugins: list[Plugin]) -> None:
     print("==> 日志校验")
     lowered = log.lower()
@@ -337,6 +379,12 @@ def main() -> None:
         help="跳过部署前的线上插件数据备份（默认备份到 .local/backup/remote-<时间>/）",
     )
     parser.add_argument("--upload-only", action="store_true", help="只上传，不重启")
+    parser.add_argument(
+        "--announce-seconds",
+        type=int,
+        default=0,
+        help="重启前发送全服倒计时公告的秒数（0 表示不公告）",
+    )
     parser.add_argument("--check-only", action="store_true", help="只读日志校验，不上传")
     parser.add_argument("--timeout", type=int, default=300, help="等待就绪的秒数（默认 300）")
     args = parser.parse_args()
@@ -389,6 +437,9 @@ def main() -> None:
             print(f"    {remote}")
         print("    未重启（重启后生效）")
         return
+
+    if args.announce_seconds > 0:
+        announce_restart(api, args.announce_seconds)
 
     print("==> 重启实例")
     before = api.log()

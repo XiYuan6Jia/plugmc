@@ -7,6 +7,11 @@
 
 - `demo/`：最小示例，注册一条命令，用于验证构建、部署与本地开发服链路。
 - `tpa/`：申请传送，`/tpa`、`/tpahere` 发起申请，对方在聊天栏一键接受/拒绝，带读秒热身与冷却，详见 [tpa/README.md](tpa/README.md)。
+- `sethome/`：家园与死亡点传送，`/sethome`、`/home`、`/delhome`、`/homes`、`/deathpoint`，
+  带传送读秒/冷却与可点击的死亡点按钮，详见 [sethome/README.md](sethome/README.md)。
+- `sleepvote/`：入睡半径，半径内达到比例的玩家入睡后跳过夜晚，详见 [sleepvote/README.md](sleepvote/README.md)。
+- `anti-xray/`：反矿物透视，隐藏矿挖掘预警 + `/antixray apply` 管理 Paper 内置防透视配置，
+  详见 [anti-xray/README.md](anti-xray/README.md)。
 - `hub/`：主城大厅，启动时创建独立虚空维度 `hub` 并用代码生成一座带喷泉/柱子/天窗的大厅，
   `/hub` 进入、`/hub back` 返回原位置，禁建造/禁 PvP/禁刷怪/掉虚空拉回，
   东门外还有 20 段跳台的跑酷赛道（`/hub parkour`），详见 [hub/README.md](hub/README.md)。
