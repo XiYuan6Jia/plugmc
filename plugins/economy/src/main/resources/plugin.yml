@@ -29,7 +29,7 @@ commands:
     aliases: [marketplace]
   mail:
     description: "邮箱"
-    usage: /mail [claim <id|all>]
+    usage: /mail [claim <id|all>] | /mail give <玩家> <物品> <数量>
     aliases: [mailbox]
   order:
     description: "收购订单"
@@ -71,6 +71,9 @@ permissions:
   economy.mail.use:
     description: "使用邮箱"
     default: true
+  economy.mail.admin:
+    description: "给玩家邮箱投递物品（补偿/发放）"
+    default: op
   economy.order.use:
     description: "使用收购订单"
     default: true

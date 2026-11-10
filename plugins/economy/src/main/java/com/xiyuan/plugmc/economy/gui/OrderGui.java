@@ -97,7 +97,8 @@ public final class OrderGui {
 			});
 		} else {
 			holder.set(20, item(Material.LIME_STAINED_GLASS_PANE, "&a交付 1 个", List.of(
-				"&7从背包扣除对应物品"
+				"&7从背包扣除对应物品",
+				"&8物品送达买方邮箱，钱立即到账"
 			)), p -> fill(p, id, 1, false, backPage));
 			holder.set(21, item(Material.LIME_STAINED_GLASS_PANE, "&a交付 16 个", List.of()), p ->
 				fill(p, id, 16, false, backPage));

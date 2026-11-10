@@ -144,7 +144,13 @@ public final class EconomyPlugin extends JavaPlugin implements Listener {
 			marketService = new MarketService(this, ledger, store, mailService, marketConfig);
 			registerCommand("market", new MarketCommand(marketService, new MarketGui(marketService, chatPrompt)));
 			registerCommand("mail", new MailCommand(mailService, new MailGui(mailService)));
-			orderService = new OrderService(this, ledger, store, OrderConfig.load(getConfig(), config.decimalPlaces()));
+			orderService = new OrderService(
+				this,
+				ledger,
+				store,
+				mailService,
+				OrderConfig.load(getConfig(), config.decimalPlaces())
+			);
 			registerCommand("order", new OrderCommand(orderService, new OrderGui(orderService, chatPrompt)));
 			auctionService = new AuctionService(
 				this,

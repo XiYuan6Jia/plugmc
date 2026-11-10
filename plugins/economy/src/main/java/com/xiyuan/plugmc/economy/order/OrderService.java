@@ -8,6 +8,7 @@ import com.xiyuan.plugmc.economy.internal.JournalRecord;
 import com.xiyuan.plugmc.economy.internal.LedgerService;
 import com.xiyuan.plugmc.economy.internal.Money;
 import com.xiyuan.plugmc.economy.internal.Settlement;
+import com.xiyuan.plugmc.economy.mail.MailService;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -32,13 +33,21 @@ public final class OrderService {
 	private final JavaPlugin plugin;
 	private final LedgerService ledger;
 	private final EconomyStore store;
+	private final MailService mail;
 	private final java.util.Set<Long> remindedExpiring = java.util.concurrent.ConcurrentHashMap.newKeySet();
 	private volatile OrderConfig config;
 
-	public OrderService(JavaPlugin plugin, LedgerService ledger, EconomyStore store, OrderConfig config) {
+	public OrderService(
+		JavaPlugin plugin,
+		LedgerService ledger,
+		EconomyStore store,
+		MailService mail,
+		OrderConfig config
+	) {
 		this.plugin = plugin;
 		this.ledger = ledger;
 		this.store = store;
+		this.mail = mail;
 		this.config = config;
 	}
 
@@ -254,7 +263,8 @@ public final class OrderService {
 
 		player.sendMessage("已发布收购订单 #" + id + "：" + finalAmount + " 个 "
 			+ template.getType().name() + "，单价 " + ledger.format(price)
-			+ "，已托管 " + ledger.format(total) + "（手续费 " + ledger.format(fee) + "）。");
+			+ "，已托管 " + ledger.format(total) + "（手续费 " + ledger.format(fee) + "）。"
+			+ "有人交付后物品会送达你的邮箱（背包有空位时自动放入）。");
 		return true;
 	}
 
@@ -272,6 +282,10 @@ public final class OrderService {
 			player.sendMessage("不能交付自己的收购订单。");
 			return false;
 		}
+		if (!mail.canAccept(order.buyer())) {
+			player.sendMessage("买方邮箱已满，暂时无法交付，请稍后再试。");
+			return false;
+		}
 
 		int amount = all ? order.remaining() : Math.min(Math.max(1, requestedAmount), order.remaining());
 		List<int[]> picked = new ArrayList<>();
@@ -285,9 +299,13 @@ public final class OrderService {
 			return false;
 		}
 
-		ItemStack[] snapshot = player.getInventory().getStorageContents();
+		ItemStack delivered = order.template().clone();
+		delivered.setAmount(amount);
+		MailService.PreparedMail prepared = mail.prepareItem(order.buyer(), delivered, "ORDER_FILL");
+
+		ItemStack[] snapshot = cloneContents(player.getInventory().getStorageContents());
 		withdraw(player, picked);
-		if (!paySeller(player, order, amount)) {
+		if (!paySeller(player, order, amount, prepared)) {
 			player.getInventory().setStorageContents(snapshot);
 			player.sendMessage("交付失败，物品已退回。");
 			return false;
@@ -297,8 +315,10 @@ public final class OrderService {
 			+ "，获得 " + ledger.format(netAmount(order.unitPrice(), amount)) + "。");
 		Player buyer = plugin.getServer().getPlayer(order.buyer());
 		if (buyer != null) {
+			mail.tryAutoClaim(buyer, prepared.entry().id());
 			buyer.sendMessage("你的收购订单 #" + id + " 已收到 " + amount + " 个 "
-				+ order.template().getType().name() + "，剩余 " + Math.max(0, order.remaining() - amount) + " 个。");
+				+ order.template().getType().name() + "，剩余 " + Math.max(0, order.remaining() - amount)
+				+ " 个（背包有空位时自动放入，否则请用 /mail 领取）。");
 		}
 		return true;
 	}
@@ -315,7 +335,7 @@ public final class OrderService {
 		return true;
 	}
 
-	private boolean paySeller(Player seller, BuyOrder order, int amount) {
+	private boolean paySeller(Player seller, BuyOrder order, int amount, MailService.PreparedMail prepared) {
 		BigDecimal gross = total(order.unitPrice(), amount);
 		Settlement settlement = Settlement.of(gross, config.taxRate(), ledger.decimalPlaces());
 		BigDecimal tax = settlement.tax();
@@ -329,13 +349,17 @@ public final class OrderService {
 		}
 
 		int remaining = order.remaining() - amount;
-		List<JournalRecord.StateOp> ops = remaining <= 0
-			? List.of(new JournalRecord.StateOp("ORDER_REMOVE", Long.toString(order.id()), null))
-			: List.of(new JournalRecord.StateOp(
+		List<JournalRecord.StateOp> ops = new ArrayList<>();
+		if (remaining <= 0) {
+			ops.add(new JournalRecord.StateOp("ORDER_REMOVE", Long.toString(order.id()), null));
+		} else {
+			ops.add(new JournalRecord.StateOp(
 				"ORDER_UPDATE",
 				Long.toString(order.id()),
 				GSON.toJson(order.withRemaining(remaining, BuyOrder.Status.ACTIVE).toDto())
 			));
+		}
+		ops.add(prepared.stateOp());
 		return ledger.commitEntries(entries, ops, "ORDER_FILL", Long.toString(order.id()));
 	}
 
@@ -412,6 +436,14 @@ public final class OrderService {
 			}
 		}
 		player.getInventory().setStorageContents(contents);
+	}
+
+	private ItemStack[] cloneContents(ItemStack[] contents) {
+		ItemStack[] copy = new ItemStack[contents.length];
+		for (int slot = 0; slot < contents.length; slot++) {
+			copy[slot] = contents[slot] == null ? null : contents[slot].clone();
+		}
+		return copy;
 	}
 
 	private BigDecimal total(BigDecimal unitPrice, int amount) {

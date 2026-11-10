@@ -28,6 +28,7 @@ Paper 经济插件。当前版本使用**复式记账账本**：玩家余额、�
 | `/market reload` | 重载市场配置 | `economy.market.admin` |
 | `/mail` | 打开邮箱 GUI | `economy.mail.use`（默认所有玩家） |
 | `/mail claim <id\|all>` | 领取邮件 | `economy.mail.use` |
+| `/mail give <玩家> <物品> <数量>` | 管理端把物品投递到玩家邮箱（补偿/发放） | `economy.mail.admin` |
 | `/order` | 列出进行中的收购订单 | `economy.order.use`（默认所有玩家） |
 | `/order create <单价> <数量\|all>` | 手持物品作为样本，托管资金发布收购订单 | `economy.order.use` |
 | `/order fill <编号> [数量\|all]` | 用背包中的物品交付收购订单 | `economy.order.use` |
@@ -190,6 +191,8 @@ items:
   余额与「最大可买」；也可以一键设为按余额能买的最大数量。
 - 交付：卖方用 `/order fill <编号> [数量|all]`，系统从背包按顺序扣除匹配物品
   （与原版 `isSimilar` 一致），买家托管资金即时结算给卖方，成交税从卖方所得扣除。
+  物品与资金在同一次账本事务里提交：物品投递到买家邮箱（`ORDER_FILL`），
+  买家在线且背包有空位时立即自动领取；买家邮箱已满时交付会被拒绝，物品不会丢失。
 - 取消或过期时，未成交部分的托管资金原额退回买家余额；订单不会产生负数账户。
 - 买家不能交付自己的订单；单个玩家同时进行的订单数受 `orders.slots` 限制。
 - 托管资金的每一次进出都记入账本，`/eco doctor` 可校验 `escrow:ORDER` 与总账平衡。
