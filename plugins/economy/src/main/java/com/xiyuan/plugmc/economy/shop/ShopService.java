@@ -93,13 +93,18 @@ public final class ShopService {
 			return false;
 		}
 
-		BigDecimal bankPaid = bank == null
-			? BigDecimal.ZERO
-			: bank.debitForShop(player, item, charge);
+		BigDecimal bankPaid = BigDecimal.ZERO;
+		BankService.BankPayment bankPayment = null;
+		if (bank != null) {
+			bankPayment = bank.debitForShop(player, item, charge);
+			if (!bankPayment.isEmpty()) {
+				bankPaid = bankPayment.amount();
+			}
+		}
 		BigDecimal moneyDue = charge.subtract(bankPaid);
 		if (ledger.balance(player.getUniqueId()).compareTo(moneyDue) < 0) {
-			if (bank != null && bankPaid.signum() > 0) {
-				bank.refund(player, bankPaid);
+			if (bank != null && !bankPayment.isEmpty()) {
+				bank.refund(player, bankPayment, bankPaid);
 			}
 			player.sendMessage("余额不足，本次需要 " + ledger.format(moneyDue)
 				+ "（货款 " + ledger.format(total) + " + 交易税 " + ledger.format(tax)
@@ -122,8 +127,8 @@ public final class ShopService {
 			"SHOP_BUY",
 			item.id()
 		)) {
-			if (bank != null && bankPaid.signum() > 0) {
-				bank.refund(player, bankPaid);
+			if (bank != null && !bankPayment.isEmpty()) {
+				bank.refund(player, bankPayment, bankPaid);
 			}
 			player.sendMessage("余额不足，购买已取消。");
 			return false;
@@ -139,7 +144,7 @@ public final class ShopService {
 			BigDecimal bankRefund = bankPaid.min(refundTotal);
 			BigDecimal moneyRefund = refundTotal.subtract(bankRefund);
 			if (bank != null && bankRefund.signum() > 0) {
-				bank.refund(player, bankRefund);
+				bank.refund(player, bankPayment, bankRefund);
 			}
 			if (moneyRefund.signum() > 0) {
 				ledger.commitEntries(
@@ -435,8 +440,9 @@ public final class ShopService {
 			+ " / 件（另收 " + settings.taxPercent() + "% 交易税）。");
 		if (bank != null && bank.accepts(item)) {
 			player.sendMessage("建材银行估值 " + ledger.format(bank.money(bank.valueOf(item)))
-				+ " / 件，购买时优先用银行额度抵扣（当前额度 "
-				+ ledger.format(bank.creditMoney(player)) + "）。");
+				+ " / 件，本类额度 "
+				+ ledger.format(bank.money(bank.availableOf(player.getUniqueId(), item.category())))
+				+ "，购买时优先抵扣。");
 		}
 		if (!item.sellable()) {
 			player.sendMessage(sellableHint() + "此物品不回收。");

@@ -100,10 +100,22 @@ public final class BankCommand implements CommandExecutor, TabCompleter {
 				}
 			}
 			case "balance", "额度" -> {
-				if (sender instanceof Player player) {
-					player.sendMessage("建材银行额度：" + bank.format(bank.creditOf(player.getUniqueId())));
-				} else {
+				if (!(sender instanceof Player player)) {
 					sender.sendMessage("只有玩家可以查询银行额度。");
+					return true;
+				}
+				player.sendMessage("建材银行总额度："
+					+ bank.format(bank.creditOf(player.getUniqueId())));
+				for (com.xiyuan.plugmc.economy.shop.ShopCategory category : bank.categories()) {
+					long points = bank.creditOf(player.getUniqueId(), category.id());
+					if (points > 0) {
+						player.sendMessage(" - " + category.displayName() + "："
+							+ bank.format(points));
+					}
+				}
+				long legacy = bank.creditOf(player.getUniqueId(), BankPools.LEGACY);
+				if (legacy > 0) {
+					player.sendMessage(" - 历史额度：" + bank.format(legacy) + "（可跨类使用）");
 				}
 			}
 			case "reload" -> {
@@ -115,9 +127,17 @@ public final class BankCommand implements CommandExecutor, TabCompleter {
 				sender.sendMessage("建材银行配置已重载，可用分类："
 					+ String.join("、", bank.acceptedCategoryIds()));
 			}
+			case "save" -> {
+				if (!sender.hasPermission("economy.bank.admin")) {
+					sender.sendMessage("你没有权限保存建材银行数据。");
+					return true;
+				}
+				bank.save();
+				sender.sendMessage("建材银行数据已保存。");
+			}
 			default -> {
 				sender.sendMessage("用法：/bank [deposit [数量|all] | depositall | withdraw <商品> [数量] "
-					+ "| value <商品> | balance | reload]");
+					+ "| value <商品> | balance | reload | save]");
 			}
 		}
 		return true;
@@ -143,7 +163,7 @@ public final class BankCommand implements CommandExecutor, TabCompleter {
 	) {
 		if (args.length == 1) {
 			return filter(
-				List.of("deposit", "depositall", "withdraw", "value", "balance", "reload"),
+				List.of("deposit", "depositall", "withdraw", "value", "balance", "reload", "save"),
 				args[0]
 			);
 		}

@@ -85,7 +85,8 @@ public final class BankDepositGui {
 			"&7Shift+点击输入区可整组取回",
 			"&7点击下方「一键全部存入」",
 			"&7只收商店目录内的干净建材",
-			"&7当前额度：&e" + bank.format(bank.creditOf(player.getUniqueId())),
+			"&7按分类分别记账，只能换同类建材",
+			"&7总额度：&e" + bank.format(bank.creditOf(player.getUniqueId())),
 			"&7不支持的物品会留在格子里"
 		));
 	}

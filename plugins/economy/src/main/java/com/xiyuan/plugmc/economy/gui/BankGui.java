@@ -1,6 +1,7 @@
 package com.xiyuan.plugmc.economy.gui;
 
 import com.xiyuan.plugmc.economy.bank.BankItems;
+import com.xiyuan.plugmc.economy.bank.BankPools;
 import com.xiyuan.plugmc.economy.bank.BankService;
 import com.xiyuan.plugmc.economy.shop.ShopCategory;
 import com.xiyuan.plugmc.economy.shop.ShopItem;
@@ -12,6 +13,7 @@ import org.bukkit.inventory.meta.ItemMeta;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * 建材银行界面：主界面按分类进入，商品页左键兑换、右键存入。
@@ -32,11 +34,7 @@ public final class BankGui {
 		}
 		EconomyMenuHolder holder = new EconomyMenuHolder(6, "&8建材银行");
 		holder.fill(filler());
-		holder.set(4, button(Material.GOLD_INGOT, "&6建材银行额度", List.of(
-			"&7当前额度：&e" + bank.format(bank.creditOf(player.getUniqueId())),
-			"&7额度 = 建材按合成表折算的价值",
-			"&7在系统商店购买建材时自动抵扣金币"
-		)), null);
+		holder.set(4, button(Material.GOLD_INGOT, "&6建材银行额度", poolLore(player)), null);
 		holder.setClick(20, button(Material.CHEST, "&a存入主手物品", List.of(
 			"&7把主手整组建材存入银行",
 			"&7Shift+点击只存 1 个",
@@ -63,6 +61,9 @@ public final class BankGui {
 		for (int index = 0; index < categories.size() && index < slots.length; index++) {
 			ShopCategory category = categories.get(index);
 			holder.set(slots[index], button(category.icon(), "&6" + category.displayName(), List.of(
+				"&7本类额度：&e" + bank.format(
+					bank.creditOf(player.getUniqueId(), category.id())
+				),
 				"&7浏览该分类下的建材",
 				"&8左键兑换 · 右键存入"
 			)), p -> openCategory(p, category, 0));
@@ -122,7 +123,8 @@ public final class BankGui {
 
 	private ItemStack itemIcon(Player player, ShopItem item) {
 		long unit = bank.valueOf(item);
-		long credit = bank.creditOf(player.getUniqueId());
+		String category = BankPools.normalize(item.category());
+		long credit = bank.availableOf(player.getUniqueId(), category);
 		int stackSize = Math.max(1, item.material().getMaxStackSize());
 		ItemStack icon = item.createStack(1);
 		ItemMeta meta = icon.getItemMeta();
@@ -130,7 +132,7 @@ public final class BankGui {
 			meta.displayName(MenuText.component("&f" + item.id()));
 			List<String> lore = new ArrayList<>();
 			lore.add("&7估值：&e" + bank.format(unit) + " &7/ 个");
-			lore.add("&7当前额度：&e" + bank.format(credit));
+			lore.add("&7" + bank.categoryName(category) + "额度：&e" + bank.format(credit));
 			lore.add("&7背包内可存：&f" + countPlain(player, item) + " 个");
 			lore.add("&7单次最多可兑：&f"
 				+ (int) Math.min(credit / Math.max(1, unit), bank.config().maxPerOperation()) + " 个");
@@ -143,6 +145,26 @@ public final class BankGui {
 			icon.setItemMeta(meta);
 		}
 		return icon;
+	}
+
+	private List<String> poolLore(Player player) {
+		UUID id = player.getUniqueId();
+		List<String> lore = new ArrayList<>();
+		lore.add("&7总额度：&e" + bank.format(bank.creditOf(id)));
+		for (ShopCategory category : bank.categories()) {
+			long points = bank.creditOf(id, category.id());
+			if (points > 0) {
+				lore.add("&7" + category.displayName() + "：&e" + bank.format(points));
+			}
+		}
+		long legacy = bank.creditOf(id, BankPools.LEGACY);
+		if (legacy > 0) {
+			lore.add("&7历史额度：&e" + bank.format(legacy) + " &8(可跨类使用)");
+		}
+		lore.add("&8");
+		lore.add("&7额度按分类记账，只能在本分类内兑换");
+		lore.add("&7在系统商店购买同分类建材时自动抵扣");
+		return lore;
 	}
 
 	private int countPlain(Player player, ShopItem item) {

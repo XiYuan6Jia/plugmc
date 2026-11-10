@@ -57,7 +57,7 @@ public final class BankService {
 	private final ShopService shop;
 	private final int decimalPlaces;
 	private final File file;
-	private final Map<UUID, Long> credit = new HashMap<>();
+	private final Map<UUID, Map<String, Long>> pools = new HashMap<>();
 	private final Map<UUID, String> names = new HashMap<>();
 	private final Set<Material> acceptedMaterials = new HashSet<>();
 	private volatile BankConfig config;
@@ -95,7 +95,7 @@ public final class BankService {
 	}
 
 	private void loadCredit() {
-		credit.clear();
+		pools.clear();
 		names.clear();
 		if (!file.isFile()) {
 			return;
@@ -112,20 +112,47 @@ public final class BankService {
 			} catch (IllegalArgumentException exception) {
 				continue;
 			}
-			credit.put(id, Math.max(0L, players.getLong(key + ".credit", 0L)));
+			Map<String, Long> playerPools = new HashMap<>();
+			ConfigurationSection sections = players.getConfigurationSection(key + ".credit");
+			if (sections != null) {
+				for (String category : sections.getKeys(false)) {
+					long points = Math.max(0L, sections.getLong(category, 0L));
+					if (points > 0) {
+						playerPools.put(BankPools.normalize(category), points);
+					}
+				}
+			} else {
+				// 旧版本单池数据：迁移成历史额度，可继续跨分类使用直到用完
+				long legacy = Math.max(0L, players.getLong(key + ".credit", 0L));
+				if (legacy > 0) {
+					playerPools.put(BankPools.LEGACY, legacy);
+				}
+			}
+			pools.put(id, playerPools);
 			String name = players.getString(key + ".name");
 			if (name != null && !name.isBlank()) {
 				names.put(id, name);
 			}
 		}
-		plugin.getLogger().info("建材银行数据已加载：" + credit.size() + " 名玩家");
+		long legacyPlayers = pools.values().stream()
+			.filter(playerPools -> BankPools.legacy(playerPools) > 0)
+			.count();
+		if (legacyPlayers > 0) {
+			plugin.getLogger().info("建材银行检测到 " + legacyPlayers
+				+ " 名玩家的旧版总额度，已迁移为历史额度（可继续跨分类使用直到用完）");
+		}
+		plugin.getLogger().info("建材银行数据已加载：" + pools.size() + " 名玩家");
 	}
 
 	public void save() {
 		YamlConfiguration yaml = new YamlConfiguration();
-		credit.forEach((id, points) -> {
+		pools.forEach((id, playerPools) -> {
 			String base = ROOT + id;
-			yaml.set(base + ".credit", points);
+			playerPools.forEach((category, points) -> {
+				if (points != null && points > 0) {
+					yaml.set(base + ".credit." + category, points);
+				}
+			});
 			String name = names.get(id);
 			if (name != null && !name.isBlank()) {
 				yaml.set(base + ".name", name);
@@ -236,12 +263,20 @@ public final class BankService {
 		return result;
 	}
 
-	public long creditOf(UUID id) {
-		return credit.getOrDefault(id, 0L);
+	public Map<String, Long> poolsOf(UUID id) {
+		return pools.computeIfAbsent(id, key -> new HashMap<>());
 	}
 
-	public BigDecimal creditMoney(Player player) {
-		return money(creditOf(player.getUniqueId()));
+	public long creditOf(UUID id) {
+		return BankPools.total(poolsOf(id));
+	}
+
+	public long creditOf(UUID id, String category) {
+		return BankPools.credit(poolsOf(id), category);
+	}
+
+	public long availableOf(UUID id, String category) {
+		return BankPools.available(poolsOf(id), category);
 	}
 
 	public BigDecimal money(long points) {
@@ -252,55 +287,95 @@ public final class BankService {
 		return shop.format(money(points));
 	}
 
-	private void addCredit(Player player, long points) {
+	/**
+	 * 分类的中文显示名（没有配置时退回分类 id）。
+	 */
+	public String categoryName(String category) {
+		String normalized = BankPools.normalize(category);
+		if (normalized.equals(BankPools.LEGACY)) {
+			return "历史额度";
+		}
+		for (ShopCategory shopCategory : shop.goods().categories()) {
+			if (BankPools.normalize(shopCategory.id()).equals(normalized)) {
+				return shopCategory.displayName();
+			}
+		}
+		return normalized;
+	}
+
+	private void addCredit(Player player, String category, long points) {
 		if (points <= 0) {
 			return;
 		}
 		names.put(player.getUniqueId(), player.getName());
-		credit.merge(player.getUniqueId(), points, Long::sum);
-	}
-
-	private void setCredit(UUID id, long points) {
-		credit.put(id, Math.max(0L, points));
+		BankPools.add(poolsOf(player.getUniqueId()), category, points);
 	}
 
 	/**
-	 * 商店结账时优先用银行额度抵扣，返回实际抵扣的金额（0 表示没有抵扣）。
+	 * 一次商店抵扣的组成，退款时按原路退回，避免额度跨分类漂移。
 	 */
-	public BigDecimal debitForShop(Player player, ShopItem item, BigDecimal charge) {
+	public record BankPayment(BigDecimal amount, String category, long fromCategory, long fromLegacy) {
+		public boolean isEmpty() {
+			return amount == null || amount.signum() <= 0;
+		}
+	}
+
+	/**
+	 * 商店结账时用该商品所属分类的额度抵扣，返回实际抵扣结果。
+	 */
+	public BankPayment debitForShop(Player player, ShopItem item, BigDecimal charge) {
 		if (!enabled() || !config.payShop() || !accepts(item) || charge == null
 			|| charge.signum() <= 0) {
-			return BigDecimal.ZERO;
+			return emptyPayment();
 		}
 		long required = charge.movePointRight(decimalPlaces).setScale(0, RoundingMode.DOWN)
 			.longValueExact();
 		if (required <= 0) {
-			return BigDecimal.ZERO;
+			return emptyPayment();
 		}
-		long available = creditOf(player.getUniqueId());
+		String category = BankPools.normalize(item.category());
+		Map<String, Long> playerPools = poolsOf(player.getUniqueId());
+		long available = BankPools.available(playerPools, category);
 		long used = Math.min(available, required);
 		if (used <= 0) {
-			return BigDecimal.ZERO;
+			return emptyPayment();
+		}
+		long beforeOwn = BankPools.credit(playerPools, category);
+		long spent = BankPools.spend(playerPools, category, used);
+		if (spent <= 0) {
+			return emptyPayment();
 		}
 		names.put(player.getUniqueId(), player.getName());
-		setCredit(player.getUniqueId(), available - used);
+		long fromCategory = Math.min(beforeOwn, spent);
 		save();
-		return money(used);
+		return new BankPayment(money(spent), category, fromCategory, spent - fromCategory);
+	}
+
+	private BankPayment emptyPayment() {
+		return new BankPayment(BigDecimal.ZERO, "", 0L, 0L);
 	}
 
 	/**
-	 * 取消交易时把已经抵扣的额度退回。
+	 * 取消交易时按原路退回额度（部分退款时按比例拆分）。
 	 */
-	public void refund(Player player, BigDecimal amount) {
-		if (amount == null || amount.signum() <= 0) {
+	public void refund(Player player, BankPayment payment, BigDecimal amount) {
+		if (payment == null || payment.isEmpty() || amount == null || amount.signum() <= 0) {
 			return;
 		}
-		long points = amount.movePointRight(decimalPlaces).setScale(0, RoundingMode.DOWN)
+		long requested = amount.movePointRight(decimalPlaces).setScale(0, RoundingMode.DOWN)
 			.longValueExact();
-		if (points <= 0) {
+		long totalPoints = payment.amount().movePointRight(decimalPlaces)
+			.setScale(0, RoundingMode.DOWN).longValueExact();
+		if (requested <= 0 || totalPoints <= 0) {
 			return;
 		}
-		addCredit(player, points);
+		long refund = Math.min(requested, totalPoints);
+		long own = refund >= totalPoints
+			? payment.fromCategory()
+			: refund * payment.fromCategory() / totalPoints;
+		long legacy = refund - own;
+		names.put(player.getUniqueId(), player.getName());
+		BankPools.refund(poolsOf(player.getUniqueId()), payment.category(), own, legacy);
 		save();
 	}
 
@@ -364,10 +439,13 @@ public final class BankService {
 			player.sendMessage("本次存入的估值不足 1 点，已取消。");
 			return 0;
 		}
-		addCredit(player, gain);
+		String category = BankPools.normalize(item.category());
+		addCredit(player, category, gain);
 		save();
 		player.sendMessage("已存入 " + collected + " 个 " + item.id() + "，获得额度 "
-			+ format(gain) + "，当前额度 " + format(creditOf(player.getUniqueId())) + "。");
+			+ format(gain) + "（" + categoryName(category) + "），当前"
+			+ categoryName(category) + "额度 "
+			+ format(creditOf(player.getUniqueId(), category)) + "。");
 		return collected;
 	}
 
@@ -381,7 +459,7 @@ public final class BankService {
 		}
 		ItemStack[] contents = player.getInventory().getStorageContents();
 		int remaining = config.maxPerOperation();
-		long gain = 0;
+		Map<String, Long> gains = new LinkedHashMap<>();
 		int count = 0;
 		Map<String, Integer> detail = new LinkedHashMap<>();
 		for (int slot = 0; slot < contents.length && remaining > 0; slot++) {
@@ -406,7 +484,7 @@ public final class BankService {
 				left.setAmount(stack.getAmount() - take);
 				player.getInventory().setItem(slot, left);
 			}
-			gain += gain(unit, take);
+			gains.merge(BankPools.normalize(item.category()), gain(unit, take), Long::sum);
 			count += take;
 			remaining -= take;
 			detail.merge(item.id(), take, Integer::sum);
@@ -415,10 +493,11 @@ public final class BankService {
 			player.sendMessage("背包里没有可存入的建材。");
 			return 0;
 		}
-		addCredit(player, gain);
+		gains.forEach((category, points) -> addCredit(player, category, points));
 		save();
 		player.sendMessage("已批量存入 " + detail.size() + " 种共 " + count + " 个建材"
-			+ summary(detail) + "，获得额度 " + format(gain) + "，当前额度 "
+			+ summary(detail) + "，获得额度 " + format(BankPools.total(gains))
+			+ gainsDetail(gains) + "，当前总额度 "
 			+ format(creditOf(player.getUniqueId())) + "。");
 		return count;
 	}
@@ -432,7 +511,7 @@ public final class BankService {
 			return 0;
 		}
 		int remaining = config.maxPerOperation();
-		long gain = 0;
+		Map<String, Long> gains = new LinkedHashMap<>();
 		int count = 0;
 		Map<String, Integer> detail = new LinkedHashMap<>();
 		for (ItemStack stack : offered) {
@@ -457,7 +536,7 @@ public final class BankService {
 				rest.setAmount(stack.getAmount() - take);
 				leftovers.add(rest);
 			}
-			gain += gain(unit, take);
+			gains.merge(BankPools.normalize(item.category()), gain(unit, take), Long::sum);
 			count += take;
 			remaining -= take;
 			detail.merge(item.id(), take, Integer::sum);
@@ -466,12 +545,34 @@ public final class BankService {
 			player.sendMessage("没有可以存入的建材，物品已退回。");
 			return 0;
 		}
-		addCredit(player, gain);
+		gains.forEach((category, points) -> addCredit(player, category, points));
 		save();
 		player.sendMessage("已批量存入 " + detail.size() + " 种共 " + count + " 个建材"
-			+ summary(detail) + "，获得额度 " + format(gain) + "，当前额度 "
+			+ summary(detail) + "，获得额度 " + format(BankPools.total(gains))
+			+ gainsDetail(gains) + "，当前总额度 "
 			+ format(creditOf(player.getUniqueId())) + "。");
 		return count;
+	}
+
+	private String gainsDetail(Map<String, Long> gains) {
+		if (gains.size() <= 1) {
+			return "";
+		}
+		StringBuilder builder = new StringBuilder("（");
+		int shown = 0;
+		for (Map.Entry<String, Long> entry : gains.entrySet()) {
+			if (shown == 4) {
+				builder.append("…");
+				break;
+			}
+			if (shown > 0) {
+				builder.append("、");
+			}
+			builder.append(categoryName(entry.getKey())).append(' ')
+				.append(format(entry.getValue()));
+			shown++;
+		}
+		return builder.append('）').toString();
 	}
 
 	private String summary(Map<String, Integer> detail) {
@@ -530,11 +631,13 @@ public final class BankService {
 			return 0;
 		}
 		int limit = Math.max(1, Math.min(requested, config.maxPerOperation()));
-		long available = creditOf(player.getUniqueId());
+		String category = BankPools.normalize(item.category());
+		long available = availableOf(player.getUniqueId(), category);
 		int affordable = (int) Math.min(limit, available / unit);
 		if (affordable <= 0) {
-			player.sendMessage("额度不足，兑换 1 个 " + item.id() + " 需要 " + format(unit)
-				+ "，当前额度 " + format(available) + "。");
+			player.sendMessage(categoryName(category) + "额度不足，兑换 1 个 " + item.id()
+				+ " 需要 " + format(unit) + "，当前" + categoryName(category) + "额度 "
+				+ format(available) + "。");
 			return 0;
 		}
 		List<ItemStack> stacks = split(item, affordable);
@@ -543,22 +646,34 @@ public final class BankService {
 			return 0;
 		}
 		long cost = unit * affordable;
-		setCredit(player.getUniqueId(), available - cost);
+		Map<String, Long> playerPools = poolsOf(player.getUniqueId());
+		long beforeOwn = BankPools.credit(playerPools, category);
+		long spent = BankPools.spend(playerPools, category, cost);
+		if (spent < cost) {
+			long fromOwn = Math.min(beforeOwn, spent);
+			BankPools.refund(playerPools, category, fromOwn, spent - fromOwn);
+			player.sendMessage("额度状态异常，已取消本次兑换。");
+			return 0;
+		}
+		long fromOwnSpent = Math.min(beforeOwn, spent);
 		Map<Integer, ItemStack> leftovers = player.getInventory()
 			.addItem(stacks.toArray(ItemStack[]::new));
 		int leftoverCount = InventoryUtil.count(leftovers);
 		if (leftoverCount > 0) {
 			long back = unit * leftoverCount;
-			addCredit(player, back);
-			player.sendMessage("背包放不下，已退回额度 " + format(back) + "。");
+			long backOwn = spent <= 0 ? back : back * fromOwnSpent / spent;
+			BankPools.refund(playerPools, category, backOwn, back - backOwn);
+			player.sendMessage("背包放不下，已退回" + categoryName(category) + "额度 "
+				+ format(back) + "。");
 		}
 		int given = affordable - leftoverCount;
 		save();
 		if (given > 0) {
 			names.put(player.getUniqueId(), player.getName());
-			player.sendMessage("已取出 " + given + " 个 " + item.id() + "，消耗额度 "
-				+ format(cost - unit * leftoverCount) + "，当前额度 "
-				+ format(creditOf(player.getUniqueId())) + "。");
+			player.sendMessage("已取出 " + given + " 个 " + item.id() + "，消耗"
+				+ categoryName(category) + "额度 "
+				+ format(cost - unit * leftoverCount) + "，当前" + categoryName(category)
+				+ "额度 " + format(creditOf(player.getUniqueId(), category)) + "。");
 		}
 		return given;
 	}
