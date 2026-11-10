@@ -1,0 +1,15 @@
+# 反矿物透视
+detection:
+  # 是否开启隐藏矿挖掘检测
+  enabled: true
+  # 统计窗口（分钟）
+  window-minutes: 10
+  # 窗口内至少挖到多少个「周围没有空气/液体」的矿石才预警
+  min-hidden-ores: 20
+  # 隐藏矿占其矿石挖掘总数的比例（0-1）
+  min-hidden-ratio: 0.75
+  # 同一玩家两次预警的最小间隔（分钟）
+  alert-cooldown-minutes: 10
+paper:
+  # /antixray apply 写入 Paper 防透视时使用的 engine-mode（1 或 2）
+  engine-mode: 1

@@ -1,0 +1,19 @@
+name: anti-xray
+version: '${version}'
+main: com.xiyuan.plugmc.antixray.AntiXrayPlugin
+api-version: '${api_version}'
+authors: [XiYuan6Jia]
+description: "反矿物透视：隐藏矿挖掘预警 + Paper 内置防透视配置管理"
+commands:
+  antixray:
+    description: "反透视状态与配置"
+    usage: /antixray [status [玩家]|apply|reload|reset [玩家]]
+    aliases: [ax]
+    permission: antixray.admin
+permissions:
+  antixray.admin:
+    description: "管理反透视插件"
+    default: op
+  antixray.notify:
+    description: "接收透视预警"
+    default: op
