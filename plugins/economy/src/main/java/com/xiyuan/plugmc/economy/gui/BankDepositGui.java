@@ -81,6 +81,8 @@ public final class BankDepositGui {
 	private ItemStack info(Player player) {
 		return button(Material.LANTERN, "&e批量存入", List.of(
 			"&7把建材放入上方 " + INPUT_SLOTS + " 格",
+			"&7Shift+点击背包物品可整组放入",
+			"&7Shift+点击输入区可整组取回",
 			"&7点击下方「一键全部存入」",
 			"&7只收商店目录内的干净建材",
 			"&7当前额度：&e" + bank.format(bank.creditOf(player.getUniqueId())),

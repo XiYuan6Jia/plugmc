@@ -47,6 +47,7 @@ public final class BankGui {
 		});
 		holder.set(22, button(Material.CHEST_MINECART, "&a批量存入", List.of(
 			"&7打开批量存入页，放入多种建材一键存入",
+			"&7支持 Shift+点击背包物品整组放入",
 			"&7也可以直接执行 &e/bank depositall",
 			"&7把背包里所有可存建材一次存入"
 		)), p -> depositGui.open(p));

@@ -79,6 +79,8 @@ public final class ShopSellGui {
 	private ItemStack info(Player player) {
 		return button(Material.LANTERN, "&e批量回收", List.of(
 			"&7把物品放入上方 " + INPUT_SLOTS + " 格",
+			"&7Shift+点击背包物品可整组放入",
+			"&7Shift+点击输入区可整组取回",
 			"&7点击下方「一键全部出售」",
 			"&7只回收：" + service.sellableSummary(),
 			"&7当前余额：&e" + service.format(service.balance(player)),
