@@ -138,16 +138,21 @@ public final class EconomyCommand implements CommandExecutor, TabCompleter {
 		if (amount == null) {
 			return;
 		}
-		if (!ledger.transfer(player.getUniqueId(), target.getUniqueId(), amount, "PAY", player.getName())) {
+		BigDecimal tax = config.payTax(amount, config.decimalPlaces());
+		BigDecimal net = amount.subtract(tax);
+		if (!ledger.transferWithTax(player.getUniqueId(), target.getUniqueId(), amount, tax, "PAY", player.getName())) {
 			sender.sendMessage(target.getUniqueId().equals(player.getUniqueId())
 				? "不能向自己转账。"
 				: "余额不足，当前余额：" + economy.format(economy.getBalance(player.getUniqueId())));
 			return;
 		}
 
-		sender.sendMessage("已向 " + target.getName() + " 转账 " + economy.format(amount) + "。");
+		sender.sendMessage("已向 " + target.getName() + " 转账 " + economy.format(amount)
+			+ "（交易税 " + economy.format(tax) + "，实际到账 " + economy.format(net) + "）。");
 		if (target.isOnline()) {
-			target.getPlayer().sendMessage("你收到了来自 " + player.getName() + " 的 " + economy.format(amount) + "。");
+			target.getPlayer().sendMessage("你收到了来自 " + player.getName() + " 的 "
+				+ economy.format(net) + "（转账 " + economy.format(amount)
+				+ "，交易税 " + economy.format(tax) + "）。");
 		}
 	}
 

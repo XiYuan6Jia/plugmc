@@ -215,6 +215,12 @@ public final class AuctionService {
 		int amount = all ? hand.getAmount() : Math.min(Math.max(1, requestedAmount), hand.getAmount());
 		ItemStack escrow = hand.clone();
 		escrow.setAmount(amount);
+		try {
+			ItemCodec.encodeVerified(escrow);
+		} catch (RuntimeException exception) {
+			player.sendMessage("物品无法托管：" + exception.getMessage());
+			return false;
+		}
 
 		BigDecimal fee = config.listingFee(start, ledger.decimalPlaces());
 		if (ledger.balance(player.getUniqueId()).compareTo(fee) < 0) {

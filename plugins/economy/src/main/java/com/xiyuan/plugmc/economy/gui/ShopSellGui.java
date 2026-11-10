@@ -80,8 +80,9 @@ public final class ShopSellGui {
 		return button(Material.LANTERN, "&e批量回收", List.of(
 			"&7把物品放入上方 " + INPUT_SLOTS + " 格",
 			"&7点击下方「一键全部出售」",
+			"&7只回收矿石原矿（煤炭、粗铁/粗金/粗铜、红石、青金石、钻石、绿宝石、石英）",
 			"&7当前余额：&e" + service.format(service.balance(player)),
-			"&7商店不回收的物品会留在格子里"
+			"&7不回收的物品会留在格子里"
 		));
 	}
 

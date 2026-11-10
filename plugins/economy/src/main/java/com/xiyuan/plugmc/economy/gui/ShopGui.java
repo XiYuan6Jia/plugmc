@@ -9,6 +9,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -164,18 +165,24 @@ public final class ShopGui {
 			openItem(p, item, page, back);
 		});
 
-		holder.set(29, sellButton(item, 1, sellRemaining), p -> {
-			service.sellFromInventory(p, item, 1, false);
-			openItem(p, item, page, back);
-		});
-		holder.set(30, sellButton(item, 16, sellRemaining), p -> {
-			service.sellFromInventory(p, item, 16, false);
-			openItem(p, item, page, back);
-		});
-		holder.set(31, sellButton(item, -1, sellRemaining), p -> {
-			service.sellFromInventory(p, item, 0, true);
-			openItem(p, item, page, back);
-		});
+		if (item.sellable()) {
+			holder.set(29, sellButton(item, 1, sellRemaining), p -> {
+				service.sellFromInventory(p, item, 1, false);
+				openItem(p, item, page, back);
+			});
+			holder.set(30, sellButton(item, 16, sellRemaining), p -> {
+				service.sellFromInventory(p, item, 16, false);
+				openItem(p, item, page, back);
+			});
+			holder.set(31, sellButton(item, -1, sellRemaining), p -> {
+				service.sellFromInventory(p, item, 0, true);
+				openItem(p, item, page, back);
+			});
+		} else {
+			holder.set(31, button(Material.BARRIER, "&8商店不回收此物品", List.of(
+				"&7系统商店只回收矿石原矿"
+			)), null);
+		}
 
 		holder.set(36, button(Material.ARROW, "&e返回", List.of()), back::accept);
 		holder.set(44, button(Material.BARRIER, "&c关闭", List.of()), Player::closeInventory);
@@ -196,11 +203,17 @@ public final class ShopGui {
 		ItemMeta meta = icon.getItemMeta();
 		if (meta != null) {
 			meta.displayName(MenuText.component("&f" + item.id()));
-			meta.lore(MenuText.components(List.of(
-				"&7买价：&e" + service.format(item.buyPrice()),
-				"&7回收：&e" + service.format(item.sellPrice()),
-				"&8点击查看详情"
-			)));
+			List<String> lore = new ArrayList<>();
+			lore.add("&7买价：&e" + service.format(item.buyPrice())
+				+ " &8(+" + service.taxPercent() + "% 税)");
+			if (item.sellable()) {
+				lore.add("&7回收：&e" + service.format(item.sellPrice())
+					+ " &8(-" + service.taxPercent() + "% 税)");
+			} else {
+				lore.add("&7回收：&8不回收（只收矿石原矿）");
+			}
+			lore.add("&8点击查看详情");
+			meta.lore(MenuText.components(lore));
 			icon.setItemMeta(meta);
 		}
 		return icon;
@@ -208,17 +221,23 @@ public final class ShopGui {
 
 	private ItemStack buyButton(ShopItem item, int amount, int remaining) {
 		BigDecimal cost = item.buyPrice().multiply(BigDecimal.valueOf(amount));
+		BigDecimal tax = service.taxFor(cost);
 		return button(Material.LIME_STAINED_GLASS_PANE, "&a购买 " + amount + " 个", List.of(
-			"&7花费：&e" + service.format(cost),
+			"&7花费：&e" + service.format(cost.add(tax)) + " &8(含税 " + service.format(tax) + ")",
 			"&7今日剩余：&f" + remainingText(remaining)
 		));
 	}
 
 	private ItemStack sellButton(ShopItem item, int amount, int remaining) {
 		String label = amount < 0 ? "出售背包内全部" : "出售 " + amount + " 个";
+		BigDecimal gross = amount < 0
+			? item.sellPrice()
+			: item.sellPrice().multiply(BigDecimal.valueOf(amount));
+		BigDecimal tax = service.taxFor(gross);
 		return button(Material.RED_STAINED_GLASS_PANE, "&c" + label, List.of(
 			"&7从背包（含快捷栏）扣除",
 			"&7单价：&e" + service.format(item.sellPrice()),
+			"&7到手：&e" + service.format(gross.subtract(tax)) + " &8(含税 " + service.format(tax) + ")",
 			"&7今日剩余：&f" + remainingText(remaining)
 		));
 	}

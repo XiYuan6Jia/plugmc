@@ -11,6 +11,11 @@ shop:
   daily-buy-limit: 256
   daily-sell-limit: 256
   allow-custom-items: false
+  # 系统商店交易税：买卖都按成交总额收取 3%
+  tax-rate: 0.03
+pay:
+  # /pay 转账税：从转账总额中扣除 3% 进入税收账户
+  tax-rate: 0.03
 market:
   enabled: true
   slots: 8

@@ -25,7 +25,8 @@ public final class LedgerSelfTest {
 			2,
 			new BigDecimal("100.00"),
 			300,
-			14
+			14,
+			0.03
 		);
 		InMemoryLedgerStore store = new InMemoryLedgerStore();
 		LedgerService ledger = new LedgerService(store, config);

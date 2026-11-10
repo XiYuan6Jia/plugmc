@@ -17,6 +17,7 @@ public record ShopItem(
 	int dailySellLimit,
 	List<String> aliases,
 	boolean exactMatch,
+	boolean sellable,
 	ItemStack template
 ) {
 	public ShopItem {

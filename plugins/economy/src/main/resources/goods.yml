@@ -1,3 +1,5 @@
+# sellable: 是否允许卖回系统商店。默认 false，只有矿石原矿开启；
+# 锭、方块和成品只能购买，不能回收。
 categories:
   building:
     display: "建筑"
@@ -6,7 +8,7 @@ categories:
   mineral:
     display: "矿物"
     icon: DIAMOND
-    items: [coal, iron_ingot, copper_ingot, gold_ingot, redstone, lapis_lazuli, diamond, emerald]
+    items: [coal, raw_copper, raw_iron, raw_gold, iron_ingot, copper_ingot, gold_ingot, redstone, lapis_lazuli, diamond, emerald, quartz]
   food:
     display: "食物"
     icon: BREAD
@@ -56,6 +58,7 @@ items:
     material: COAL
     buy: "8.00"
     sell: "4.00"
+    sellable: true
     daily-buy: 256
     daily-sell: 256
     aliases: [煤炭, 煤]
@@ -84,6 +87,7 @@ items:
     material: REDSTONE
     buy: "6.00"
     sell: "3.00"
+    sellable: true
     daily-buy: 256
     daily-sell: 256
     aliases: [红石]
@@ -91,6 +95,7 @@ items:
     material: LAPIS_LAZULI
     buy: "12.00"
     sell: "6.00"
+    sellable: true
     daily-buy: 256
     daily-sell: 256
     aliases: [青金石]
@@ -98,6 +103,7 @@ items:
     material: DIAMOND
     buy: "120.00"
     sell: "60.00"
+    sellable: true
     daily-buy: 64
     daily-sell: 64
     aliases: [钻石]
@@ -105,6 +111,7 @@ items:
     material: EMERALD
     buy: "100.00"
     sell: "50.00"
+    sellable: true
     daily-buy: 64
     daily-sell: 64
     aliases: [绿宝石]
@@ -171,3 +178,35 @@ items:
     daily-buy: 256
     daily-sell: 256
     aliases: [火药]
+  raw_copper:
+    material: RAW_COPPER
+    buy: "10.00"
+    sell: "5.00"
+    sellable: true
+    daily-buy: 256
+    daily-sell: 256
+    aliases: [粗铜, 铜原矿]
+  raw_iron:
+    material: RAW_IRON
+    buy: "24.00"
+    sell: "12.00"
+    sellable: true
+    daily-buy: 256
+    daily-sell: 256
+    aliases: [粗铁, 铁原矿]
+  raw_gold:
+    material: RAW_GOLD
+    buy: "32.00"
+    sell: "16.00"
+    sellable: true
+    daily-buy: 128
+    daily-sell: 128
+    aliases: [粗金, 金原矿]
+  quartz:
+    material: QUARTZ
+    buy: "10.00"
+    sell: "5.00"
+    sellable: true
+    daily-buy: 256
+    daily-sell: 256
+    aliases: [下界石英, 石英]

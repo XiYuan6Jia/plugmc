@@ -232,6 +232,12 @@ public final class OrderService {
 		long id = store.nextOrderId();
 		ItemStack template = templateStack.clone();
 		template.setAmount(1);
+		try {
+			ItemCodec.encodeVerified(template);
+		} catch (RuntimeException exception) {
+			player.sendMessage("物品无法托管：" + exception.getMessage());
+			return false;
+		}
 
 		BuyOrder order = new BuyOrder(
 			id,

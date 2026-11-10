@@ -159,7 +159,7 @@ public final class MarketService {
 		dto.seller = player.getUniqueId().toString();
 		dto.sellerName = player.getName();
 		try {
-			dto.item = ItemCodec.encode(escrow);
+			dto.item = ItemCodec.encodeVerified(escrow);
 		} catch (RuntimeException exception) {
 			player.sendMessage("物品无法托管：" + exception.getMessage());
 			return false;

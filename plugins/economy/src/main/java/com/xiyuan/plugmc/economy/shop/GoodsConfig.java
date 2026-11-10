@@ -104,6 +104,7 @@ public final class GoodsConfig {
 
 			String category = findCategory(categories, key);
 			boolean exact = "exact".equalsIgnoreCase(section.getString("match", "material"));
+			boolean sellable = section.getBoolean("sellable", false);
 			ItemStack template = buildTemplate(material, section);
 			ShopItem item = new ShopItem(
 				key,
@@ -115,6 +116,7 @@ public final class GoodsConfig {
 				dailySell,
 				section.getStringList("aliases"),
 				exact,
+				sellable,
 				template
 			);
 			items.put(key, item);
@@ -214,6 +216,15 @@ public final class GoodsConfig {
 			}
 		}
 		return null;
+	}
+
+	/**
+	 * 回收匹配：只有 goods.yml 中标注 sellable: true 的商品才允许卖给商店，
+	 * 默认只给矿石原矿开启，避免把锭、方块和成品卖回系统。
+	 */
+	public ShopItem matchSellable(ItemStack stack, boolean allowCustomItems) {
+		ShopItem item = match(stack, allowCustomItems);
+		return item != null && item.sellable() ? item : null;
 	}
 
 	public List<ShopItem> itemsForCategory(String categoryId) {

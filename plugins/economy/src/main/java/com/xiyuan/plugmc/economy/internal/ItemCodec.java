@@ -34,4 +34,16 @@ public final class ItemCodec {
 			throw new IllegalArgumentException("物品数据无法解析", exception);
 		}
 	}
+
+	/**
+	 * 编码后再解码，确认 NBT / 数据组件被完整保留；挂拍、寄售、收购模板都走这里。
+	 */
+	public static String encodeVerified(ItemStack stack) {
+		String data = encode(stack);
+		ItemStack decoded = decode(data);
+		if (!decoded.isSimilar(stack)) {
+			throw new IllegalArgumentException("物品数据无法完整保留（NBT/组件校验失败）");
+		}
+		return data;
+	}
 }

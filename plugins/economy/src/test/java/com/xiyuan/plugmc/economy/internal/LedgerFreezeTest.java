@@ -20,7 +20,8 @@ class LedgerFreezeTest {
 		2,
 		new BigDecimal("100.00"),
 		300,
-		14
+		14,
+		0.03
 	);
 
 	@Test

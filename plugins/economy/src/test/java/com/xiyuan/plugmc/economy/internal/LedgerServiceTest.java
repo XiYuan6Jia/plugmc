@@ -18,7 +18,8 @@ class LedgerServiceTest {
 		2,
 		new BigDecimal("100.00"),
 		300,
-		14
+		14,
+		0.03
 	);
 
 	@Test
@@ -86,6 +87,27 @@ class LedgerServiceTest {
 		UUID player = UUID.randomUUID();
 
 		assertFalse(ledger.transfer(player, player, new BigDecimal("1.00"), "TEST", null));
+	}
+
+	@Test
+	void transferWithTaxSplitsAmountBetweenRecipientAndTax() {
+		FakeStore store = new FakeStore();
+		LedgerService ledger = new LedgerService(store, CONFIG);
+		UUID sender = UUID.randomUUID();
+		UUID recipient = UUID.randomUUID();
+
+		assertTrue(ledger.transferWithTax(
+			sender,
+			recipient,
+			new BigDecimal("100.00"),
+			new BigDecimal("3.00"),
+			"PAY",
+			null
+		));
+		assertEquals(new BigDecimal("0.00"), ledger.balance(sender));
+		assertEquals(new BigDecimal("197.00"), ledger.balance(recipient));
+		assertEquals(new BigDecimal("3.00"), store.balance(LedgerService.TAX));
+		assertEquals(0, ledger.total().signum());
 	}
 
 	@Test

@@ -2,6 +2,7 @@ package com.xiyuan.plugmc.economy.shop;
 
 import com.xiyuan.plugmc.economy.internal.EconomyStore;
 import com.xiyuan.plugmc.economy.internal.InventoryUtil;
+import com.xiyuan.plugmc.economy.internal.JournalRecord;
 import com.xiyuan.plugmc.economy.internal.LedgerService;
 import com.xiyuan.plugmc.economy.internal.Money;
 import org.bukkit.Material;
@@ -73,9 +74,12 @@ public final class ShopService {
 		}
 
 		BigDecimal total = total(item.buyPrice(), amount);
-		if (ledger.balance(player.getUniqueId()).compareTo(total) < 0) {
-			player.sendMessage("余额不足，本次需要 " + ledger.format(total)
-				+ "，当前余额 " + ledger.format(ledger.balance(player.getUniqueId())) + "。");
+		BigDecimal tax = settings.tax(total, ledger.decimalPlaces());
+		BigDecimal charge = total.add(tax);
+		if (ledger.balance(player.getUniqueId()).compareTo(charge) < 0) {
+			player.sendMessage("余额不足，本次需要 " + ledger.format(charge)
+				+ "（货款 " + ledger.format(total) + " + 交易税 " + ledger.format(tax)
+				+ "），当前余额 " + ledger.format(ledger.balance(player.getUniqueId())) + "。");
 			return false;
 		}
 
@@ -85,7 +89,16 @@ public final class ShopService {
 			return false;
 		}
 
-		if (!ledger.withdraw(player.getUniqueId(), total, "SHOP_BUY", item.id())) {
+		if (!ledger.commitEntries(
+			List.of(
+				new JournalRecord.Entry(LedgerService.playerKey(player.getUniqueId()), charge.negate()),
+				new JournalRecord.Entry(LedgerService.MINT, total),
+				new JournalRecord.Entry(LedgerService.TAX, tax)
+			),
+			List.of(),
+			"SHOP_BUY",
+			item.id()
+		)) {
 			player.sendMessage("余额不足，购买已取消。");
 			return false;
 		}
@@ -94,15 +107,40 @@ public final class ShopService {
 		int leftoverCount = InventoryUtil.count(leftovers);
 		int delivered = amount - leftoverCount;
 		if (leftoverCount > 0) {
-			BigDecimal refund = total(item.buyPrice(), leftoverCount);
-			ledger.deposit(player.getUniqueId(), refund, "SHOP_REFUND", item.id());
+			BigDecimal deliveredTotal = total(item.buyPrice(), delivered);
+			BigDecimal deliveredTax = settings.tax(deliveredTotal, ledger.decimalPlaces());
+			BigDecimal refund = charge.subtract(deliveredTotal.add(deliveredTax));
+			if (refund.signum() > 0) {
+				ledger.commitEntries(
+					List.of(
+						new JournalRecord.Entry(
+							LedgerService.playerKey(player.getUniqueId()),
+							refund
+						),
+						new JournalRecord.Entry(
+							LedgerService.MINT,
+							deliveredTotal.subtract(total)
+						),
+						new JournalRecord.Entry(
+							LedgerService.TAX,
+							deliveredTax.subtract(tax)
+						)
+					),
+					List.of(),
+					"SHOP_REFUND",
+					item.id()
+				);
+			}
 			player.sendMessage("背包空间不足，已退还 " + ledger.format(refund) + "。");
 		}
 		if (delivered > 0) {
 			dailyLimits.consume(player, "buy", item.id(), delivered);
+			BigDecimal deliveredTotal = total(item.buyPrice(), delivered);
+			BigDecimal deliveredTax = settings.tax(deliveredTotal, ledger.decimalPlaces());
 			player.sendMessage("已购买 " + delivered + " 个 " + item.id() + "，花费 "
-				+ ledger.format(total(item.buyPrice(), delivered))
-				+ "，余额 " + ledger.format(ledger.balance(player.getUniqueId())) + "。");
+				+ ledger.format(deliveredTotal.add(deliveredTax)) + "（含交易税 "
+				+ ledger.format(deliveredTax) + "），余额 "
+				+ ledger.format(ledger.balance(player.getUniqueId())) + "。");
 		}
 		return delivered > 0;
 	}
@@ -117,9 +155,9 @@ public final class ShopService {
 			return false;
 		}
 
-		ShopItem item = goods.match(hand, settings.allowCustomItems());
+		ShopItem item = goods.matchSellable(hand, settings.allowCustomItems());
 		if (item == null) {
-			player.sendMessage("商店不回收这种物品。");
+			player.sendMessage("商店只回收矿石原矿（煤炭、粗铁/粗金/粗铜、红石、青金石、钻石、绿宝石、石英）。");
 			return false;
 		}
 
@@ -133,7 +171,9 @@ public final class ShopService {
 			return false;
 		}
 
-		BigDecimal total = total(item.sellPrice(), amount);
+		BigDecimal gross = total(item.sellPrice(), amount);
+		BigDecimal tax = settings.tax(gross, ledger.decimalPlaces());
+		BigDecimal net = gross.subtract(tax);
 		ItemStack original = hand.clone();
 		if (amount >= available) {
 			player.getInventory().setItemInMainHand(new ItemStack(Material.AIR));
@@ -144,7 +184,20 @@ public final class ShopService {
 		}
 
 		try {
-			ledger.deposit(player.getUniqueId(), total, "SHOP_SELL", item.id());
+			if (!ledger.commitEntries(
+				List.of(
+					new JournalRecord.Entry(LedgerService.MINT, gross.negate()),
+					new JournalRecord.Entry(LedgerService.playerKey(player.getUniqueId()), net),
+					new JournalRecord.Entry(LedgerService.TAX, tax)
+				),
+				List.of(),
+				"SHOP_SELL",
+				item.id()
+			)) {
+				player.getInventory().setItemInMainHand(original);
+				player.sendMessage("出售失败，请稍后再试。");
+				return false;
+			}
 		} catch (RuntimeException exception) {
 			player.getInventory().setItemInMainHand(original);
 			throw exception;
@@ -152,7 +205,8 @@ public final class ShopService {
 
 		dailyLimits.consume(player, "sell", item.id(), amount);
 		player.sendMessage("已出售 " + amount + " 个 " + item.id() + "，获得 "
-			+ ledger.format(total) + "，余额 " + ledger.format(ledger.balance(player.getUniqueId())) + "。");
+			+ ledger.format(net) + "（含交易税 " + ledger.format(tax) + "），余额 "
+			+ ledger.format(ledger.balance(player.getUniqueId())) + "。");
 		return true;
 	}
 
@@ -161,6 +215,7 @@ public final class ShopService {
 			return false;
 		}
 		BigDecimal earned = Money.zero(ledger.decimalPlaces());
+		BigDecimal taxTotal = Money.zero(ledger.decimalPlaces());
 		int soldTotal = 0;
 		Set<String> unsellable = new LinkedHashSet<>();
 		Set<String> limited = new LinkedHashSet<>();
@@ -169,7 +224,7 @@ public final class ShopService {
 			if (stack == null || stack.getType().isAir() || stack.getAmount() <= 0) {
 				continue;
 			}
-			ShopItem item = goods.match(stack, settings.allowCustomItems());
+			ShopItem item = goods.matchSellable(stack, settings.allowCustomItems());
 			if (item == null) {
 				unsellable.add(stack.getType().name());
 				leftoversLeftInGui.add(stack.clone());
@@ -186,15 +241,30 @@ public final class ShopService {
 
 			ItemStack sold = stack.clone();
 			sold.setAmount(sellable);
-			BigDecimal value = total(item.sellPrice(), sellable);
+			BigDecimal gross = total(item.sellPrice(), sellable);
+			BigDecimal tax = settings.tax(gross, ledger.decimalPlaces());
+			BigDecimal net = gross.subtract(tax);
 			try {
-				ledger.deposit(player.getUniqueId(), value, "SHOP_SELL", item.id());
+				if (!ledger.commitEntries(
+					List.of(
+						new JournalRecord.Entry(LedgerService.MINT, gross.negate()),
+						new JournalRecord.Entry(LedgerService.playerKey(player.getUniqueId()), net),
+						new JournalRecord.Entry(LedgerService.TAX, tax)
+					),
+					List.of(),
+					"SHOP_SELL",
+					item.id()
+				)) {
+					leftoversLeftInGui.add(stack.clone());
+					continue;
+				}
 			} catch (RuntimeException exception) {
 				leftoversLeftInGui.add(stack.clone());
 				continue;
 			}
 			dailyLimits.consume(player, "sell", item.id(), sellable);
-			earned = earned.add(value);
+			earned = earned.add(net);
+			taxTotal = taxTotal.add(tax);
 			soldTotal += sellable;
 
 			int rest = stack.getAmount() - sellable;
@@ -208,13 +278,14 @@ public final class ShopService {
 
 		if (soldTotal > 0) {
 			player.sendMessage("批量回收完成：出售 " + soldTotal + " 件，获得 "
-				+ ledger.format(earned) + "，余额 "
+				+ ledger.format(earned) + "（含交易税 " + ledger.format(taxTotal) + "），余额 "
 				+ ledger.format(ledger.balance(player.getUniqueId())) + "。");
 		} else {
 			player.sendMessage("没有可回收的物品。");
 		}
 		if (!unsellable.isEmpty()) {
-			player.sendMessage("以下物品商店不回收，已留在原地：" + String.join("、", unsellable));
+			player.sendMessage("以下物品商店不回收（只收矿石原矿），已留在原地："
+				+ String.join("、", unsellable));
 		}
 		if (!limited.isEmpty()) {
 			player.sendMessage("以下商品达到今日回收上限，剩余部分已留在原地："
@@ -229,7 +300,7 @@ public final class ShopService {
 			if (stack == null || stack.getType().isAir()) {
 				continue;
 			}
-			if (goods.match(stack, settings.allowCustomItems()) == item) {
+			if (goods.matchSellable(stack, settings.allowCustomItems()) == item) {
 				total += stack.getAmount();
 			}
 		}
@@ -249,7 +320,7 @@ public final class ShopService {
 			if (stack == null || stack.getType().isAir()) {
 				continue;
 			}
-			if (goods.match(stack, settings.allowCustomItems()) == item) {
+			if (goods.matchSellable(stack, settings.allowCustomItems()) == item) {
 				available += stack.getAmount();
 			}
 		}
@@ -277,7 +348,7 @@ public final class ShopService {
 		for (int slot = 0; slot < contents.length && remaining > 0; slot++) {
 			ItemStack stack = contents[slot];
 			if (stack == null || stack.getType().isAir()
-				|| goods.match(stack, settings.allowCustomItems()) != item) {
+				|| goods.matchSellable(stack, settings.allowCustomItems()) != item) {
 				continue;
 			}
 			int take = Math.min(stack.getAmount(), remaining);
@@ -287,9 +358,24 @@ public final class ShopService {
 			remaining -= take;
 		}
 
-		BigDecimal total = total(item.sellPrice(), amount);
+		BigDecimal gross = total(item.sellPrice(), amount);
+		BigDecimal tax = settings.tax(gross, ledger.decimalPlaces());
+		BigDecimal net = gross.subtract(tax);
 		try {
-			ledger.deposit(player.getUniqueId(), total, "SHOP_SELL", item.id());
+			if (!ledger.commitEntries(
+				List.of(
+					new JournalRecord.Entry(LedgerService.MINT, gross.negate()),
+					new JournalRecord.Entry(LedgerService.playerKey(player.getUniqueId()), net),
+					new JournalRecord.Entry(LedgerService.TAX, tax)
+				),
+				List.of(),
+				"SHOP_SELL",
+				item.id()
+			)) {
+				player.getInventory().setStorageContents(snapshot);
+				player.sendMessage("出售失败，请稍后再试。");
+				return false;
+			}
 		} catch (RuntimeException exception) {
 			player.getInventory().setStorageContents(snapshot);
 			throw exception;
@@ -297,7 +383,8 @@ public final class ShopService {
 
 		dailyLimits.consume(player, "sell", item.id(), amount);
 		player.sendMessage("已出售 " + amount + " 个 " + item.id() + "（背包扣除），获得 "
-			+ ledger.format(total) + "，余额 " + ledger.format(ledger.balance(player.getUniqueId())) + "。");
+			+ ledger.format(net) + "（含交易税 " + ledger.format(tax) + "），余额 "
+			+ ledger.format(ledger.balance(player.getUniqueId())) + "。");
 		if (amount < available) {
 			player.sendMessage("背包中还有 " + (available - amount) + " 个未出售"
 				+ (limitRemaining <= amount ? "（今日限额已用完）" : "") + "。");
@@ -313,14 +400,21 @@ public final class ShopService {
 		}
 		ShopItem item = goods.match(hand, settings.allowCustomItems());
 		if (item == null) {
-			player.sendMessage("商店不回收这种物品。");
+			player.sendMessage("系统商店不出售也不回收这种物品。");
 			return;
 		}
 		int buyLimit = settings.effectiveBuyLimit(item.dailyBuyLimit());
+		player.sendMessage("商品：" + item.id() + "，买价 " + ledger.format(item.buyPrice())
+			+ " / 件（另收 " + settings.taxPercent() + "% 交易税）。");
+		if (!item.sellable()) {
+			player.sendMessage("商店只回收矿石原矿，此物品不回收。");
+			return;
+		}
 		int sellLimit = settings.effectiveSellLimit(item.dailySellLimit());
-		player.sendMessage("商品：" + item.id()
-			+ "，买价 " + ledger.format(item.buyPrice())
-			+ " / 件，回收价 " + ledger.format(item.sellPrice()) + " / 件。");
+		BigDecimal tax = settings.tax(item.sellPrice(), ledger.decimalPlaces());
+		player.sendMessage("回收价 " + ledger.format(item.sellPrice()) + " / 件（扣 "
+			+ settings.taxPercent() + "% 交易税后到手 "
+			+ ledger.format(item.sellPrice().subtract(tax)) + "）。");
 		player.sendMessage("今日剩余：购买 " + remainingText(dailyLimits.remaining(player, "buy", item.id(), buyLimit))
 			+ "，出售 " + remainingText(dailyLimits.remaining(player, "sell", item.id(), sellLimit)) + "。");
 	}
@@ -339,6 +433,14 @@ public final class ShopService {
 
 	public String format(BigDecimal amount) {
 		return ledger.format(amount);
+	}
+
+	public BigDecimal taxFor(BigDecimal total) {
+		return settings.tax(total, ledger.decimalPlaces());
+	}
+
+	public int taxPercent() {
+		return settings.taxPercent();
 	}
 
 	public int remainingBuy(Player player, ShopItem item) {

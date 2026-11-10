@@ -168,6 +168,51 @@ public final class LedgerService {
 	}
 
 	/**
+	 * 带交易税的转账：转出方扣 amount，接收方得到 amount - tax，税进 TAX 账户。
+	 */
+	public boolean transferWithTax(
+		UUID fromPlayerId,
+		UUID toPlayerId,
+		BigDecimal amount,
+		BigDecimal tax,
+		String reason,
+		String ref
+	) {
+		BigDecimal normalized = Money.positive(amount, config.decimalPlaces());
+		BigDecimal normalizedTax = Money.nonNegative(tax, config.decimalPlaces());
+		if (normalizedTax.compareTo(normalized) > 0) {
+			normalizedTax = normalized;
+		}
+		if (requirePlayerId(fromPlayerId).equals(requirePlayerId(toPlayerId))) {
+			return false;
+		}
+		synchronized (lock) {
+			String fromKey = playerKey(fromPlayerId);
+			if (store.isAccountFrozen(fromKey)) {
+				return false;
+			}
+			BigDecimal fromBalance = store.balance(fromKey);
+			if (fromBalance == null) {
+				if (config.startingBalance().compareTo(normalized) < 0) {
+					return false;
+				}
+				ensureAccount(fromPlayerId);
+			}
+			ensureAccount(toPlayerId);
+			List<JournalRecord.Entry> entries = new ArrayList<>();
+			entries.add(new JournalRecord.Entry(fromKey, normalized.negate()));
+			entries.add(new JournalRecord.Entry(
+				playerKey(toPlayerId),
+				normalized.subtract(normalizedTax)
+			));
+			if (normalizedTax.signum() > 0) {
+				entries.add(new JournalRecord.Entry(TAX, normalizedTax));
+			}
+			return commitEntries(entries, List.of(), reason, ref);
+		}
+	}
+
+	/**
 	 * 模块内部使用：在任意两个已存在的账户之间转账；目标账户缺失时创建为零余额。
 	 */
 	public boolean transferAccount(String fromAccount, String toAccount, BigDecimal amount, String reason, String ref) {

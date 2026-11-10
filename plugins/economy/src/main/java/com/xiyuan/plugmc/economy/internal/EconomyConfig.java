@@ -14,7 +14,8 @@ public record EconomyConfig(
 	int decimalPlaces,
 	BigDecimal startingBalance,
 	int snapshotIntervalSeconds,
-	int backupCount
+	int backupCount,
+	double payTaxRate
 ) {
 	public EconomyConfig {
 		currencyName = Objects.requireNonNullElse(currencyName, "金币");
@@ -25,6 +26,7 @@ public record EconomyConfig(
 		startingBalance = Money.nonNegative(startingBalance, decimalPlaces);
 		snapshotIntervalSeconds = clamp(snapshotIntervalSeconds, 10, 3600);
 		backupCount = clamp(backupCount, 1, 100);
+		payTaxRate = Math.max(0.0, Math.min(1.0, payTaxRate));
 	}
 
 	public static EconomyConfig load(FileConfiguration config) {
@@ -43,8 +45,20 @@ public record EconomyConfig(
 			decimalPlaces,
 			startingBalance,
 			config.getInt("storage.snapshot-interval-seconds", 300),
-			config.getInt("storage.backup-count", 14)
+			config.getInt("storage.backup-count", 14),
+			config.getDouble("pay.tax-rate", 0.03)
 		);
+	}
+
+	/**
+	 * /pay 转账税：按转账总额百分比向上取整。
+	 */
+	public BigDecimal payTax(BigDecimal amount, int decimalPlaces) {
+		return Money.ceil(amount.multiply(BigDecimal.valueOf(payTaxRate)), decimalPlaces);
+	}
+
+	public int payTaxPercent() {
+		return (int) Math.round(payTaxRate * 100);
 	}
 
 	private static int clamp(int value, int min, int max) {
