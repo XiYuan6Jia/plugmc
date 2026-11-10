@@ -14,6 +14,9 @@
   python scripts/deploy_paper.py --skip-build       # 复用已有 jar
   python scripts/deploy_paper.py --upload-only      # 只上传，不重启
   python scripts/deploy_paper.py --check-only       # 只读当前日志校验插件是否加载
+
+带 --announce-seconds 时先发全服倒计时公告；若查询到当前没有玩家在线，
+会跳过公告直接重启。
 """
 
 from __future__ import annotations
@@ -33,6 +36,9 @@ import deploy_test as dt
 PLUGINS_DIR = dt.REPO_ROOT / "plugins"
 DEFAULT_PLUGINS_PATH = "plugins"
 NAME_PATTERN = re.compile(r"^name:\s*['\"]?([^'\"\n#]+)", re.MULTILINE)
+PLAYER_COUNT_PATTERN = re.compile(
+    r"There are (\d+) of a max of \d+ players online", re.IGNORECASE
+)
 
 
 @dataclass(frozen=True)
@@ -237,6 +243,30 @@ def wait_ready_after_restart(api: "dt.Api", before: str, timeout: int) -> str:
     sys.exit("服务端未在限定时间内就绪")
 
 
+def online_players(api: "dt.Api", timeout: float = 10.0) -> int | None:
+    """向控制台发 list 命令并解析在线人数；解析失败返回 None。"""
+    try:
+        before = api.log()
+        api.request("POST", "/command", json={"command": "list"})
+    except SystemExit as exc:
+        print(f"    无法查询在线人数：{exc}")
+        return None
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        time.sleep(1.0)
+        try:
+            log = api.log()
+        except SystemExit as exc:
+            print(f"    无法读取日志：{exc}")
+            return None
+        fresh = log[len(before):] if log.startswith(before) else log
+        matches = PLAYER_COUNT_PATTERN.findall(fresh)
+        if matches:
+            return int(matches[-1])
+    print("    在线人数解析超时")
+    return None
+
+
 def announce_restart(api: "dt.Api", seconds: int) -> None:
     """重启前用 tellraw @a 发全服倒计时公告。"""
     print(f"==> 全服公告：{seconds} 秒后重启")
@@ -439,7 +469,13 @@ def main() -> None:
         return
 
     if args.announce_seconds > 0:
-        announce_restart(api, args.announce_seconds)
+        players = online_players(api)
+        if players == 0:
+            print("==> 当前没有玩家在线，跳过重启公告，直接重启")
+        else:
+            if players is None:
+                print("==> 未能确认在线人数，按有玩家处理，照常公告")
+            announce_restart(api, args.announce_seconds)
 
     print("==> 重启实例")
     before = api.log()
