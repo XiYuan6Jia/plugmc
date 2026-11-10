@@ -6,7 +6,11 @@ import com.xiyuan.plugmc.economy.api.EconomyTransactionEvent;
 import com.xiyuan.plugmc.economy.auction.AuctionCommand;
 import com.xiyuan.plugmc.economy.auction.AuctionConfig;
 import com.xiyuan.plugmc.economy.auction.AuctionService;
+import com.xiyuan.plugmc.economy.bank.BankCommand;
+import com.xiyuan.plugmc.economy.bank.BankConfig;
+import com.xiyuan.plugmc.economy.bank.BankService;
 import com.xiyuan.plugmc.economy.gui.AuctionGui;
+import com.xiyuan.plugmc.economy.gui.BankGui;
 import com.xiyuan.plugmc.economy.gui.ChatPrompt;
 import com.xiyuan.plugmc.economy.gui.EconomyMenuHolder;
 import com.xiyuan.plugmc.economy.gui.MailGui;
@@ -63,6 +67,7 @@ public final class EconomyPlugin extends JavaPlugin implements Listener {
 	private OrderService orderService;
 	private AuctionService auctionService;
 	private TradeManager tradeManager;
+	private BankService bankService;
 	private BukkitTask snapshotTask;
 	private BukkitTask marketTask;
 	private BukkitTask mailTask;
@@ -131,9 +136,14 @@ public final class EconomyPlugin extends JavaPlugin implements Listener {
 			ShopConfig shopConfig = ShopConfig.load(getConfig());
 			GoodsConfig goodsConfig = GoodsConfig.load(this, shopConfig, config.decimalPlaces());
 			ShopService shopService = new ShopService(this, ledger, store, shopConfig, goodsConfig);
-			ShopGui shopGui = new ShopGui(shopService);
+			bankService = new BankService(this, shopService, BankConfig.load(getConfig()), config.decimalPlaces());
+			shopService.setBank(bankService);
+			bankService.load();
+			ShopGui shopGui = new ShopGui(shopService, bankService);
+			BankGui bankGui = new BankGui(bankService);
 			getServer().getPluginManager().registerEvents(new MenuListener(), this);
 			registerCommand("shop", new ShopCommand(shopService, shopGui));
+			registerCommand("bank", new BankCommand(bankService, bankGui));
 
 			ChatPrompt chatPrompt = new ChatPrompt(this);
 			getServer().getPluginManager().registerEvents(chatPrompt, this);
@@ -226,6 +236,10 @@ public final class EconomyPlugin extends JavaPlugin implements Listener {
 		if (tradeManager != null) {
 			tradeManager.closeAll();
 			tradeManager = null;
+		}
+		if (bankService != null) {
+			bankService.save();
+			bankService = null;
 		}
 		for (Player player : Bukkit.getOnlinePlayers()) {
 			if (player.getOpenInventory().getTopInventory().getHolder(false) instanceof EconomyMenuHolder) {

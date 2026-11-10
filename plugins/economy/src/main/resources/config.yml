@@ -56,3 +56,13 @@ rewards:
     minutes: 10
     amount: "20.00"
     max-per-day: 6
+bank:
+  enabled: true
+  # 可存入/兑换的分类（对应 goods.yml 的分类 id）；只收这些分类里的“干净”物品
+  categories: [stone, wood, glass, wool, concrete, terracotta, light, decor]
+  # 存入折算率：1.0 = 按估值全额入账（估值 ≤ 商店买价与任何合成成本）
+  deposit-rate: 1.0
+  # 单次存入 / 取出 / 兑换的数量上限
+  max-per-operation: 2304
+  # 是否允许用银行额度抵扣系统商店消费（仅限上面 categories 里的商品）
+  pay-shop: true

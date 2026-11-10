@@ -19,6 +19,12 @@ Paper 经济插件。当前版本使用**复式记账账本**：玩家余额、�
 | `/shop price [商品]` | 查看手持或指定商品的买卖价 | `economy.shop.use` |
 | `/shop search <关键词>` | 搜索商品并打开结果页 | `economy.shop.use` |
 | `/shop reload` | 重载 `goods.yml` 与商店配置 | `economy.shop.admin` |
+| `/bank` | 打开建材银行界面：存入建材换算额度、兑换同类建材 | `economy.bank.use`（默认所有玩家） |
+| `/bank deposit [数量\|all]` | 把主手建材存入银行 | `economy.bank.use` |
+| `/bank withdraw <商品> [数量\|all]` | 用额度取出/兑换建材 | `economy.bank.use` |
+| `/bank value [商品]` | 查看主手或指定商品的建材银行估值 | `economy.bank.use` |
+| `/bank balance` | 查看当前建材银行额度 | `economy.bank.use` |
+| `/bank reload` | 重新按合成表计算估值并重载配置 | `economy.bank.admin` |
 | `/market` | 打开玩家市场 GUI | `economy.market.use`（默认所有玩家） |
 | `/market sell <单价> [数量\|all]` | 把手持物品挂到市场 | `economy.market.use` |
 | `/market buy <编号> [数量]` | 购买市场挂单 | `economy.market.use` |
@@ -179,6 +185,46 @@ items:
 - 商品 ID、材质名、别名都可用于 `/shop buy`、`/shop price` 和 Tab 补全。
 - 在商品详情页点击出售按钮时，会从**背包（快捷栏 + 主背包）**扣除对应商品，而不是只取主手；
   详情页会显示背包中该商品的数量，出售后自动刷新。
+
+### 建材银行
+
+`/bank`（菜单「建材银行」按钮）把建材按合成表折算成额度，实现同类建材互换，
+并在系统商店购买建材时自动抵扣金币。
+
+| 命令 | 作用 |
+| --- | --- |
+| `/bank` | 打开建材银行界面 |
+| `/bank deposit [数量\|all]` | 把主手建材存入银行（默认整组） |
+| `/bank withdraw <商品> [数量\|all]` | 用额度取出/兑换建材 |
+| `/bank value [商品]` | 查看主手或指定商品的估值 |
+| `/bank balance` | 查看当前额度 |
+| `/bank reload` | 重载估值与配置（`economy.bank.admin`） |
+
+估值规则（参考开源等价交换 ProjectE 的思路）：
+
+- 以 `goods.yml` 买价为上限，以原版**合成台配方**和**烧炼配方**为成本下限，迭代到收敛；
+- 因此估值永远 `≤` 商店买价，也永远 `≤` 任何一条合成路径的材料成本，买卖/合成无法套利；
+- 台阶、楼梯、墙按配方比例低于整块建材（例如石砖 2.00、石砖楼梯 3.00、石砖台阶 1.00）；
+- 石砖烧炼成裂纹石砖，两者估值相同，可以 1:1 兑换；
+- 只统计原版合成/烧炼配方，石材切割机等 1:1 配方不参与（否则台阶会和整块同价）。
+
+防刷物资措施：
+
+- 只收 `bank.categories` 分类内、`goods.yml` 目录中的**干净物品**（无自定义名称/Lore/附魔/
+  损坏/容器数据/烟花数据），按材质合并；
+- 存入：先从背包扣除物品，再加额度；取出：先扣额度，再加物品，背包放不下立即退回额度；
+- 估值与额度使用整数最小单位（默认 0.01 金币）并向下取整，任何取整都不会凭空产生价值；
+- 所有操作在服务端主线程同步执行，数据即时原子写入 `plugins/economy/bank.yml`。
+
+配置（`config.yml`）：
+
+| 键 | 说明 |
+| --- | --- |
+| `bank.enabled` | 是否启用建材银行 |
+| `bank.categories` | 可存入/兑换的分类 id，默认 `stone/wood/glass/wool/concrete/terracotta/light/decor` |
+| `bank.deposit-rate` | 存入折算率，`1.0` 表示按估值全额入账 |
+| `bank.max-per-operation` | 单次存取/兑换上限，默认 `2304` |
+| `bank.pay-shop` | 是否允许在系统商店用额度抵扣（仅 `bank.categories` 内的商品） |
 
 ### 商店批量回收
 

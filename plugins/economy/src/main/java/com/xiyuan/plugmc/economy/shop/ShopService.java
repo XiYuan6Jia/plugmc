@@ -1,5 +1,6 @@
 package com.xiyuan.plugmc.economy.shop;
 
+import com.xiyuan.plugmc.economy.bank.BankService;
 import com.xiyuan.plugmc.economy.internal.EconomyStore;
 import com.xiyuan.plugmc.economy.internal.InventoryUtil;
 import com.xiyuan.plugmc.economy.internal.JournalRecord;
@@ -11,6 +12,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -27,6 +29,7 @@ public final class ShopService {
 	private final DailyLimitService dailyLimits;
 	private volatile ShopConfig settings;
 	private volatile GoodsConfig goods;
+	private BankService bank;
 
 	public ShopService(
 		JavaPlugin plugin,
@@ -51,12 +54,19 @@ public final class ShopService {
 		return goods;
 	}
 
+	public void setBank(BankService bank) {
+		this.bank = bank;
+	}
+
 	public void reload() {
 		plugin.reloadConfig();
 		ShopConfig reloadedSettings = ShopConfig.load(plugin.getConfig());
 		GoodsConfig reloadedGoods = GoodsConfig.load(plugin, reloadedSettings, ledger.decimalPlaces());
 		this.settings = reloadedSettings;
 		this.goods = reloadedGoods;
+		if (bank != null) {
+			bank.rebuildValues();
+		}
 		plugin.getLogger().info("商店配置已重载：" + reloadedGoods.items().size() + " 种商品");
 	}
 
@@ -76,12 +86,6 @@ public final class ShopService {
 		BigDecimal total = total(item.buyPrice(), amount);
 		BigDecimal tax = settings.tax(total, ledger.decimalPlaces());
 		BigDecimal charge = total.add(tax);
-		if (ledger.balance(player.getUniqueId()).compareTo(charge) < 0) {
-			player.sendMessage("余额不足，本次需要 " + ledger.format(charge)
-				+ "（货款 " + ledger.format(total) + " + 交易税 " + ledger.format(tax)
-				+ "），当前余额 " + ledger.format(ledger.balance(player.getUniqueId())) + "。");
-			return false;
-		}
 
 		List<ItemStack> stacks = split(item, amount);
 		if (!InventoryUtil.canFit(player, stacks)) {
@@ -89,16 +93,38 @@ public final class ShopService {
 			return false;
 		}
 
-		if (!ledger.commitEntries(
+		BigDecimal bankPaid = bank == null
+			? BigDecimal.ZERO
+			: bank.debitForShop(player, item, charge);
+		BigDecimal moneyDue = charge.subtract(bankPaid);
+		if (ledger.balance(player.getUniqueId()).compareTo(moneyDue) < 0) {
+			if (bank != null && bankPaid.signum() > 0) {
+				bank.refund(player, bankPaid);
+			}
+			player.sendMessage("余额不足，本次需要 " + ledger.format(moneyDue)
+				+ "（货款 " + ledger.format(total) + " + 交易税 " + ledger.format(tax)
+				+ (bankPaid.signum() > 0 ? "，建材银行已抵扣 " + ledger.format(bankPaid) : "")
+				+ "），当前余额 " + ledger.format(ledger.balance(player.getUniqueId())) + "。");
+			return false;
+		}
+
+		BigDecimal moneyTotal = moneyDue.signum() <= 0
+			? BigDecimal.ZERO
+			: moneyDue.multiply(total).divide(charge, ledger.decimalPlaces(), RoundingMode.DOWN);
+		BigDecimal moneyTax = moneyDue.subtract(moneyTotal);
+		if (moneyDue.signum() > 0 && !ledger.commitEntries(
 			List.of(
-				new JournalRecord.Entry(LedgerService.playerKey(player.getUniqueId()), charge.negate()),
-				new JournalRecord.Entry(LedgerService.MINT, total),
-				new JournalRecord.Entry(LedgerService.TAX, tax)
+				new JournalRecord.Entry(LedgerService.playerKey(player.getUniqueId()), moneyDue.negate()),
+				new JournalRecord.Entry(LedgerService.MINT, moneyTotal),
+				new JournalRecord.Entry(LedgerService.TAX, moneyTax)
 			),
 			List.of(),
 			"SHOP_BUY",
 			item.id()
 		)) {
+			if (bank != null && bankPaid.signum() > 0) {
+				bank.refund(player, bankPaid);
+			}
 			player.sendMessage("余额不足，购买已取消。");
 			return false;
 		}
@@ -109,38 +135,39 @@ public final class ShopService {
 		if (leftoverCount > 0) {
 			BigDecimal deliveredTotal = total(item.buyPrice(), delivered);
 			BigDecimal deliveredTax = settings.tax(deliveredTotal, ledger.decimalPlaces());
-			BigDecimal refund = charge.subtract(deliveredTotal.add(deliveredTax));
-			if (refund.signum() > 0) {
+			BigDecimal refundTotal = charge.subtract(deliveredTotal.add(deliveredTax));
+			BigDecimal bankRefund = bankPaid.min(refundTotal);
+			BigDecimal moneyRefund = refundTotal.subtract(bankRefund);
+			if (bank != null && bankRefund.signum() > 0) {
+				bank.refund(player, bankRefund);
+			}
+			if (moneyRefund.signum() > 0) {
 				ledger.commitEntries(
 					List.of(
 						new JournalRecord.Entry(
 							LedgerService.playerKey(player.getUniqueId()),
-							refund
+							moneyRefund
 						),
-						new JournalRecord.Entry(
-							LedgerService.MINT,
-							deliveredTotal.subtract(total)
-						),
-						new JournalRecord.Entry(
-							LedgerService.TAX,
-							deliveredTax.subtract(tax)
-						)
+						new JournalRecord.Entry(LedgerService.MINT, moneyRefund.negate())
 					),
 					List.of(),
 					"SHOP_REFUND",
 					item.id()
 				);
 			}
-			player.sendMessage("背包空间不足，已退还 " + ledger.format(refund) + "。");
+			player.sendMessage("背包空间不足，已退还 " + ledger.format(refundTotal)
+				+ (bankRefund.signum() > 0 ? "（其中建材银行额度 "
+					+ ledger.format(bankRefund) + "）" : "") + "。");
 		}
 		if (delivered > 0) {
 			dailyLimits.consume(player, "buy", item.id(), delivered);
 			BigDecimal deliveredTotal = total(item.buyPrice(), delivered);
 			BigDecimal deliveredTax = settings.tax(deliveredTotal, ledger.decimalPlaces());
 			player.sendMessage("已购买 " + delivered + " 个 " + item.id() + "，花费 "
-				+ ledger.format(deliveredTotal.add(deliveredTax)) + "（含交易税 "
-				+ ledger.format(deliveredTax) + "），余额 "
-				+ ledger.format(ledger.balance(player.getUniqueId())) + "。");
+				+ ledger.format(deliveredTotal.add(deliveredTax))
+				+ (bankPaid.signum() > 0 ? "（其中建材银行抵扣 "
+					+ ledger.format(bankPaid) + "）" : "")
+				+ "，余额 " + ledger.format(ledger.balance(player.getUniqueId())) + "。");
 		}
 		return delivered > 0;
 	}
@@ -406,6 +433,11 @@ public final class ShopService {
 		int buyLimit = settings.effectiveBuyLimit(item.dailyBuyLimit());
 		player.sendMessage("商品：" + item.id() + "，买价 " + ledger.format(item.buyPrice())
 			+ " / 件（另收 " + settings.taxPercent() + "% 交易税）。");
+		if (bank != null && bank.accepts(item)) {
+			player.sendMessage("建材银行估值 " + ledger.format(bank.money(bank.valueOf(item)))
+				+ " / 件，购买时优先用银行额度抵扣（当前额度 "
+				+ ledger.format(bank.creditMoney(player)) + "）。");
+		}
 		if (!item.sellable()) {
 			player.sendMessage(sellableHint() + "此物品不回收。");
 			return;

@@ -1,5 +1,6 @@
 package com.xiyuan.plugmc.economy.gui;
 
+import com.xiyuan.plugmc.economy.bank.BankService;
 import com.xiyuan.plugmc.economy.shop.ShopCategory;
 import com.xiyuan.plugmc.economy.shop.ShopItem;
 import com.xiyuan.plugmc.economy.shop.ShopService;
@@ -16,9 +17,11 @@ import java.util.function.Consumer;
 public final class ShopGui {
 	private final ShopService service;
 	private final ShopSellGui sellGui;
+	private final BankService bank;
 
-	public ShopGui(ShopService service) {
+	public ShopGui(ShopService service, BankService bank) {
 		this.service = service;
+		this.bank = bank;
 		this.sellGui = new ShopSellGui(service);
 	}
 
@@ -82,10 +85,7 @@ public final class ShopGui {
 		);
 		holder.set(
 			31,
-			button(Material.GOLD_INGOT, "&6当前余额", List.of(
-				"&e" + service.format(service.balance(player)),
-				"&7购买商品会直接扣款"
-			)),
+			button(Material.GOLD_INGOT, "&6当前余额", balanceLore(player)),
 			null
 		);
 		holder.set(
@@ -189,9 +189,7 @@ public final class ShopGui {
 		EconomyMenuHolder holder = new EconomyMenuHolder(5, "&8商品：" + item.id());
 		holder.fill(filler());
 		holder.set(13, itemIcon(item), null);
-		holder.set(4, button(Material.GOLD_INGOT, "&6余额", List.of(
-			"&e" + service.format(service.balance(player))
-		)), null);
+		holder.set(4, button(Material.GOLD_INGOT, "&6余额", balanceLore(player)), null);
 		holder.set(12, button(Material.CHEST, "&f背包中的数量", List.of(
 			"&e" + service.countInInventory(player, item) + " &7个 " + item.id(),
 			"&8出售会从背包（含快捷栏）扣除"
@@ -290,8 +288,19 @@ public final class ShopGui {
 		));
 	}
 
-	private ItemStack button(Material material, String name, List<String> lore) {
-		ItemStack item = new ItemStack(material);
+	private List<String> balanceLore(Player player) {
+		List<String> lore = new ArrayList<>();
+		lore.add("&e" + service.format(service.balance(player)));
+		if (bank != null && bank.enabled()) {
+			lore.add("&7建材银行：&e" + bank.format(bank.creditOf(player.getUniqueId())));
+			lore.add("&7购买建材时自动优先抵扣");
+		} else {
+			lore.add("&7购买商品会直接扣款");
+		}
+		return lore;
+	}
+
+	private ItemStack button(Material material, String name, List<String> lore) {		ItemStack item = new ItemStack(material);
 		ItemMeta meta = item.getItemMeta();
 		if (meta != null) {
 			meta.displayName(MenuText.component(name));

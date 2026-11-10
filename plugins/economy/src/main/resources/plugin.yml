@@ -42,6 +42,11 @@ commands:
   trade:
     description: "直接交易"
     usage: /trade <玩家> | /trade accept <玩家>
+  bank:
+    description: "建材银行：存入建材换算额度，取出同类建材或抵扣商店消费"
+    usage: /bank [deposit [数量|all] | withdraw <商品> [数量] | value <商品> | balance | reload]
+    aliases: [matbank, jiancai]
+    permission: economy.bank.use
   daily:
     description: "每日签到与在线奖励"
     usage: /daily [status|reload]
@@ -94,4 +99,10 @@ permissions:
     default: true
   economy.reward.admin:
     description: "重载奖励配置"
+    default: op
+  economy.bank.use:
+    description: "使用建材银行"
+    default: true
+  economy.bank.admin:
+    description: "重载建材银行配置"
     default: op
