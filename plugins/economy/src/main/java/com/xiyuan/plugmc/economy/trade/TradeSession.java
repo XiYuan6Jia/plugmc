@@ -41,6 +41,29 @@ public final class TradeSession implements InventoryHolder {
 		this.partnerName = partner.getName();
 		this.initiatorInventory = createInventory("&8交易 · " + partnerName);
 		this.partnerInventory = createInventory("&8交易 · " + initiatorName);
+		fillDisplaySlots(initiatorInventory);
+		fillDisplaySlots(partnerInventory);
+	}
+
+	/**
+	 * 展示区初始占位，避免玩家把物品误放进「对方物品」的两行。
+	 */
+	private void fillDisplaySlots(Inventory inventory) {
+		ItemStack placeholder = displayPlaceholder();
+		for (int slot = OTHER_START; slot < OTHER_END; slot++) {
+			inventory.setItem(slot, placeholder.clone());
+		}
+	}
+
+	private static ItemStack displayPlaceholder() {
+		ItemStack stack = new ItemStack(Material.LIGHT_GRAY_STAINED_GLASS_PANE);
+		ItemMeta meta = stack.getItemMeta();
+		if (meta != null) {
+			meta.displayName(net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer
+				.legacyAmpersand().deserialize("&8对方物品"));
+			stack.setItemMeta(meta);
+		}
+		return stack;
 	}
 
 	private Inventory createInventory(String title) {
@@ -130,7 +153,10 @@ public final class TradeSession implements InventoryHolder {
 		Inventory other = otherInventoryOf(owner);
 		for (int index = 0; index < OWN_END - OWN_START; index++) {
 			ItemStack stack = own.getItem(OWN_START + index);
-			other.setItem(OTHER_START + index, stack == null ? null : stack.clone());
+			other.setItem(
+				OTHER_START + index,
+				stack == null || stack.getType().isAir() ? displayPlaceholder() : stack.clone()
+			);
 		}
 	}
 

@@ -13,7 +13,9 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
+import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -171,8 +173,8 @@ public final class TradeManager implements Listener {
 		session.render();
 		requester.openInventory(session.inventoryOf(requester));
 		target.openInventory(session.inventoryOf(target));
-		requester.sendMessage("交易已开始，双方把物品放入自己的区域后点击确认。");
-		target.sendMessage("交易已开始，双方把物品放入自己的区域后点击确认。");
+		requester.sendMessage("交易已开始：前两行放自己的物品，第三、四行显示对方的物品，双方点「确认交易」后立即交换。");
+		target.sendMessage("交易已开始：前两行放自己的物品，第三、四行显示对方的物品，双方点「确认交易」后立即交换。");
 	}
 
 	@EventHandler(priority = EventPriority.HIGHEST)
@@ -192,6 +194,22 @@ public final class TradeManager implements Listener {
 		if (raw >= topSize) {
 			if (session.bothConfirmed()) {
 				event.setCancelled(true);
+				return;
+			}
+			if (event.getClick() == ClickType.DOUBLE_CLICK) {
+				// 双击会从交易窗口里收集物品，可能把展示区的对方物品拿到手上
+				event.setCancelled(true);
+				return;
+			}
+			if (event.isShiftClick()) {
+				event.setCancelled(true);
+				if (session.confirmed(player)) {
+					player.sendMessage(MenuText.component("&e请先取消确认再修改物品。"));
+					return;
+				}
+				if (moveIntoOwnArea(session, player, event.getClickedInventory(), event.getSlot()) > 0) {
+					scheduleSync(session, player);
+				}
 			}
 			return;
 		}
@@ -299,6 +317,61 @@ public final class TradeManager implements Listener {
 				session.syncDisplay(player);
 			}
 		});
+	}
+
+	/**
+	 * 把背包里点击的物品（shift 整组）挪进自己的两行交易区；
+	 * 默认的 shift 逻辑会把物品塞进「对方物品」展示区，导致对方看不见、结算时还会丢。
+	 */
+	private int moveIntoOwnArea(TradeSession session, Player player, Inventory source, int sourceSlot) {
+		if (source == null || sourceSlot < 0) {
+			return 0;
+		}
+		ItemStack stack = source.getItem(sourceSlot);
+		if (stack == null || stack.getType().isAir()) {
+			return 0;
+		}
+		Inventory own = session.inventoryOf(player);
+		int remaining = stack.getAmount();
+		for (int slot = TradeSession.OWN_START; slot < TradeSession.OWN_END && remaining > 0; slot++) {
+			ItemStack existing = own.getItem(slot);
+			if (existing == null || existing.getType().isAir() || !existing.isSimilar(stack)) {
+				continue;
+			}
+			int space = existing.getMaxStackSize() - existing.getAmount();
+			if (space <= 0) {
+				continue;
+			}
+			int moved = Math.min(space, remaining);
+			ItemStack merged = existing.clone();
+			merged.setAmount(existing.getAmount() + moved);
+			own.setItem(slot, merged);
+			remaining -= moved;
+		}
+		for (int slot = TradeSession.OWN_START; slot < TradeSession.OWN_END && remaining > 0; slot++) {
+			ItemStack existing = own.getItem(slot);
+			if (existing != null && !existing.getType().isAir()) {
+				continue;
+			}
+			ItemStack moved = stack.clone();
+			moved.setAmount(remaining);
+			own.setItem(slot, moved);
+			remaining = 0;
+		}
+		int movedTotal = stack.getAmount() - remaining;
+		if (movedTotal <= 0) {
+			player.sendMessage(MenuText.component("&c你的交易区已满（前两行共 18 格）。"));
+			return 0;
+		}
+		if (remaining > 0) {
+			ItemStack left = stack.clone();
+			left.setAmount(remaining);
+			source.setItem(sourceSlot, left);
+			player.sendMessage(MenuText.component("&e交易区空间不足，还有 " + remaining + " 个留在背包。"));
+		} else {
+			source.setItem(sourceSlot, null);
+		}
+		return movedTotal;
 	}
 
 	private void execute(TradeSession session, Player initiator, Player partner) {
