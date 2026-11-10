@@ -308,6 +308,10 @@ public final class BankService {
 	 * 把背包里符合条件的同类物品全部存入（最多 maxPerOperation 个）。
 	 */
 	public int deposit(Player player, ShopItem item, int requested) {
+		return deposit(player, item, requested, -1);
+	}
+
+	private int deposit(Player player, ShopItem item, int requested, int preferredSlot) {
 		if (!enabled()) {
 			player.sendMessage("建材银行未开启。");
 			return 0;
@@ -325,7 +329,18 @@ public final class BankService {
 		limit = Math.min(limit, config.maxPerOperation());
 		int collected = 0;
 		ItemStack[] contents = player.getInventory().getStorageContents();
-		for (int slot = 0; slot < contents.length && collected < limit; slot++) {
+		int[] order = new int[contents.length];
+		int position = 0;
+		if (preferredSlot >= 0 && preferredSlot < contents.length) {
+			order[position++] = preferredSlot;
+		}
+		for (int slot = 0; slot < contents.length; slot++) {
+			if (slot != preferredSlot) {
+				order[position++] = slot;
+			}
+		}
+		for (int index = 0; index < order.length && collected < limit; index++) {
+			int slot = order[index];
 			ItemStack stack = contents[slot];
 			if (!BankItems.isPlain(item, stack)) {
 				continue;
@@ -370,7 +385,8 @@ public final class BankService {
 			player.sendMessage("主手物品不在建材银行的收取范围内。");
 			return 0;
 		}
-		return deposit(player, item.get(), requested <= 0 ? hand.getAmount() : requested);
+		return deposit(player, item.get(), requested <= 0 ? hand.getAmount() : requested,
+			player.getInventory().getHeldItemSlot());
 	}
 
 	/**
