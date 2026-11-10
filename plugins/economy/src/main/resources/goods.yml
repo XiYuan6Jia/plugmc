@@ -173,6 +173,40 @@ categories:
     - smooth_quartz
     - smooth_quartz_stairs
     - smooth_quartz_slab
+    - cinnabar
+    - cinnabar_stairs
+    - cinnabar_slab
+    - cinnabar_wall
+    - cinnabar_bricks
+    - cinnabar_bricks_stairs
+    - cinnabar_bricks_slab
+    - cinnabar_bricks_wall
+    - polished_cinnabar
+    - polished_cinnabar_stairs
+    - polished_cinnabar_slab
+    - polished_cinnabar_wall
+    - chiseled_cinnabar
+    - sulfur
+    - sulfur_stairs
+    - sulfur_slab
+    - sulfur_wall
+    - sulfur_bricks
+    - sulfur_bricks_stairs
+    - sulfur_bricks_slab
+    - sulfur_bricks_wall
+    - polished_sulfur
+    - polished_sulfur_stairs
+    - polished_sulfur_slab
+    - polished_sulfur_wall
+    - chiseled_sulfur
+    - sulfur_spike
+    - resin_block
+    - resin_bricks
+    - resin_bricks_stairs
+    - resin_bricks_slab
+    - resin_bricks_wall
+    - chiseled_resin_bricks
+    - nether_brick_fence
     - copper_block
     - exposed_copper
     - weathered_copper
@@ -326,6 +360,19 @@ categories:
     - pale_oak_trapdoor
     - pale_oak_sign
     - pale_oak_hanging_sign
+    - poplar_log
+    - stripped_poplar_log
+    - poplar_wood
+    - stripped_poplar_wood
+    - poplar_planks
+    - poplar_stairs
+    - poplar_slab
+    - poplar_fence
+    - poplar_fence_gate
+    - poplar_door
+    - poplar_trapdoor
+    - poplar_sign
+    - poplar_hanging_sign
     - bamboo_block
     - stripped_bamboo_block
     - bamboo_mosaic
@@ -411,93 +458,173 @@ categories:
     items:
     - white_wool
     - white_carpet
+    - white_wool_slab
+    - white_wool_stairs
     - orange_wool
     - orange_carpet
+    - orange_wool_slab
+    - orange_wool_stairs
     - magenta_wool
     - magenta_carpet
+    - magenta_wool_slab
+    - magenta_wool_stairs
     - light_blue_wool
     - light_blue_carpet
+    - light_blue_wool_slab
+    - light_blue_wool_stairs
     - yellow_wool
     - yellow_carpet
+    - yellow_wool_slab
+    - yellow_wool_stairs
     - lime_wool
     - lime_carpet
+    - lime_wool_slab
+    - lime_wool_stairs
     - pink_wool
     - pink_carpet
+    - pink_wool_slab
+    - pink_wool_stairs
     - gray_wool
     - gray_carpet
+    - gray_wool_slab
+    - gray_wool_stairs
     - light_gray_wool
     - light_gray_carpet
+    - light_gray_wool_slab
+    - light_gray_wool_stairs
     - cyan_wool
     - cyan_carpet
+    - cyan_wool_slab
+    - cyan_wool_stairs
     - purple_wool
     - purple_carpet
+    - purple_wool_slab
+    - purple_wool_stairs
     - blue_wool
     - blue_carpet
+    - blue_wool_slab
+    - blue_wool_stairs
     - brown_wool
     - brown_carpet
+    - brown_wool_slab
+    - brown_wool_stairs
     - green_wool
     - green_carpet
+    - green_wool_slab
+    - green_wool_stairs
     - red_wool
     - red_carpet
+    - red_wool_slab
+    - red_wool_stairs
     - black_wool
     - black_carpet
+    - black_wool_slab
+    - black_wool_stairs
   concrete:
     display: 混凝土
     icon: WHITE_CONCRETE
     items:
     - white_concrete
     - white_concrete_powder
+    - white_concrete_slab
+    - white_concrete_stairs
     - orange_concrete
     - orange_concrete_powder
+    - orange_concrete_slab
+    - orange_concrete_stairs
     - magenta_concrete
     - magenta_concrete_powder
+    - magenta_concrete_slab
+    - magenta_concrete_stairs
     - light_blue_concrete
     - light_blue_concrete_powder
+    - light_blue_concrete_slab
+    - light_blue_concrete_stairs
     - yellow_concrete
     - yellow_concrete_powder
+    - yellow_concrete_slab
+    - yellow_concrete_stairs
     - lime_concrete
     - lime_concrete_powder
+    - lime_concrete_slab
+    - lime_concrete_stairs
     - pink_concrete
     - pink_concrete_powder
+    - pink_concrete_slab
+    - pink_concrete_stairs
     - gray_concrete
     - gray_concrete_powder
+    - gray_concrete_slab
+    - gray_concrete_stairs
     - light_gray_concrete
     - light_gray_concrete_powder
+    - light_gray_concrete_slab
+    - light_gray_concrete_stairs
     - cyan_concrete
     - cyan_concrete_powder
+    - cyan_concrete_slab
+    - cyan_concrete_stairs
     - purple_concrete
     - purple_concrete_powder
+    - purple_concrete_slab
+    - purple_concrete_stairs
     - blue_concrete
     - blue_concrete_powder
+    - blue_concrete_slab
+    - blue_concrete_stairs
     - brown_concrete
     - brown_concrete_powder
+    - brown_concrete_slab
+    - brown_concrete_stairs
     - green_concrete
     - green_concrete_powder
+    - green_concrete_slab
+    - green_concrete_stairs
     - red_concrete
     - red_concrete_powder
+    - red_concrete_slab
+    - red_concrete_stairs
     - black_concrete
     - black_concrete_powder
+    - black_concrete_slab
+    - black_concrete_stairs
   terracotta:
     display: 陶瓦
     icon: TERRACOTTA
     items:
     - terracotta
     - white_terracotta
+    - white_glazed_terracotta
     - orange_terracotta
+    - orange_glazed_terracotta
     - magenta_terracotta
+    - magenta_glazed_terracotta
     - light_blue_terracotta
+    - light_blue_glazed_terracotta
     - yellow_terracotta
+    - yellow_glazed_terracotta
     - lime_terracotta
+    - lime_glazed_terracotta
     - pink_terracotta
+    - pink_glazed_terracotta
     - gray_terracotta
+    - gray_glazed_terracotta
     - light_gray_terracotta
+    - light_gray_glazed_terracotta
     - cyan_terracotta
+    - cyan_glazed_terracotta
     - purple_terracotta
+    - purple_glazed_terracotta
     - blue_terracotta
+    - blue_glazed_terracotta
     - brown_terracotta
+    - brown_glazed_terracotta
     - green_terracotta
+    - green_glazed_terracotta
     - red_terracotta
+    - red_glazed_terracotta
     - black_terracotta
+    - black_glazed_terracotta
   light:
     display: 照明
     icon: LANTERN
@@ -593,6 +720,74 @@ categories:
     - lodestone
     - target
     - lightning_rod
+    - iron_door
+    - iron_trapdoor
+    - pale_moss_block
+    - pale_moss_carpet
+    - copper_bars
+    - copper_bulb
+    - copper_chest
+    - copper_door
+    - copper_golem_statue
+    - copper_grate
+    - copper_lantern
+    - copper_trapdoor
+    - exposed_copper_bars
+    - exposed_copper_bulb
+    - exposed_copper_chest
+    - exposed_copper_door
+    - exposed_copper_golem_statue
+    - exposed_copper_grate
+    - exposed_copper_lantern
+    - exposed_copper_trapdoor
+    - weathered_copper_bars
+    - weathered_copper_bulb
+    - weathered_copper_chest
+    - weathered_copper_door
+    - weathered_copper_golem_statue
+    - weathered_copper_grate
+    - weathered_copper_lantern
+    - weathered_copper_trapdoor
+    - oxidized_copper_bars
+    - oxidized_copper_bulb
+    - oxidized_copper_chest
+    - oxidized_copper_door
+    - oxidized_copper_golem_statue
+    - oxidized_copper_grate
+    - oxidized_copper_lantern
+    - oxidized_copper_trapdoor
+    - waxed_copper_bars
+    - waxed_copper_bulb
+    - waxed_copper_chest
+    - waxed_copper_door
+    - waxed_copper_golem_statue
+    - waxed_copper_grate
+    - waxed_copper_lantern
+    - waxed_copper_trapdoor
+    - waxed_exposed_copper_bars
+    - waxed_exposed_copper_bulb
+    - waxed_exposed_copper_chest
+    - waxed_exposed_copper_door
+    - waxed_exposed_copper_golem_statue
+    - waxed_exposed_copper_grate
+    - waxed_exposed_copper_lantern
+    - waxed_exposed_copper_trapdoor
+    - waxed_weathered_copper_bars
+    - waxed_weathered_copper_bulb
+    - waxed_weathered_copper_chest
+    - waxed_weathered_copper_door
+    - waxed_weathered_copper_golem_statue
+    - waxed_weathered_copper_grate
+    - waxed_weathered_copper_lantern
+    - waxed_weathered_copper_trapdoor
+    - waxed_oxidized_copper_bars
+    - waxed_oxidized_copper_bulb
+    - waxed_oxidized_copper_chest
+    - waxed_oxidized_copper_door
+    - waxed_oxidized_copper_golem_statue
+    - waxed_oxidized_copper_grate
+    - waxed_oxidized_copper_lantern
+    - waxed_oxidized_copper_trapdoor
   mineral:
     display: 矿物
     icon: DIAMOND
@@ -3609,3 +3804,978 @@ items:
     buy: '12.00'
     aliases:
     - 涂蜡氧化铜链
+  cinnabar:
+    material: CINNABAR
+    buy: '4.00'
+    aliases:
+    - 朱砂
+  cinnabar_stairs:
+    material: CINNABAR_STAIRS
+    buy: '5.00'
+    aliases:
+    - 朱砂楼梯
+  cinnabar_slab:
+    material: CINNABAR_SLAB
+    buy: '5.00'
+    aliases:
+    - 朱砂台阶
+  cinnabar_wall:
+    material: CINNABAR_WALL
+    buy: '5.00'
+    aliases:
+    - 朱砂墙
+  cinnabar_bricks:
+    material: CINNABAR_BRICKS
+    buy: '5.00'
+    aliases:
+    - 朱砂砖
+  cinnabar_bricks_stairs:
+    material: CINNABAR_BRICK_STAIRS
+    buy: '6.00'
+    aliases:
+    - 朱砂砖楼梯
+  cinnabar_bricks_slab:
+    material: CINNABAR_BRICK_SLAB
+    buy: '6.00'
+    aliases:
+    - 朱砂砖台阶
+  cinnabar_bricks_wall:
+    material: CINNABAR_BRICK_WALL
+    buy: '6.00'
+    aliases:
+    - 朱砂砖墙
+  polished_cinnabar:
+    material: POLISHED_CINNABAR
+    buy: '5.00'
+    aliases:
+    - 磨制朱砂
+  polished_cinnabar_stairs:
+    material: POLISHED_CINNABAR_STAIRS
+    buy: '6.00'
+    aliases:
+    - 磨制朱砂楼梯
+  polished_cinnabar_slab:
+    material: POLISHED_CINNABAR_SLAB
+    buy: '6.00'
+    aliases:
+    - 磨制朱砂台阶
+  polished_cinnabar_wall:
+    material: POLISHED_CINNABAR_WALL
+    buy: '6.00'
+    aliases:
+    - 磨制朱砂墙
+  chiseled_cinnabar:
+    material: CHISELED_CINNABAR
+    buy: '6.00'
+    aliases:
+    - 雕纹朱砂
+  sulfur:
+    material: SULFUR
+    buy: '4.00'
+    aliases:
+    - 硫磺
+  sulfur_stairs:
+    material: SULFUR_STAIRS
+    buy: '5.00'
+    aliases:
+    - 硫磺楼梯
+  sulfur_slab:
+    material: SULFUR_SLAB
+    buy: '5.00'
+    aliases:
+    - 硫磺台阶
+  sulfur_wall:
+    material: SULFUR_WALL
+    buy: '5.00'
+    aliases:
+    - 硫磺墙
+  sulfur_bricks:
+    material: SULFUR_BRICKS
+    buy: '5.00'
+    aliases:
+    - 硫磺砖
+  sulfur_bricks_stairs:
+    material: SULFUR_BRICK_STAIRS
+    buy: '6.00'
+    aliases:
+    - 硫磺砖楼梯
+  sulfur_bricks_slab:
+    material: SULFUR_BRICK_SLAB
+    buy: '6.00'
+    aliases:
+    - 硫磺砖台阶
+  sulfur_bricks_wall:
+    material: SULFUR_BRICK_WALL
+    buy: '6.00'
+    aliases:
+    - 硫磺砖墙
+  polished_sulfur:
+    material: POLISHED_SULFUR
+    buy: '5.00'
+    aliases:
+    - 磨制硫磺
+  polished_sulfur_stairs:
+    material: POLISHED_SULFUR_STAIRS
+    buy: '6.00'
+    aliases:
+    - 磨制硫磺楼梯
+  polished_sulfur_slab:
+    material: POLISHED_SULFUR_SLAB
+    buy: '6.00'
+    aliases:
+    - 磨制硫磺台阶
+  polished_sulfur_wall:
+    material: POLISHED_SULFUR_WALL
+    buy: '6.00'
+    aliases:
+    - 磨制硫磺墙
+  chiseled_sulfur:
+    material: CHISELED_SULFUR
+    buy: '6.00'
+    aliases:
+    - 雕纹硫磺
+  sulfur_spike:
+    material: SULFUR_SPIKE
+    buy: '6.00'
+    aliases:
+    - 硫磺尖刺
+  resin_block:
+    material: RESIN_BLOCK
+    buy: '6.00'
+    aliases:
+    - 树脂块
+  resin_bricks:
+    material: RESIN_BRICKS
+    buy: '7.00'
+    aliases:
+    - 树脂砖
+  resin_bricks_stairs:
+    material: RESIN_BRICK_STAIRS
+    buy: '8.00'
+    aliases:
+    - 树脂砖楼梯
+  resin_bricks_slab:
+    material: RESIN_BRICK_SLAB
+    buy: '8.00'
+    aliases:
+    - 树脂砖台阶
+  resin_bricks_wall:
+    material: RESIN_BRICK_WALL
+    buy: '8.00'
+    aliases:
+    - 树脂砖墙
+  chiseled_resin_bricks:
+    material: CHISELED_RESIN_BRICKS
+    buy: '8.00'
+    aliases:
+    - 雕纹树脂砖
+  nether_brick_fence:
+    material: NETHER_BRICK_FENCE
+    buy: '5.00'
+    aliases:
+    - 下界砖栅栏
+  poplar_log:
+    material: POPLAR_LOG
+    buy: '3.00'
+    aliases:
+    - 白杨原木
+  stripped_poplar_log:
+    material: STRIPPED_POPLAR_LOG
+    buy: '4.00'
+    aliases:
+    - 去皮白杨原木
+  poplar_wood:
+    material: POPLAR_WOOD
+    buy: '4.00'
+    aliases:
+    - 白杨木头
+  stripped_poplar_wood:
+    material: STRIPPED_POPLAR_WOOD
+    buy: '5.00'
+    aliases:
+    - 去皮白杨木头
+  poplar_planks:
+    material: POPLAR_PLANKS
+    buy: '2.00'
+    aliases:
+    - 白杨木板
+  poplar_stairs:
+    material: POPLAR_STAIRS
+    buy: '3.00'
+    aliases:
+    - 白杨楼梯
+  poplar_slab:
+    material: POPLAR_SLAB
+    buy: '2.00'
+    aliases:
+    - 白杨台阶
+  poplar_fence:
+    material: POPLAR_FENCE
+    buy: '4.00'
+    aliases:
+    - 白杨栅栏
+  poplar_fence_gate:
+    material: POPLAR_FENCE_GATE
+    buy: '4.00'
+    aliases:
+    - 白杨栅栏门
+  poplar_door:
+    material: POPLAR_DOOR
+    buy: '5.00'
+    aliases:
+    - 白杨门
+  poplar_trapdoor:
+    material: POPLAR_TRAPDOOR
+    buy: '4.00'
+    aliases:
+    - 白杨活板门
+  poplar_sign:
+    material: POPLAR_SIGN
+    buy: '4.00'
+    aliases:
+    - 白杨告示牌
+  poplar_hanging_sign:
+    material: POPLAR_HANGING_SIGN
+    buy: '4.00'
+    aliases:
+    - 白杨悬挂告示牌
+  white_wool_slab:
+    material: WHITE_WOOL_SLAB
+    buy: '3.00'
+    aliases:
+    - 白色羊毛台阶
+  white_wool_stairs:
+    material: WHITE_WOOL_STAIRS
+    buy: '4.00'
+    aliases:
+    - 白色羊毛楼梯
+  orange_wool_slab:
+    material: ORANGE_WOOL_SLAB
+    buy: '3.00'
+    aliases:
+    - 橙色羊毛台阶
+  orange_wool_stairs:
+    material: ORANGE_WOOL_STAIRS
+    buy: '4.00'
+    aliases:
+    - 橙色羊毛楼梯
+  magenta_wool_slab:
+    material: MAGENTA_WOOL_SLAB
+    buy: '3.00'
+    aliases:
+    - 品红色羊毛台阶
+  magenta_wool_stairs:
+    material: MAGENTA_WOOL_STAIRS
+    buy: '4.00'
+    aliases:
+    - 品红色羊毛楼梯
+  light_blue_wool_slab:
+    material: LIGHT_BLUE_WOOL_SLAB
+    buy: '3.00'
+    aliases:
+    - 淡蓝色羊毛台阶
+  light_blue_wool_stairs:
+    material: LIGHT_BLUE_WOOL_STAIRS
+    buy: '4.00'
+    aliases:
+    - 淡蓝色羊毛楼梯
+  yellow_wool_slab:
+    material: YELLOW_WOOL_SLAB
+    buy: '3.00'
+    aliases:
+    - 黄色羊毛台阶
+  yellow_wool_stairs:
+    material: YELLOW_WOOL_STAIRS
+    buy: '4.00'
+    aliases:
+    - 黄色羊毛楼梯
+  lime_wool_slab:
+    material: LIME_WOOL_SLAB
+    buy: '3.00'
+    aliases:
+    - 黄绿色羊毛台阶
+  lime_wool_stairs:
+    material: LIME_WOOL_STAIRS
+    buy: '4.00'
+    aliases:
+    - 黄绿色羊毛楼梯
+  pink_wool_slab:
+    material: PINK_WOOL_SLAB
+    buy: '3.00'
+    aliases:
+    - 粉红色羊毛台阶
+  pink_wool_stairs:
+    material: PINK_WOOL_STAIRS
+    buy: '4.00'
+    aliases:
+    - 粉红色羊毛楼梯
+  gray_wool_slab:
+    material: GRAY_WOOL_SLAB
+    buy: '3.00'
+    aliases:
+    - 灰色羊毛台阶
+  gray_wool_stairs:
+    material: GRAY_WOOL_STAIRS
+    buy: '4.00'
+    aliases:
+    - 灰色羊毛楼梯
+  light_gray_wool_slab:
+    material: LIGHT_GRAY_WOOL_SLAB
+    buy: '3.00'
+    aliases:
+    - 淡灰色羊毛台阶
+  light_gray_wool_stairs:
+    material: LIGHT_GRAY_WOOL_STAIRS
+    buy: '4.00'
+    aliases:
+    - 淡灰色羊毛楼梯
+  cyan_wool_slab:
+    material: CYAN_WOOL_SLAB
+    buy: '3.00'
+    aliases:
+    - 青色羊毛台阶
+  cyan_wool_stairs:
+    material: CYAN_WOOL_STAIRS
+    buy: '4.00'
+    aliases:
+    - 青色羊毛楼梯
+  purple_wool_slab:
+    material: PURPLE_WOOL_SLAB
+    buy: '3.00'
+    aliases:
+    - 紫色羊毛台阶
+  purple_wool_stairs:
+    material: PURPLE_WOOL_STAIRS
+    buy: '4.00'
+    aliases:
+    - 紫色羊毛楼梯
+  blue_wool_slab:
+    material: BLUE_WOOL_SLAB
+    buy: '3.00'
+    aliases:
+    - 蓝色羊毛台阶
+  blue_wool_stairs:
+    material: BLUE_WOOL_STAIRS
+    buy: '4.00'
+    aliases:
+    - 蓝色羊毛楼梯
+  brown_wool_slab:
+    material: BROWN_WOOL_SLAB
+    buy: '3.00'
+    aliases:
+    - 棕色羊毛台阶
+  brown_wool_stairs:
+    material: BROWN_WOOL_STAIRS
+    buy: '4.00'
+    aliases:
+    - 棕色羊毛楼梯
+  green_wool_slab:
+    material: GREEN_WOOL_SLAB
+    buy: '3.00'
+    aliases:
+    - 绿色羊毛台阶
+  green_wool_stairs:
+    material: GREEN_WOOL_STAIRS
+    buy: '4.00'
+    aliases:
+    - 绿色羊毛楼梯
+  red_wool_slab:
+    material: RED_WOOL_SLAB
+    buy: '3.00'
+    aliases:
+    - 红色羊毛台阶
+  red_wool_stairs:
+    material: RED_WOOL_STAIRS
+    buy: '4.00'
+    aliases:
+    - 红色羊毛楼梯
+  black_wool_slab:
+    material: BLACK_WOOL_SLAB
+    buy: '3.00'
+    aliases:
+    - 黑色羊毛台阶
+  black_wool_stairs:
+    material: BLACK_WOOL_STAIRS
+    buy: '4.00'
+    aliases:
+    - 黑色羊毛楼梯
+  white_concrete_slab:
+    material: WHITE_CONCRETE_SLAB
+    buy: '4.00'
+    aliases:
+    - 白色混凝土台阶
+  white_concrete_stairs:
+    material: WHITE_CONCRETE_STAIRS
+    buy: '5.00'
+    aliases:
+    - 白色混凝土楼梯
+  orange_concrete_slab:
+    material: ORANGE_CONCRETE_SLAB
+    buy: '4.00'
+    aliases:
+    - 橙色混凝土台阶
+  orange_concrete_stairs:
+    material: ORANGE_CONCRETE_STAIRS
+    buy: '5.00'
+    aliases:
+    - 橙色混凝土楼梯
+  magenta_concrete_slab:
+    material: MAGENTA_CONCRETE_SLAB
+    buy: '4.00'
+    aliases:
+    - 品红色混凝土台阶
+  magenta_concrete_stairs:
+    material: MAGENTA_CONCRETE_STAIRS
+    buy: '5.00'
+    aliases:
+    - 品红色混凝土楼梯
+  light_blue_concrete_slab:
+    material: LIGHT_BLUE_CONCRETE_SLAB
+    buy: '4.00'
+    aliases:
+    - 淡蓝色混凝土台阶
+  light_blue_concrete_stairs:
+    material: LIGHT_BLUE_CONCRETE_STAIRS
+    buy: '5.00'
+    aliases:
+    - 淡蓝色混凝土楼梯
+  yellow_concrete_slab:
+    material: YELLOW_CONCRETE_SLAB
+    buy: '4.00'
+    aliases:
+    - 黄色混凝土台阶
+  yellow_concrete_stairs:
+    material: YELLOW_CONCRETE_STAIRS
+    buy: '5.00'
+    aliases:
+    - 黄色混凝土楼梯
+  lime_concrete_slab:
+    material: LIME_CONCRETE_SLAB
+    buy: '4.00'
+    aliases:
+    - 黄绿色混凝土台阶
+  lime_concrete_stairs:
+    material: LIME_CONCRETE_STAIRS
+    buy: '5.00'
+    aliases:
+    - 黄绿色混凝土楼梯
+  pink_concrete_slab:
+    material: PINK_CONCRETE_SLAB
+    buy: '4.00'
+    aliases:
+    - 粉红色混凝土台阶
+  pink_concrete_stairs:
+    material: PINK_CONCRETE_STAIRS
+    buy: '5.00'
+    aliases:
+    - 粉红色混凝土楼梯
+  gray_concrete_slab:
+    material: GRAY_CONCRETE_SLAB
+    buy: '4.00'
+    aliases:
+    - 灰色混凝土台阶
+  gray_concrete_stairs:
+    material: GRAY_CONCRETE_STAIRS
+    buy: '5.00'
+    aliases:
+    - 灰色混凝土楼梯
+  light_gray_concrete_slab:
+    material: LIGHT_GRAY_CONCRETE_SLAB
+    buy: '4.00'
+    aliases:
+    - 淡灰色混凝土台阶
+  light_gray_concrete_stairs:
+    material: LIGHT_GRAY_CONCRETE_STAIRS
+    buy: '5.00'
+    aliases:
+    - 淡灰色混凝土楼梯
+  cyan_concrete_slab:
+    material: CYAN_CONCRETE_SLAB
+    buy: '4.00'
+    aliases:
+    - 青色混凝土台阶
+  cyan_concrete_stairs:
+    material: CYAN_CONCRETE_STAIRS
+    buy: '5.00'
+    aliases:
+    - 青色混凝土楼梯
+  purple_concrete_slab:
+    material: PURPLE_CONCRETE_SLAB
+    buy: '4.00'
+    aliases:
+    - 紫色混凝土台阶
+  purple_concrete_stairs:
+    material: PURPLE_CONCRETE_STAIRS
+    buy: '5.00'
+    aliases:
+    - 紫色混凝土楼梯
+  blue_concrete_slab:
+    material: BLUE_CONCRETE_SLAB
+    buy: '4.00'
+    aliases:
+    - 蓝色混凝土台阶
+  blue_concrete_stairs:
+    material: BLUE_CONCRETE_STAIRS
+    buy: '5.00'
+    aliases:
+    - 蓝色混凝土楼梯
+  brown_concrete_slab:
+    material: BROWN_CONCRETE_SLAB
+    buy: '4.00'
+    aliases:
+    - 棕色混凝土台阶
+  brown_concrete_stairs:
+    material: BROWN_CONCRETE_STAIRS
+    buy: '5.00'
+    aliases:
+    - 棕色混凝土楼梯
+  green_concrete_slab:
+    material: GREEN_CONCRETE_SLAB
+    buy: '4.00'
+    aliases:
+    - 绿色混凝土台阶
+  green_concrete_stairs:
+    material: GREEN_CONCRETE_STAIRS
+    buy: '5.00'
+    aliases:
+    - 绿色混凝土楼梯
+  red_concrete_slab:
+    material: RED_CONCRETE_SLAB
+    buy: '4.00'
+    aliases:
+    - 红色混凝土台阶
+  red_concrete_stairs:
+    material: RED_CONCRETE_STAIRS
+    buy: '5.00'
+    aliases:
+    - 红色混凝土楼梯
+  black_concrete_slab:
+    material: BLACK_CONCRETE_SLAB
+    buy: '4.00'
+    aliases:
+    - 黑色混凝土台阶
+  black_concrete_stairs:
+    material: BLACK_CONCRETE_STAIRS
+    buy: '5.00'
+    aliases:
+    - 黑色混凝土楼梯
+  white_glazed_terracotta:
+    material: WHITE_GLAZED_TERRACOTTA
+    buy: '10.00'
+    aliases:
+    - 白色带釉陶瓦
+  orange_glazed_terracotta:
+    material: ORANGE_GLAZED_TERRACOTTA
+    buy: '10.00'
+    aliases:
+    - 橙色带釉陶瓦
+  magenta_glazed_terracotta:
+    material: MAGENTA_GLAZED_TERRACOTTA
+    buy: '10.00'
+    aliases:
+    - 品红色带釉陶瓦
+  light_blue_glazed_terracotta:
+    material: LIGHT_BLUE_GLAZED_TERRACOTTA
+    buy: '10.00'
+    aliases:
+    - 淡蓝色带釉陶瓦
+  yellow_glazed_terracotta:
+    material: YELLOW_GLAZED_TERRACOTTA
+    buy: '10.00'
+    aliases:
+    - 黄色带釉陶瓦
+  lime_glazed_terracotta:
+    material: LIME_GLAZED_TERRACOTTA
+    buy: '10.00'
+    aliases:
+    - 黄绿色带釉陶瓦
+  pink_glazed_terracotta:
+    material: PINK_GLAZED_TERRACOTTA
+    buy: '10.00'
+    aliases:
+    - 粉红色带釉陶瓦
+  gray_glazed_terracotta:
+    material: GRAY_GLAZED_TERRACOTTA
+    buy: '10.00'
+    aliases:
+    - 灰色带釉陶瓦
+  light_gray_glazed_terracotta:
+    material: LIGHT_GRAY_GLAZED_TERRACOTTA
+    buy: '10.00'
+    aliases:
+    - 淡灰色带釉陶瓦
+  cyan_glazed_terracotta:
+    material: CYAN_GLAZED_TERRACOTTA
+    buy: '10.00'
+    aliases:
+    - 青色带釉陶瓦
+  purple_glazed_terracotta:
+    material: PURPLE_GLAZED_TERRACOTTA
+    buy: '10.00'
+    aliases:
+    - 紫色带釉陶瓦
+  blue_glazed_terracotta:
+    material: BLUE_GLAZED_TERRACOTTA
+    buy: '10.00'
+    aliases:
+    - 蓝色带釉陶瓦
+  brown_glazed_terracotta:
+    material: BROWN_GLAZED_TERRACOTTA
+    buy: '10.00'
+    aliases:
+    - 棕色带釉陶瓦
+  green_glazed_terracotta:
+    material: GREEN_GLAZED_TERRACOTTA
+    buy: '10.00'
+    aliases:
+    - 绿色带釉陶瓦
+  red_glazed_terracotta:
+    material: RED_GLAZED_TERRACOTTA
+    buy: '10.00'
+    aliases:
+    - 红色带釉陶瓦
+  black_glazed_terracotta:
+    material: BLACK_GLAZED_TERRACOTTA
+    buy: '10.00'
+    aliases:
+    - 黑色带釉陶瓦
+  iron_door:
+    material: IRON_DOOR
+    buy: '8.00'
+    aliases:
+    - 铁门
+  iron_trapdoor:
+    material: IRON_TRAPDOOR
+    buy: '8.00'
+    aliases:
+    - 铁活板门
+  pale_moss_block:
+    material: PALE_MOSS_BLOCK
+    buy: '4.00'
+    aliases:
+    - 苍白苔藓块
+  pale_moss_carpet:
+    material: PALE_MOSS_CARPET
+    buy: '2.00'
+    aliases:
+    - 苍白苔藓毯
+  copper_bars:
+    material: COPPER_BARS
+    buy: '6.00'
+    aliases:
+    - 铜栏杆
+  copper_bulb:
+    material: COPPER_BULB
+    buy: '12.00'
+    aliases:
+    - 铜灯泡
+  copper_chest:
+    material: COPPER_CHEST
+    buy: '12.00'
+    aliases:
+    - 铜箱子
+  copper_door:
+    material: COPPER_DOOR
+    buy: '8.00'
+    aliases:
+    - 铜门
+  copper_golem_statue:
+    material: COPPER_GOLEM_STATUE
+    buy: '20.00'
+    aliases:
+    - 铜魔像雕像
+  copper_grate:
+    material: COPPER_GRATE
+    buy: '8.00'
+    aliases:
+    - 铜格栅
+  copper_lantern:
+    material: COPPER_LANTERN
+    buy: '8.00'
+    aliases:
+    - 铜灯笼
+  copper_trapdoor:
+    material: COPPER_TRAPDOOR
+    buy: '8.00'
+    aliases:
+    - 铜活板门
+  exposed_copper_bars:
+    material: EXPOSED_COPPER_BARS
+    buy: '6.00'
+    aliases:
+    - 斑驳的铜栏杆
+  exposed_copper_bulb:
+    material: EXPOSED_COPPER_BULB
+    buy: '12.00'
+    aliases:
+    - 斑驳的铜灯泡
+  exposed_copper_chest:
+    material: EXPOSED_COPPER_CHEST
+    buy: '12.00'
+    aliases:
+    - 斑驳的铜箱子
+  exposed_copper_door:
+    material: EXPOSED_COPPER_DOOR
+    buy: '8.00'
+    aliases:
+    - 斑驳的铜门
+  exposed_copper_golem_statue:
+    material: EXPOSED_COPPER_GOLEM_STATUE
+    buy: '20.00'
+    aliases:
+    - 斑驳的铜魔像雕像
+  exposed_copper_grate:
+    material: EXPOSED_COPPER_GRATE
+    buy: '8.00'
+    aliases:
+    - 斑驳的铜格栅
+  exposed_copper_lantern:
+    material: EXPOSED_COPPER_LANTERN
+    buy: '8.00'
+    aliases:
+    - 斑驳的铜灯笼
+  exposed_copper_trapdoor:
+    material: EXPOSED_COPPER_TRAPDOOR
+    buy: '8.00'
+    aliases:
+    - 斑驳的铜活板门
+  weathered_copper_bars:
+    material: WEATHERED_COPPER_BARS
+    buy: '6.00'
+    aliases:
+    - 风化的铜栏杆
+  weathered_copper_bulb:
+    material: WEATHERED_COPPER_BULB
+    buy: '12.00'
+    aliases:
+    - 风化的铜灯泡
+  weathered_copper_chest:
+    material: WEATHERED_COPPER_CHEST
+    buy: '12.00'
+    aliases:
+    - 风化的铜箱子
+  weathered_copper_door:
+    material: WEATHERED_COPPER_DOOR
+    buy: '8.00'
+    aliases:
+    - 风化的铜门
+  weathered_copper_golem_statue:
+    material: WEATHERED_COPPER_GOLEM_STATUE
+    buy: '20.00'
+    aliases:
+    - 风化的铜魔像雕像
+  weathered_copper_grate:
+    material: WEATHERED_COPPER_GRATE
+    buy: '8.00'
+    aliases:
+    - 风化的铜格栅
+  weathered_copper_lantern:
+    material: WEATHERED_COPPER_LANTERN
+    buy: '8.00'
+    aliases:
+    - 风化的铜灯笼
+  weathered_copper_trapdoor:
+    material: WEATHERED_COPPER_TRAPDOOR
+    buy: '8.00'
+    aliases:
+    - 风化的铜活板门
+  oxidized_copper_bars:
+    material: OXIDIZED_COPPER_BARS
+    buy: '6.00'
+    aliases:
+    - 氧化的铜栏杆
+  oxidized_copper_bulb:
+    material: OXIDIZED_COPPER_BULB
+    buy: '12.00'
+    aliases:
+    - 氧化的铜灯泡
+  oxidized_copper_chest:
+    material: OXIDIZED_COPPER_CHEST
+    buy: '12.00'
+    aliases:
+    - 氧化的铜箱子
+  oxidized_copper_door:
+    material: OXIDIZED_COPPER_DOOR
+    buy: '8.00'
+    aliases:
+    - 氧化的铜门
+  oxidized_copper_golem_statue:
+    material: OXIDIZED_COPPER_GOLEM_STATUE
+    buy: '20.00'
+    aliases:
+    - 氧化的铜魔像雕像
+  oxidized_copper_grate:
+    material: OXIDIZED_COPPER_GRATE
+    buy: '8.00'
+    aliases:
+    - 氧化的铜格栅
+  oxidized_copper_lantern:
+    material: OXIDIZED_COPPER_LANTERN
+    buy: '8.00'
+    aliases:
+    - 氧化的铜灯笼
+  oxidized_copper_trapdoor:
+    material: OXIDIZED_COPPER_TRAPDOOR
+    buy: '8.00'
+    aliases:
+    - 氧化的铜活板门
+  waxed_copper_bars:
+    material: WAXED_COPPER_BARS
+    buy: '6.00'
+    aliases:
+    - 涂蜡铜栏杆
+  waxed_copper_bulb:
+    material: WAXED_COPPER_BULB
+    buy: '12.00'
+    aliases:
+    - 涂蜡铜灯泡
+  waxed_copper_chest:
+    material: WAXED_COPPER_CHEST
+    buy: '12.00'
+    aliases:
+    - 涂蜡铜箱子
+  waxed_copper_door:
+    material: WAXED_COPPER_DOOR
+    buy: '8.00'
+    aliases:
+    - 涂蜡铜门
+  waxed_copper_golem_statue:
+    material: WAXED_COPPER_GOLEM_STATUE
+    buy: '20.00'
+    aliases:
+    - 涂蜡铜魔像雕像
+  waxed_copper_grate:
+    material: WAXED_COPPER_GRATE
+    buy: '8.00'
+    aliases:
+    - 涂蜡铜格栅
+  waxed_copper_lantern:
+    material: WAXED_COPPER_LANTERN
+    buy: '8.00'
+    aliases:
+    - 涂蜡铜灯笼
+  waxed_copper_trapdoor:
+    material: WAXED_COPPER_TRAPDOOR
+    buy: '8.00'
+    aliases:
+    - 涂蜡铜活板门
+  waxed_exposed_copper_bars:
+    material: WAXED_EXPOSED_COPPER_BARS
+    buy: '6.00'
+    aliases:
+    - 涂蜡斑驳铜栏杆
+  waxed_exposed_copper_bulb:
+    material: WAXED_EXPOSED_COPPER_BULB
+    buy: '12.00'
+    aliases:
+    - 涂蜡斑驳铜灯泡
+  waxed_exposed_copper_chest:
+    material: WAXED_EXPOSED_COPPER_CHEST
+    buy: '12.00'
+    aliases:
+    - 涂蜡斑驳铜箱子
+  waxed_exposed_copper_door:
+    material: WAXED_EXPOSED_COPPER_DOOR
+    buy: '8.00'
+    aliases:
+    - 涂蜡斑驳铜门
+  waxed_exposed_copper_golem_statue:
+    material: WAXED_EXPOSED_COPPER_GOLEM_STATUE
+    buy: '20.00'
+    aliases:
+    - 涂蜡斑驳铜魔像雕像
+  waxed_exposed_copper_grate:
+    material: WAXED_EXPOSED_COPPER_GRATE
+    buy: '8.00'
+    aliases:
+    - 涂蜡斑驳铜格栅
+  waxed_exposed_copper_lantern:
+    material: WAXED_EXPOSED_COPPER_LANTERN
+    buy: '8.00'
+    aliases:
+    - 涂蜡斑驳铜灯笼
+  waxed_exposed_copper_trapdoor:
+    material: WAXED_EXPOSED_COPPER_TRAPDOOR
+    buy: '8.00'
+    aliases:
+    - 涂蜡斑驳铜活板门
+  waxed_weathered_copper_bars:
+    material: WAXED_WEATHERED_COPPER_BARS
+    buy: '6.00'
+    aliases:
+    - 涂蜡风化铜栏杆
+  waxed_weathered_copper_bulb:
+    material: WAXED_WEATHERED_COPPER_BULB
+    buy: '12.00'
+    aliases:
+    - 涂蜡风化铜灯泡
+  waxed_weathered_copper_chest:
+    material: WAXED_WEATHERED_COPPER_CHEST
+    buy: '12.00'
+    aliases:
+    - 涂蜡风化铜箱子
+  waxed_weathered_copper_door:
+    material: WAXED_WEATHERED_COPPER_DOOR
+    buy: '8.00'
+    aliases:
+    - 涂蜡风化铜门
+  waxed_weathered_copper_golem_statue:
+    material: WAXED_WEATHERED_COPPER_GOLEM_STATUE
+    buy: '20.00'
+    aliases:
+    - 涂蜡风化铜魔像雕像
+  waxed_weathered_copper_grate:
+    material: WAXED_WEATHERED_COPPER_GRATE
+    buy: '8.00'
+    aliases:
+    - 涂蜡风化铜格栅
+  waxed_weathered_copper_lantern:
+    material: WAXED_WEATHERED_COPPER_LANTERN
+    buy: '8.00'
+    aliases:
+    - 涂蜡风化铜灯笼
+  waxed_weathered_copper_trapdoor:
+    material: WAXED_WEATHERED_COPPER_TRAPDOOR
+    buy: '8.00'
+    aliases:
+    - 涂蜡风化铜活板门
+  waxed_oxidized_copper_bars:
+    material: WAXED_OXIDIZED_COPPER_BARS
+    buy: '6.00'
+    aliases:
+    - 涂蜡氧化铜栏杆
+  waxed_oxidized_copper_bulb:
+    material: WAXED_OXIDIZED_COPPER_BULB
+    buy: '12.00'
+    aliases:
+    - 涂蜡氧化铜灯泡
+  waxed_oxidized_copper_chest:
+    material: WAXED_OXIDIZED_COPPER_CHEST
+    buy: '12.00'
+    aliases:
+    - 涂蜡氧化铜箱子
+  waxed_oxidized_copper_door:
+    material: WAXED_OXIDIZED_COPPER_DOOR
+    buy: '8.00'
+    aliases:
+    - 涂蜡氧化铜门
+  waxed_oxidized_copper_golem_statue:
+    material: WAXED_OXIDIZED_COPPER_GOLEM_STATUE
+    buy: '20.00'
+    aliases:
+    - 涂蜡氧化铜魔像雕像
+  waxed_oxidized_copper_grate:
+    material: WAXED_OXIDIZED_COPPER_GRATE
+    buy: '8.00'
+    aliases:
+    - 涂蜡氧化铜格栅
+  waxed_oxidized_copper_lantern:
+    material: WAXED_OXIDIZED_COPPER_LANTERN
+    buy: '8.00'
+    aliases:
+    - 涂蜡氧化铜灯笼
+  waxed_oxidized_copper_trapdoor:
+    material: WAXED_OXIDIZED_COPPER_TRAPDOOR
+    buy: '8.00'
+    aliases:
+    - 涂蜡氧化铜活板门
