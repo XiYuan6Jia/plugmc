@@ -167,8 +167,8 @@ items:
 ```
 
 - `buy` 是玩家购买价，`sell` 是商店回收价，必须 `buy > sell`。
-- `sellable` 默认 `false`：只有矿石原矿（煤炭、粗铜/粗铁/粗金、红石、青金石、钻石、绿宝石、石英）
-  标 `sellable: true`，锭、方块和成品只能购买、不能卖回系统商店。
+- `sellable` 默认 `false`：目前只有粗铜、粗铁、粗金、钻石与远古残骸标 `sellable: true`，
+  其余物品（煤炭、红石、青金石、绿宝石、石英、各种锭/方块/成品）只能购买、不能卖回系统商店。
 - `daily-buy` / `daily-sell` 为单玩家每日限额，`0` 表示不限；未写时使用 `config.yml` 的全局默认值。
 - `match: material`（默认）只匹配物品类型；`match: exact` 还会匹配名称/Lore 等组件。
 - `allow-custom-items: false` 时，带自定义名称、Lore 或附魔的物品不能按普通材料回收。

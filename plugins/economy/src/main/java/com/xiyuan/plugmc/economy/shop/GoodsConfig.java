@@ -227,6 +227,19 @@ public final class GoodsConfig {
 		return item != null && item.sellable() ? item : null;
 	}
 
+	/**
+	 * 可回收商品的展示名（别名优先），用于提示文案。
+	 */
+	public String sellableSummary() {
+		List<String> names = new ArrayList<>();
+		for (ShopItem item : items.values()) {
+			if (item.sellable()) {
+				names.add(item.aliases().isEmpty() ? item.id() : item.aliases().get(0));
+			}
+		}
+		return String.join("、", names);
+	}
+
 	public List<ShopItem> itemsForCategory(String categoryId) {
 		ShopCategory category = categories.get(categoryId.toLowerCase(Locale.ROOT));
 		if (category == null) {

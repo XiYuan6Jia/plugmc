@@ -157,7 +157,7 @@ public final class ShopService {
 
 		ShopItem item = goods.matchSellable(hand, settings.allowCustomItems());
 		if (item == null) {
-			player.sendMessage("商店只回收矿石原矿（煤炭、粗铁/粗金/粗铜、红石、青金石、钻石、绿宝石、石英）。");
+			player.sendMessage(sellableHint());
 			return false;
 		}
 
@@ -407,7 +407,7 @@ public final class ShopService {
 		player.sendMessage("商品：" + item.id() + "，买价 " + ledger.format(item.buyPrice())
 			+ " / 件（另收 " + settings.taxPercent() + "% 交易税）。");
 		if (!item.sellable()) {
-			player.sendMessage("商店只回收矿石原矿，此物品不回收。");
+			player.sendMessage(sellableHint() + "此物品不回收。");
 			return;
 		}
 		int sellLimit = settings.effectiveSellLimit(item.dailySellLimit());
@@ -441,6 +441,10 @@ public final class ShopService {
 
 	public int taxPercent() {
 		return settings.taxPercent();
+	}
+
+	public String sellableSummary() {
+		return goods.sellableSummary();
 	}
 
 	public int remainingBuy(Player player, ShopItem item) {
@@ -494,5 +498,10 @@ public final class ShopService {
 
 	private String remainingText(int remaining) {
 		return remaining == Integer.MAX_VALUE ? "不限" : Integer.toString(remaining);
+	}
+
+	private String sellableHint() {
+		String summary = goods.sellableSummary();
+		return summary.isBlank() ? "商店暂不回收任何物品。" : "商店只回收：" + summary + "。";
 	}
 }
