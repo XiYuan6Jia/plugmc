@@ -34,8 +34,7 @@ public final class HubTeleportManager implements Listener {
 		}
 		if (plugin.hubWorld().isHub(player.getLocation())) {
 			// 已经在主城：直接回出生点，不再读秒
-			player.teleport(plugin.hubWorld().spawn(config));
-			return true;
+			return plugin.hubManager().performEnter(player);
 		}
 		int warmup = config.teleportWarmupSeconds();
 		if (warmup <= 0) {
