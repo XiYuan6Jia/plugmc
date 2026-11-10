@@ -1,4 +1,4 @@
-config-version: 12
+config-version: 13
 menu:
   title: "&8服务器菜单"
   rows: 6
@@ -98,6 +98,16 @@ menu:
       action: player_command
       value: "order"
       permission: economy.order.use
+    "40":
+      material: BRICKS
+      name: "&6建材银行"
+      lore:
+        - "&7存入建材换算额度，兑换同类建材"
+        - "&7购买建材时可抵扣金币"
+        - "&8点击打开"
+      action: player_command
+      value: "bank"
+      permission: economy.bank.use
 
     # 第三区：社交与信息
     "36":

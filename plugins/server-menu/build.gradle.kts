@@ -6,4 +6,4 @@ dependencies {
 	compileOnly(project(":plugins:economy"))
 }
 
-version = "0.3.5"
+version = "0.3.6"
