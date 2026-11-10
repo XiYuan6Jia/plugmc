@@ -1,0 +1,21 @@
+name: hub
+version: '${version}'
+main: com.xiyuan.plugmc.hub.HubPlugin
+api-version: '${api_version}'
+authors: [XiYuan6Jia]
+description: "主城大厅：独立虚空维度 + 插件生成大厅，/hub 传送"
+commands:
+  hub:
+    description: "传送到主城大厅"
+    usage: /hub [back|info|check|setspawn|build|reload]
+    aliases: [spawn, lobby, maincity]
+permissions:
+  hub.use:
+    description: "进入主城大厅"
+    default: true
+  hub.admin:
+    description: "设置主城出生点、重建大厅、自检、重载配置"
+    default: op
+  hub.build:
+    description: "在主城大厅里放置/破坏方块"
+    default: op

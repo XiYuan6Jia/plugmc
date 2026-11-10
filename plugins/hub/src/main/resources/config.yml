@@ -1,0 +1,36 @@
+# 主城大厅（独立虚空维度 + 插件生成的大厅建筑）
+world:
+  # 世界（维度）文件夹名，创建后不建议改名
+  name: hub
+  # 地板方块所在的 Y 层，出生点在该层上方一格
+  floor-y: 64
+  # 大厅半径（实际宽度 = 2 × radius + 1），范围 8-48
+  radius: 24
+  # 启动时如果大厅不存在则自动生成
+  auto-build: true
+
+spawn:
+  x: 0.5
+  y: 65.0
+  z: 8.5
+  yaw: 180.0
+  pitch: 0.0
+
+# 大厅里的两行悬浮文字
+text:
+  title: "&6&l主城大厅"
+  subtitle: "&7/menu 打开菜单 · &f/hub back &7返回原位置"
+
+teleport:
+  # 进服时把玩家送进主城（默认关闭：用 /hub 或菜单进入）
+  join-auto: false
+  # 在主城死亡时原地（主城出生点）重生
+  respawn-in-hub: true
+  # 掉出世界底部（Y < 0）时拉回出生点
+  rescue-void: true
+
+protect:
+  deny-build: true
+  deny-pvp: true
+  deny-mob-spawn: true
+  no-fall-damage: true
