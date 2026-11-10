@@ -120,8 +120,10 @@ final class NpcCommand implements TabExecutor {
 			sender.sendMessage(text("进服欢迎已关闭"));
 			return;
 		}
-		plugin.welcomeByName(playerName);
-		sender.sendMessage(text("已发送欢迎语: " + playerName));
+		boolean sent = plugin.welcomeByName(playerName);
+		sender.sendMessage(text(sent
+			? "已发送欢迎语: " + playerName
+			: "玩家 " + playerName + " 不在线，欢迎语只写入了日志"));
 	}
 
 	private void banter(CommandSender sender, String message) {

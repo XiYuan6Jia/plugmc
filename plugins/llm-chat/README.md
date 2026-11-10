@@ -46,7 +46,7 @@ python scripts/deploy_paper.py --plugin llm-chat --upload-file llm-chat=.local/l
 | `npc.broadcast` | `true` 广播回复；`false` 只回给提问者 |
 | `welcome.enabled` | 是否在玩家进服时发送欢迎语 |
 | `welcome.message` | 欢迎语模板，支持 `{player}`、`{online}` 占位符 |
-| `welcome.broadcast` | `true` 全服广播；`false` 只发给进服玩家 |
+| `welcome.broadcast` | 默认 `false`：欢迎语只发给进服玩家（仅本人可见）；`true` 才全服广播 |
 | `banter.enabled` | 是否对公开聊天按概率触发 NPC 吐槽 |
 | `banter.systemChat` | 是否把 `BroadcastMessageEvent`（插件广播/部分 `/say`）也纳入吐槽 |
 | `banter.ignoreJoinLeave` | 跳过进服/退服消息，避免与欢迎重复（默认 `true`） |
@@ -65,7 +65,7 @@ python scripts/deploy_paper.py --plugin llm-chat --upload-file llm-chat=.local/l
 | `/npc status` | `plugmc.npc` | 查看接口、模型、密钥掩码、会话数 |
 | `/npc clear` | `plugmc.npc` | 清空自己的对话历史；控制台执行会清空全部 |
 | `/npc chat <内容>` | `plugmc.npc` | 通过命令直接对话（便于控制台测试） |
-| `/npc welcome <玩家名>` | `plugmc.npc.admin` | 手动发送欢迎语（离线名称只渲染模板） |
+| `/npc welcome <玩家名>` | `plugmc.npc.admin` | 手动发送欢迎语（离线名称只写入日志） |
 | `/npc banter <内容>` | `plugmc.npc.admin` | 手动触发一次吐槽（跳过概率与冷却） |
 | `/npc reload` | `plugmc.npc.admin` | 重新读取 `config.json` |
 

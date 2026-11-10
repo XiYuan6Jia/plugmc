@@ -19,7 +19,7 @@
   "welcome": {
     "enabled": true,
     "message": "欢迎 {player} 加入服务器！我是常驻 NPC 小页，聊天栏输入 @npc 可以找我聊天。",
-    "broadcast": true
+    "broadcast": false
   },
   "banter": {
     "enabled": true,

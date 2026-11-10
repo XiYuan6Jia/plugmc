@@ -123,7 +123,7 @@ record LlmConfig(Api api, Npc npc, Welcome welcome, Banter banter) {
 			new Welcome(
 				bool(welcome, "enabled", true),
 				string(welcome, "message", DEFAULT_WELCOME),
-				bool(welcome, "broadcast", true)
+				bool(welcome, "broadcast", false)
 			),
 			new Banter(
 				bool(banter, "enabled", true),

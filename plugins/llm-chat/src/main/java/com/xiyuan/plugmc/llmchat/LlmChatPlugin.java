@@ -218,12 +218,12 @@ public final class LlmChatPlugin extends JavaPlugin implements Listener {
 		getLogger().info("欢迎新玩家 " + player.getName() + ": " + text);
 	}
 
-	/** /npc welcome：玩家离线时只渲染模板。 */
-	void welcomeByName(String playerName) {
+	/** /npc welcome：返回 true 表示欢迎语确实发给了在线玩家（离线时只渲染/记录）。 */
+	boolean welcomeByName(String playerName) {
 		Player target = Bukkit.getPlayerExact(playerName);
 		if (target != null) {
 			welcome(target);
-			return;
+			return true;
 		}
 
 		LlmConfig current = service.config();
@@ -234,6 +234,7 @@ public final class LlmChatPlugin extends JavaPlugin implements Listener {
 		} else {
 			getLogger().info(plain(message));
 		}
+		return false;
 	}
 
 	/** 重新读取配置；返回 null 表示成功，否则返回失败原因。 */
