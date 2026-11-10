@@ -18,6 +18,8 @@
   主城内保留物品掉落（`keepInventory`）。
 - **保护**：默认禁止在主城放置/破坏方块（`hub.build` 可放行）、禁止玩家互相伤害、
   禁止刷怪、摔落无伤害、掉出世界底部（Y < 0）自动拉回出生点。
+- **饱食度与回血**：主城内冻结饱食度（不会掉饿，也不会自动补满，吃东西仍可恢复），
+  并关闭饥饿/饱和带来的自然回血；药水、金苹果等治疗效果不受影响。
 - **重生**：在主城死亡时直接在主城出生点重生。
 - **返回原位置**：进入主城前记录玩家位置（`plugins/hub/returns.yml`，重启后依然有效），
   `/hub back` 或聊天栏 `[返回原位置]` 按钮一键回去；`/hub`、菜单、其它插件传送进主城都会记录，
@@ -71,6 +73,8 @@
 | `protect.deny-pvp` | 主城内禁止玩家互相伤害，默认 `true` |
 | `protect.deny-mob-spawn` | 主城内禁止刷怪，默认 `true` |
 | `protect.no-fall-damage` | 主城内无摔落伤害，默认 `true` |
+| `protect.lock-food` | 冻结主城饱食度（不掉饿也不自动补满，吃东西可恢复），默认 `true` |
+| `protect.no-natural-regen` | 关闭主城内饥饿/饱和带来的自然回血，默认 `true` |
 | `parkour.enabled` | 是否生成并启用跑酷赛道，默认 `true` |
 | `parkour.announce-records` | 有人刷新纪录时全服播报，默认 `true` |
 

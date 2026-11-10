@@ -9,6 +9,8 @@ import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.entity.EntityRegainHealthEvent;
+import org.bukkit.event.entity.FoodLevelChangeEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
@@ -115,6 +117,38 @@ public final class HubListener implements Listener {
 		ParkourCourse.Pad pad = course.padAt(to.getX(), to.getY() - 1, to.getZ());
 		if (pad != null) {
 			parkour.onPad(player, pad);
+		}
+	}
+
+	@EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+	public void onFoodLevelChange(FoodLevelChangeEvent event) {
+		HubConfig config = plugin.settings();
+		if (!config.lockFood() || !(event.getEntity() instanceof Player player)) {
+			return;
+		}
+		if (!plugin.hubWorld().isHub(player.getLocation())) {
+			return;
+		}
+		// 吃东西仍然允许，其余（饥饿消耗等）全部冻结
+		if (event.getItem() != null) {
+			return;
+		}
+		event.setCancelled(true);
+	}
+
+	@EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+	public void onRegainHealth(EntityRegainHealthEvent event) {
+		HubConfig config = plugin.settings();
+		if (!config.noNaturalRegen() || !(event.getEntity() instanceof Player player)) {
+			return;
+		}
+		if (!plugin.hubWorld().isHub(player.getLocation())) {
+			return;
+		}
+		EntityRegainHealthEvent.RegainReason reason = event.getRegainReason();
+		if (reason == EntityRegainHealthEvent.RegainReason.REGEN
+			|| reason == EntityRegainHealthEvent.RegainReason.SATIATED) {
+			event.setCancelled(true);
 		}
 	}
 

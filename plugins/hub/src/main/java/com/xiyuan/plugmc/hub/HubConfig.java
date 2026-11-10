@@ -24,6 +24,8 @@ public record HubConfig(
 	boolean denyPvp,
 	boolean denyMobSpawn,
 	boolean noFallDamage,
+	boolean lockFood,
+	boolean noNaturalRegen,
 	boolean parkourEnabled,
 	boolean parkourAnnounce
 ) {
@@ -53,6 +55,8 @@ public record HubConfig(
 			config.getBoolean("protect.deny-pvp", true),
 			config.getBoolean("protect.deny-mob-spawn", true),
 			config.getBoolean("protect.no-fall-damage", true),
+			config.getBoolean("protect.lock-food", true),
+			config.getBoolean("protect.no-natural-regen", true),
 			config.getBoolean("parkour.enabled", true),
 			config.getBoolean("parkour.announce-records", true)
 		);

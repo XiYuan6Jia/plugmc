@@ -34,6 +34,10 @@ protect:
   deny-pvp: true
   deny-mob-spawn: true
   no-fall-damage: true
+  # 冻结主城内的饱食度：不掉饿也不会自动补满，吃东西仍可恢复
+  lock-food: true
+  # 关闭主城内的自然回血（饥饿/饱和带来的恢复），药水与治疗仍有效
+  no-natural-regen: true
 
 # 主城东侧出口外的跑酷赛道
 parkour:
