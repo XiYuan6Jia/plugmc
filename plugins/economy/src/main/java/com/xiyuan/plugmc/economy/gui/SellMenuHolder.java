@@ -32,6 +32,18 @@ public final class SellMenuHolder implements InventoryHolder {
 		return slot >= 0 && slot < inputEnd;
 	}
 
+	/**
+	 * 输入区以外的槽位（按钮/填充板）是否有空位；用于判断 Shift 移入是否会落到按钮上。
+	 */
+	public boolean hasEmptyOutsideInput() {
+		for (int slot = inputEnd; slot < inventory.getSize(); slot++) {
+			if (inventory.getItem(slot) == null) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	public void set(int slot, ItemStack item, Consumer<Player> action) {
 		inventory.setItem(slot, item);
 		if (action == null) {

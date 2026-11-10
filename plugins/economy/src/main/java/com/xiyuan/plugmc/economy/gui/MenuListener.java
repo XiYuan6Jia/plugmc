@@ -33,17 +33,22 @@ public final class MenuListener implements Listener {
 			event.setCancelled(true);
 			return;
 		}
-		// 禁止 Shift 点击，避免物品被移到输入区之外或与按钮交换。
-		if (event.isShiftClick()) {
-			event.setCancelled(true);
-			return;
-		}
 		int rawSlot = event.getRawSlot();
 		boolean topClicked = event.getClickedInventory() != null
 			&& event.getClickedInventory().equals(event.getView().getTopInventory());
-		if (topClicked && !sell.isInputSlot(rawSlot)) {
+		if (topClicked) {
+			if (sell.isInputSlot(rawSlot)) {
+				// 输入区允许自由放入/取出，Shift 点击整组移回背包
+				return;
+			}
 			event.setCancelled(true);
 			sell.handle(player, rawSlot);
+			return;
+		}
+		// 点击玩家背包：允许 Shift 把整组物品放进上方输入区；
+		// 但输入区已满、上方仍存在非输入区空位时取消，避免物品被塞进按钮槽。
+		if (event.isShiftClick() && sell.hasEmptyOutsideInput()) {
+			event.setCancelled(true);
 		}
 	}
 
