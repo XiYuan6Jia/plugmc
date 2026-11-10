@@ -1,0 +1,9 @@
+# 家园与死亡点传送
+# 默认家园数量上限；可通过权限 sethome.max.<数字> 给单个玩家提高上限
+max-homes: 3
+# 传送读秒（秒），期间移动或受伤会取消；0 表示立即传送
+teleport-warmup-seconds: 3
+# 传送成功后的冷却（秒）
+teleport-cooldown-seconds: 10
+# 是否允许 /deathpoint 传送到上次死亡地点
+deathpoint-enabled: true

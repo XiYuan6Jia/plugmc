@@ -1,0 +1,33 @@
+name: sethome
+version: '${version}'
+main: com.xiyuan.plugmc.sethome.SetHomePlugin
+api-version: '${api_version}'
+authors: [XiYuan6Jia]
+description: "家园与死亡点传送：/sethome /home /delhome /homes /deathpoint"
+commands:
+  sethome:
+    description: "设置家园"
+    usage: /sethome [名称]
+  home:
+    description: "传送回家园"
+    usage: /home [名称]
+  delhome:
+    description: "删除家园"
+    usage: /delhome <名称>
+  homes:
+    description: "列出自己的家园"
+    usage: /homes
+  deathpoint:
+    description: "传送到上次死亡地点"
+    usage: /deathpoint
+    aliases: [dp, deathback]
+permissions:
+  sethome.use:
+    description: "使用家园与死亡点传送"
+    default: true
+  sethome.admin:
+    description: "家园管理"
+    default: op
+  sethome.max.*:
+    description: "家园数量上限（sethome.max.<数字>）"
+    default: false
