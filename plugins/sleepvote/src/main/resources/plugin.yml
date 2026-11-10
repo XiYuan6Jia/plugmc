@@ -1,0 +1,17 @@
+name: sleepvote
+version: '${version}'
+main: com.xiyuan.plugmc.sleepvote.SleepVotePlugin
+api-version: '${api_version}'
+authors: [XiYuan6Jia]
+description: "入睡半径：半径内达到比例的玩家入睡后跳过夜晚"
+commands:
+  sleepvote:
+    description: "查看睡眠投票状态"
+    usage: /sleepvote [status|reload]
+permissions:
+  sleepvote.use:
+    description: "使用睡眠投票状态命令"
+    default: true
+  sleepvote.admin:
+    description: "重载睡眠投票配置"
+    default: op

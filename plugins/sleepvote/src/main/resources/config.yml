@@ -1,0 +1,15 @@
+# 入睡半径：只有「半径内」的玩家计入睡眠投票，达到比例后跳过夜晚
+# 统计半径（格），以第一个上床的玩家为圆心
+radius: 100
+# 半径内需要入睡的玩家比例（1-100）
+percentage: 50
+# 半径内至少有多少名玩家（不含旁观者）才进行投票
+min-players: 1
+# 是否把原版 playersSleepingPercentage 关掉（设为 101），由本插件接管
+disable-vanilla-sleep: true
+# 跳过夜晚时是否同时停雨/停雷
+skip-weather: true
+messages:
+  progress: "&e附近玩家入睡：&f{sleeping}/{required}&e（半径 {radius} 格）"
+  skipped: "&a附近玩家已入睡，夜晚被跳过。"
+  alone: "&7附近没有其他需要入睡的玩家。"
