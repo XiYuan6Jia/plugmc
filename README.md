@@ -107,7 +107,8 @@ Paper 开发服用 `python scripts/run_paper.py` 启动时会自动把 `datapack
 - `plugins/demo`：最小示例，一条 `/demo` 命令，用于验证构建、部署与本地开发服链路。
 - `plugins/tpa`：申请传送，`/tpa`、`/tpahere` 发起，聊天栏一键接受/拒绝，带热身读秒与冷却。
 - `plugins/hub`：主城大厅，独立虚空维度 + 代码生成的大厅建筑，`/hub` 进入、`/hub back` 返回，
-  主城内禁建造/禁 PvP/禁刷怪/掉虚空拉回，详见 [plugins/hub/README.md](plugins/hub/README.md)。
+  主城内禁建造/禁 PvP/禁刷怪/掉虚空拉回，东门外附带 20 段跳台的跑酷赛道（`/hub parkour`），
+  详见 [plugins/hub/README.md](plugins/hub/README.md)。
 - `plugins/economy`：复式记账经济系统，支持余额查询、玩家转账、管理员余额管理、系统商店 GUI、
   玩家市场、收购订单、拍卖行、直接交易、邮箱、余额排行、商品每日限额、账本自检与备份，
   并提供可扩展的服务 API，详见 [plugins/economy/README.md](plugins/economy/README.md)。

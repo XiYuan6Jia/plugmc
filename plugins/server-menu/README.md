@@ -40,6 +40,7 @@
 | 20 | 进入主城大厅 | `/hub` |
 | 22 | 返回原位置 | `/hub back` |
 | 24 | 主城信息 | `/hub info` |
+| 30 | 跑酷挑战 | `/hub parkour` |
 | 29 | 设置出生点（`hub.admin`） | `/hub setspawn` |
 | 31 | 重建大厅（`hub.admin`） | `/hub build` |
 | 33 | 结构自检（`hub.admin`） | `/hub check` |

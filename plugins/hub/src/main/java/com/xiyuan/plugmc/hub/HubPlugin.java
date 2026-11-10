@@ -14,6 +14,8 @@ public final class HubPlugin extends JavaPlugin {
 	private HubWorld hubWorld;
 	private HubManager hubManager;
 	private HubReturns hubReturns;
+	private ParkourManager parkour;
+	private ParkourCourse parkourCourse;
 
 	@Override
 	public void onEnable() {
@@ -31,6 +33,10 @@ public final class HubPlugin extends JavaPlugin {
 		hubReturns = new HubReturns(getDataFolder(), getLogger());
 		hubReturns.load();
 		hubManager = new HubManager(this, hubReturns);
+
+		parkour = new ParkourManager(this);
+		parkour.load();
+		ensureParkour(false);
 		getServer().getPluginManager().registerEvents(new HubListener(this), this);
 		PluginCommand command = getCommand("hub");
 		if (command != null) {
@@ -68,5 +74,30 @@ public final class HubPlugin extends JavaPlugin {
 
 	public HubReturns hubReturns() {
 		return hubReturns;
+	}
+
+	public ParkourManager parkour() {
+		return parkour;
+	}
+
+	/**
+	 * 按配置准备跑酷赛道：已存在时只重建轨迹索引，force 时重新摆放方块。
+	 */
+	public void ensureParkour(boolean force) {
+		if (!settings.parkourEnabled()) {
+			getLogger().info("跑酷赛道已关闭（parkour.enabled=false）");
+			return;
+		}
+		parkourCourse = new ParkourCourse(hubWorld.world(), settings);
+		if (!force && ParkourCourse.isBuilt(hubWorld.world(), settings)) {
+			parkour.course(parkourCourse);
+			return;
+		}
+		long start = System.currentTimeMillis();
+		parkourCourse.build();
+		parkour.course(parkourCourse);
+		getLogger().info("跑酷赛道已生成（" + parkourCourse.platformCount() + " 段跳台，"
+			+ parkourCourse.checkpointCount() + " 个检查点），用时 "
+			+ (System.currentTimeMillis() - start) + " ms");
 	}
 }

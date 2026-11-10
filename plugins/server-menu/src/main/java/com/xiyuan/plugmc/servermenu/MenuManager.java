@@ -419,6 +419,7 @@ public final class MenuManager {
 				case 20 -> runHubCommand(player, "hub");
 				case 22 -> runHubCommand(player, "hub back");
 				case 24 -> runHubCommand(player, "hub info");
+				case 30 -> runHubCommand(player, "hub parkour");
 				case 29 -> runHubCommand(player, "hub setspawn");
 				case 31 -> runHubCommand(player, "hub build");
 				case 33 -> runHubCommand(player, "hub check");
@@ -560,6 +561,11 @@ public final class MenuManager {
 		holder.setButtonItem(24, adminItem(Material.MAP, "&b主城信息", List.of(
 			"&7维度名、出生点与在线人数",
 			"&8结果显示在聊天栏"
+		)));
+		holder.setButtonItem(30, adminItem(Material.FEATHER, "&a跑酷挑战", List.of(
+			"&7东门外的 20 段跳台",
+			"&7踩金色方块记录检查点，踩钻石块冲线",
+			"&8点击开始计时"
 		)));
 		if (player.hasPermission("hub.admin")) {
 			holder.setButtonItem(29, adminItem(Material.RESPAWN_ANCHOR, "&e设置出生点", List.of(

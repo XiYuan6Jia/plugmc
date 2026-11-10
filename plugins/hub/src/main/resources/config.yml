@@ -34,3 +34,9 @@ protect:
   deny-pvp: true
   deny-mob-spawn: true
   no-fall-damage: true
+
+# 主城东侧出口外的跑酷赛道
+parkour:
+  enabled: true
+  # 有人刷新纪录时全服播报
+  announce-records: true

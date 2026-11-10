@@ -29,13 +29,30 @@
 | --- | --- | --- |
 | `/hub` | 进入主城（已在主城则回出生点），别名 `/spawn`、`/lobby`、`/maincity` | `hub.use` |
 | `/hub back` | 回到进入主城前的位置 | `hub.use` |
-| `/hub info` | 查看维度名、出生点、在线人数、大厅是否已生成 | `hub.use` |
-| `/hub check` | 关键结构自检（喷泉、墙体柱子、屋顶天窗、大门开口…） | `hub.admin` |
+| `/hub info` | 查看维度名、出生点、在线人数、大厅与跑酷状态 | `hub.use` |
+| `/hub check` | 结构自检（大厅 + 跑酷关键方块） | `hub.admin` |
+| `/hub parkour` | 传送到跑酷起点并开始计时 | `hub.use` |
+| `/hub parkour quit` | 退出跑酷，回到大厅出生点 | `hub.use` |
+| `/hub parkour top` / `best` | 跑酷排行榜 / 自己的最佳成绩 | `hub.use` |
 | `/hub setspawn` | 把当前位置设为主城出生点（同时写回配置） | `hub.admin` |
-| `/hub build` | 强制清空并重建大厅 | `hub.admin` |
+| `/hub build` | 强制清空并重建大厅与跑酷赛道 | `hub.admin` |
 | `/hub reload` | 重载配置并重新应用世界规则（改世界名需重启） | `hub.admin` |
 
-服务器菜单（`server-menu`）第三区有「主城大厅」按钮，点击直接执行 `/hub`。
+服务器菜单（`server-menu`）第三区有「主城大厅」按钮，进入子页后可进入大厅、返回原位置、
+查看信息或开始跑酷。
+
+## 跑酷赛道
+
+- 位置：大厅**东门外**，从东门出来沿一条 3 格宽的连接走廊往东走即到起点台。
+- 结构：起点 5×5 台（中心金色方块）→ 20 段 3×3 跳台（间隔 4 格、逐步升高、左右交错）→ 终点 7×7 台（中心钻石块）。
+- 玩法：
+  - 踩**起点金色方块**开始计时；`/hub parkour` 也会直接传送到起点并开始。
+  - 每 5 段有一次**检查点**（更大的平台 + 金色方块），踩到即记录进度并显示当前用时。
+  - 踩**终点钻石块**结束计时：必须踩满全部 3 个检查点才算成绩，否则提示还差几个。
+  - 掉下赛道（Y 低于地板 8 格）自动送回最近检查点，计时继续。
+  - 成绩写入 `plugins/hub/parkour.yml`，刷新个人纪录时全服播报（`parkour.announce-records`）。
+- 悬浮字：起点「跑酷起点 · /hub parkour」、终点「跑酷终点」。
+- 自检：`/hub check` 会列出起点、检查点 1–3、终点与关键平台的实际方块。
 
 ## 配置（`plugins/hub/config.yml`）
 
@@ -54,6 +71,8 @@
 | `protect.deny-pvp` | 主城内禁止玩家互相伤害，默认 `true` |
 | `protect.deny-mob-spawn` | 主城内禁止刷怪，默认 `true` |
 | `protect.no-fall-damage` | 主城内无摔落伤害，默认 `true` |
+| `parkour.enabled` | 是否生成并启用跑酷赛道，默认 `true` |
+| `parkour.announce-records` | 有人刷新纪录时全服播报，默认 `true` |
 
 ## 权限
 

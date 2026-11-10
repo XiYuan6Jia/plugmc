@@ -23,7 +23,9 @@ public record HubConfig(
 	boolean denyBuild,
 	boolean denyPvp,
 	boolean denyMobSpawn,
-	boolean noFallDamage
+	boolean noFallDamage,
+	boolean parkourEnabled,
+	boolean parkourAnnounce
 ) {
 	public HubConfig {
 		worldName = worldName == null || worldName.isBlank() ? "hub" : worldName.trim();
@@ -50,7 +52,9 @@ public record HubConfig(
 			config.getBoolean("protect.deny-build", true),
 			config.getBoolean("protect.deny-pvp", true),
 			config.getBoolean("protect.deny-mob-spawn", true),
-			config.getBoolean("protect.no-fall-damage", true)
+			config.getBoolean("protect.no-fall-damage", true),
+			config.getBoolean("parkour.enabled", true),
+			config.getBoolean("parkour.announce-records", true)
 		);
 	}
 

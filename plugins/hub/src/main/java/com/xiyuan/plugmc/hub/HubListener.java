@@ -11,8 +11,10 @@ import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
+import org.bukkit.block.Block;
 
 /** 主城保护：禁建造、禁 PvP、禁刷怪、掉虚空拉回、主城死亡原地重生。 */
 public final class HubListener implements Listener {
@@ -87,14 +89,33 @@ public final class HubListener implements Listener {
 	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	public void onMove(PlayerMoveEvent event) {
 		HubConfig config = plugin.settings();
-		if (!config.rescueVoid() || !plugin.hubWorld().isHub(event.getTo())) {
+		if (!plugin.hubWorld().isHub(event.getTo())) {
 			return;
 		}
-		if (event.getTo().getY() >= 0) {
+		Player player = event.getPlayer();
+		ParkourManager parkour = plugin.parkour();
+		if (parkour != null && parkour.running(player) && event.getTo().getY() < config.floorY() - 8) {
+			parkour.onFall(player);
 			return;
 		}
-		event.setTo(plugin.hubWorld().spawn(config));
-		event.getPlayer().sendMessage(HubText.component("&7你掉出了主城，已送回大厅。"));
+		if (config.rescueVoid() && event.getTo().getY() < 0) {
+			event.setTo(plugin.hubWorld().spawn(config));
+			player.sendMessage(HubText.component("&7你掉出了主城，已送回大厅。"));
+			return;
+		}
+		ParkourCourse course = parkour == null ? null : parkour.course();
+		if (course == null) {
+			return;
+		}
+		Block from = event.getFrom().getBlock();
+		Block to = event.getTo().getBlock();
+		if (from.getX() == to.getX() && from.getY() == to.getY() && from.getZ() == to.getZ()) {
+			return;
+		}
+		ParkourCourse.Pad pad = course.padAt(to.getX(), to.getY() - 1, to.getZ());
+		if (pad != null) {
+			parkour.onPad(player, pad);
+		}
 	}
 
 	@EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
@@ -117,8 +138,19 @@ public final class HubListener implements Listener {
 		if (!plugin.hubWorld().ready()) {
 			return;
 		}
+		boolean leftHub = plugin.hubWorld().isHub(event.getFrom()) && !plugin.hubWorld().isHub(event.getTo());
+		if (leftHub && plugin.parkour() != null) {
+			plugin.parkour().onLeaveHub(event.getPlayer());
+		}
 		if (plugin.hubWorld().isHub(event.getTo()) && !plugin.hubWorld().isHub(event.getFrom())) {
 			plugin.hubManager().rememberOnEnter(event.getPlayer(), event.getFrom());
+		}
+	}
+
+	@EventHandler
+	public void onQuit(PlayerQuitEvent event) {
+		if (plugin.parkour() != null) {
+			plugin.parkour().onQuit(event.getPlayer());
 		}
 	}
 

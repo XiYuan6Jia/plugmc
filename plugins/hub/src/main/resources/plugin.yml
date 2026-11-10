@@ -7,7 +7,7 @@ description: "主城大厅：独立虚空维度 + 插件生成大厅，/hub 传�
 commands:
   hub:
     description: "传送到主城大厅"
-    usage: /hub [back|info|check|setspawn|build|reload]
+    usage: /hub [back|info|check|parkour|setspawn|build|reload]
     aliases: [spawn, lobby, maincity]
 permissions:
   hub.use:
