@@ -24,6 +24,8 @@
 - **返回原位置**：进入主城前记录玩家位置（`plugins/hub/returns.yml`，重启后依然有效），
   `/hub back` 或聊天栏 `[返回原位置]` 按钮一键回去；`/hub`、菜单、其它插件传送进主城都会记录，
   记录缺失时退回主世界出生点。
+- **进入读秒**：`/hub` 进入主城默认 3 秒读秒（`teleport.warmup-seconds`），期间移动或受伤会取消传送；
+  已经在主城时直接回到出生点，不读秒。
 
 ## 命令
 
@@ -67,6 +69,7 @@
 | `spawn.*` | 出生点坐标与朝向（`/hub setspawn` 会自动写回） |
 | `text.title` / `text.subtitle` | 大厅里两块悬浮文字，支持 `&` 颜色码 |
 | `teleport.join-auto` | 进服自动送进主城，默认 `false` |
+| `teleport.warmup-seconds` | `/hub` 进入主城的读秒（秒），默认 `3`；期间移动或受伤会被取消，`0` 表示立即传送 |
 | `teleport.respawn-in-hub` | 主城内死亡原地重生，默认 `true` |
 | `teleport.rescue-void` | 掉出世界底部拉回出生点，默认 `true` |
 | `protect.deny-build` | 禁止非 `hub.build` 玩家建造，默认 `true` |

@@ -13,6 +13,7 @@ public final class HubPlugin extends JavaPlugin {
 	private HubConfig settings;
 	private HubWorld hubWorld;
 	private HubManager hubManager;
+	private HubTeleportManager teleports;
 	private HubReturns hubReturns;
 	private ParkourManager parkour;
 	private ParkourCourse parkourCourse;
@@ -33,6 +34,8 @@ public final class HubPlugin extends JavaPlugin {
 		hubReturns = new HubReturns(getDataFolder(), getLogger());
 		hubReturns.load();
 		hubManager = new HubManager(this, hubReturns);
+		teleports = new HubTeleportManager(this);
+		getServer().getPluginManager().registerEvents(teleports, this);
 
 		parkour = new ParkourManager(this);
 		parkour.load();
@@ -70,6 +73,10 @@ public final class HubPlugin extends JavaPlugin {
 
 	public HubManager hubManager() {
 		return hubManager;
+	}
+
+	public HubTeleportManager teleports() {
+		return teleports;
 	}
 
 	public HubReturns hubReturns() {

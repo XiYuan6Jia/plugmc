@@ -24,6 +24,8 @@ text:
 teleport:
   # 进服时把玩家送进主城（默认关闭：用 /hub 或菜单进入）
   join-auto: false
+  # /hub 进入主城的读秒（秒），期间移动或受伤会取消；0 表示立即传送
+  warmup-seconds: 3
   # 在主城死亡时原地（主城出生点）重生
   respawn-in-hub: true
   # 掉出世界底部（Y < 0）时拉回出生点

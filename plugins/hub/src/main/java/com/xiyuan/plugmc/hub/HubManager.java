@@ -21,7 +21,17 @@ public final class HubManager {
 		this.returns = returns;
 	}
 
+	/**
+	 * /hub：带读秒进入主城（已在主城时直接回出生点）。
+	 */
 	public boolean enter(Player player) {
+		return plugin.teleports().request(player);
+	}
+
+	/**
+	 * 实际执行进入主城；由 {@link HubTeleportManager} 在读秒结束后调用。
+	 */
+	public boolean performEnter(Player player) {
 		HubConfig config = plugin.settings();
 		if (!plugin.hubWorld().ready()) {
 			player.sendMessage(HubText.component("&c主城维度尚未加载，请联系管理员。"));

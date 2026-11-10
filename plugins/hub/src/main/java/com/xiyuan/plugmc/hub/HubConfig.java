@@ -18,6 +18,7 @@ public record HubConfig(
 	String title,
 	String subtitle,
 	boolean joinAuto,
+	int teleportWarmupSeconds,
 	boolean respawnInHub,
 	boolean rescueVoid,
 	boolean denyBuild,
@@ -33,6 +34,7 @@ public record HubConfig(
 		worldName = worldName == null || worldName.isBlank() ? "hub" : worldName.trim();
 		floorY = clamp(floorY, -32, 200);
 		radius = clamp(radius, 8, 48);
+		teleportWarmupSeconds = clamp(teleportWarmupSeconds, 0, 60);
 	}
 
 	public static HubConfig load(FileConfiguration config) {
@@ -49,6 +51,7 @@ public record HubConfig(
 			config.getString("text.title", "&6&l主城大厅"),
 			config.getString("text.subtitle", "&7/menu 打开菜单 · &f/hub back &7返回原位置"),
 			config.getBoolean("teleport.join-auto", false),
+			config.getInt("teleport.warmup-seconds", 3),
 			config.getBoolean("teleport.respawn-in-hub", true),
 			config.getBoolean("teleport.rescue-void", true),
 			config.getBoolean("protect.deny-build", true),

@@ -196,7 +196,7 @@ public final class HubListener implements Listener {
 		Player player = event.getPlayer();
 		plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
 			if (player.isOnline()) {
-				plugin.hubManager().enter(player);
+				plugin.hubManager().performEnter(player);
 			}
 		}, 1L);
 	}
