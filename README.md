@@ -118,6 +118,9 @@ Paper 开发服用 `python scripts/run_paper.py` 启动时会自动把 `datapack
   `@npc <内容>` 调用大模型并广播回复；玩家进服发送欢迎语，公开聊天按概率触发 NPC 吐槽。
   配置在服务器 `plugins/llm-chat/config.json`，详见 [plugins/llm-chat/README.md](plugins/llm-chat/README.md)。
 
+- `plugins/minigames`：主城小游戏（21 点 / 幸运转盘 / 老虎机），下注与派彩进 economy 账本，
+  大厅北侧三个实体摊位右键柜台就能玩，详见 [plugins/minigames/README.md](plugins/minigames/README.md)。
+
 Fabric 时代的热加载方案（`mods/plugmc` + `hotplugins/`）保留在仓库中，见下一节。
 
 ## 热加载（Fabric 历史方案）

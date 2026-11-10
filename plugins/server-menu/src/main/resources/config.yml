@@ -1,4 +1,4 @@
-config-version: 10
+config-version: 12
 menu:
   title: "&8服务器菜单"
   rows: 6
@@ -108,6 +108,15 @@ menu:
         - "&8点击打开大厅子页"
       action: hub_panel
       permission: hub.use
+    "38":
+      material: LEVER
+      name: "&d小游戏"
+      lore:
+        - "&721点 / 幸运转盘 / 老虎机"
+        - "&8主城北侧有实体店，点击打开菜单"
+      action: player_command
+      value: "games"
+      permission: minigames.use
     "39":
       material: PLAYER_HEAD
       name: "&d直接交易"

@@ -1,0 +1,30 @@
+# 小游戏（21 点 / 幸运转盘 / 老虎机）
+limits:
+  # 单次注额范围（整数）
+  min-bet: 1
+  max-bet: 100
+  # 两次开局之间的冷却（秒）
+  cooldown-seconds: 2
+
+games:
+  blackjack:
+    enabled: true
+    default-bet: 10
+    # 21 点天然黑杰克赔率（1.5 = 3:2）
+    blackjack-payout: 1.5
+  wheel:
+    enabled: true
+    default-bet: 10
+  slots:
+    enabled: true
+    default-bet: 5
+
+# 主城大厅北侧的实体店（需要 hub 维度存在）
+venue:
+  enabled: true
+  world: hub
+  floor-y: 64
+  # 三个摊位的中心：x 轴间隔 venue-spacing，z 为统一纵深
+  center-x: 0
+  center-z: -40
+  spacing: 14

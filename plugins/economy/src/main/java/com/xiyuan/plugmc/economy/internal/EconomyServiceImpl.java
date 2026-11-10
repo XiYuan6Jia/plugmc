@@ -44,8 +44,18 @@ public final class EconomyServiceImpl implements EconomyService {
 	}
 
 	@Override
+	public boolean deposit(UUID playerId, BigDecimal amount, String reason) {
+		return ledger.deposit(playerId, amount, reason == null || reason.isBlank() ? "API_DEPOSIT" : reason, null);
+	}
+
+	@Override
 	public boolean withdraw(UUID playerId, BigDecimal amount) {
 		return ledger.withdraw(playerId, amount, "API_WITHDRAW", null);
+	}
+
+	@Override
+	public boolean withdraw(UUID playerId, BigDecimal amount, String reason) {
+		return ledger.withdraw(playerId, amount, reason == null || reason.isBlank() ? "API_WITHDRAW" : reason, null);
 	}
 
 	@Override

@@ -1,0 +1,20 @@
+name: minigames
+version: '${version}'
+main: com.xiyuan.plugmc.minigames.MinigamesPlugin
+api-version: '${api_version}'
+authors: [XiYuan6Jia]
+description: "主城小游戏：21点、幸运转盘、老虎机，主城旁实体店 + /games 菜单"
+depend: [economy]
+softdepend: [hub]
+commands:
+  games:
+    description: "打开小游戏菜单"
+    usage: /games [blackjack|wheel|slots|build|reload]
+    aliases: [game, casino]
+permissions:
+  minigames.use:
+    description: "玩小游戏"
+    default: true
+  minigames.admin:
+    description: "重建实体店、重载配置"
+    default: op

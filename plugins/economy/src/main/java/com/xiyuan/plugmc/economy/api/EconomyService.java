@@ -17,6 +17,20 @@ public interface EconomyService {
 
 	boolean withdraw(UUID playerId, BigDecimal amount);
 
+	/**
+	 * 带原因的入账，便于审计（例如 GAME_SLOTS_WIN）。默认实现忽略原因。
+	 */
+	default boolean deposit(UUID playerId, BigDecimal amount, String reason) {
+		return deposit(playerId, amount);
+	}
+
+	/**
+	 * 带原因的出账，便于审计（例如 GAME_SLOTS_BET）。默认实现忽略原因。
+	 */
+	default boolean withdraw(UUID playerId, BigDecimal amount, String reason) {
+		return withdraw(playerId, amount);
+	}
+
 	boolean transfer(UUID fromPlayerId, UUID toPlayerId, BigDecimal amount);
 
 	void setBalance(UUID playerId, BigDecimal amount);
