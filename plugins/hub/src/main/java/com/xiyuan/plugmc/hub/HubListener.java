@@ -11,8 +11,8 @@ import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
-import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
+import org.bukkit.event.player.PlayerTeleportEvent;
 
 /** 主城保护：禁建造、禁 PvP、禁刷怪、掉虚空拉回、主城死亡原地重生。 */
 public final class HubListener implements Listener {
@@ -112,6 +112,16 @@ public final class HubListener implements Listener {
 		event.setCancelled(true);
 	}
 
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+	public void onTeleport(PlayerTeleportEvent event) {
+		if (!plugin.hubWorld().ready()) {
+			return;
+		}
+		if (plugin.hubWorld().isHub(event.getTo()) && !plugin.hubWorld().isHub(event.getFrom())) {
+			plugin.hubManager().rememberOnEnter(event.getPlayer(), event.getFrom());
+		}
+	}
+
 	@EventHandler
 	public void onJoin(PlayerJoinEvent event) {
 		if (!plugin.settings().joinAuto()) {
@@ -123,10 +133,5 @@ public final class HubListener implements Listener {
 				plugin.hubManager().enter(player);
 			}
 		}, 1L);
-	}
-
-	@EventHandler
-	public void onQuit(PlayerQuitEvent event) {
-		plugin.hubManager().forget(event.getPlayer().getUniqueId());
 	}
 }

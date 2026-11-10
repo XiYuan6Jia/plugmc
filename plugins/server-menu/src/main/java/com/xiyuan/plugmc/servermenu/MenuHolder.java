@@ -11,7 +11,8 @@ public final class MenuHolder implements InventoryHolder {
 	public enum Page {
 		MAIN,
 		PLUGINS,
-		ADMIN
+		ADMIN,
+		HUB
 	}
 
 	private final Inventory inventory;

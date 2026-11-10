@@ -29,6 +29,23 @@
 | 查看余额 | `/money`（显示 `{frozen_status}` 账户状态） |
 | 余额排行 | `/baltop` |
 | 经济管理 | 统计、自检、演练、财政注入/发放、冻结/解冻、流水查询（`server-menu.admin`，默认 OP） |
+| 主城大厅 | 打开大厅子页：进入大厅、返回原位置、主城信息，管理员另有设置出生点/重建大厅/结构自检（`hub.use`，管理员按钮需 `hub.admin`） |
+
+### 主城大厅子页
+
+点击「主城大厅」进入 6 行子页（由 `hub` 插件提供具体功能，菜单只负责按钮）：
+
+| 槽位 | 内容 | 操作 |
+| --- | --- | --- |
+| 20 | 进入主城大厅 | `/hub` |
+| 22 | 返回原位置 | `/hub back` |
+| 24 | 主城信息 | `/hub info` |
+| 29 | 设置出生点（`hub.admin`） | `/hub setspawn` |
+| 31 | 重建大厅（`hub.admin`） | `/hub build` |
+| 33 | 结构自检（`hub.admin`） | `/hub check` |
+| 45 / 49 | 返回主菜单 / 关闭 | — |
+
+`hub` 插件未加载时子页会显示「主城插件未加载」。
 
 经济按钮通过 `menu.items.<slot>.action: player_command` 调用对应命令；权限分别使用
 `economy.shop.use`、`economy.market.use`、`economy.auction.use`、`economy.order.use`、
@@ -97,6 +114,7 @@ menu:
 | `daily` | 调用 `/daily` 签到并刷新菜单 |
 | `prompt_command` | 关闭菜单后让玩家在聊天栏输入，再把 `{input}` 代入 `value` 执行命令 |
 | `economy_admin` | 打开经济管理面板 |
+| `hub_panel` | 打开主城大厅子页 |
 | `none` | 无操作（用于标题、装饰） |
 | `close` | 关闭菜单 |
 

@@ -27,10 +27,10 @@ import java.util.Set;
 public final class MenuManager {
 	private static final Set<String> ACTIONS = Set.of(
 		"balance", "toggle_hud", "message", "player_command", "console_command", "plugin_list",
-		"economy_admin", "prompt_command", "daily", "none", "close"
+		"economy_admin", "hub_panel", "prompt_command", "daily", "none", "close"
 	);
 	private static final int PLUGIN_PAGE_CAPACITY = 45;
-	private static final int CONFIG_VERSION = 9;
+	private static final int CONFIG_VERSION = 10;
 	private static final int PREVIOUS_PAGE_SLOT = 45;
 	private static final int MAIN_PAGE_SLOT = 49;
 	private static final int NEXT_PAGE_SLOT = 53;
@@ -379,7 +379,8 @@ public final class MenuManager {
 		return item;
 	}
 
-	public void openPluginList(Player player, int pageNumber) {		List<Plugin> plugins = java.util.Arrays.stream(Bukkit.getPluginManager().getPlugins())
+	public void openPluginList(Player player, int pageNumber) {
+		List<Plugin> plugins = java.util.Arrays.stream(Bukkit.getPluginManager().getPlugins())
 			.filter(Plugin::isEnabled)
 			.sorted((first, second) -> first.getName().compareToIgnoreCase(second.getName()))
 			.toList();
@@ -413,6 +414,21 @@ public final class MenuManager {
 	}
 
 	public void handleClick(Player player, MenuHolder holder, int slot) {
+		if (holder.getPage() == MenuHolder.Page.HUB) {
+			switch (slot) {
+				case 20 -> runHubCommand(player, "hub");
+				case 22 -> runHubCommand(player, "hub back");
+				case 24 -> runHubCommand(player, "hub info");
+				case 29 -> runHubCommand(player, "hub setspawn");
+				case 31 -> runHubCommand(player, "hub build");
+				case 33 -> runHubCommand(player, "hub check");
+				case 45 -> open(player);
+				case 49 -> player.closeInventory();
+				default -> {
+				}
+			}
+			return;
+		}
 		if (holder.getPage() == MenuHolder.Page.ADMIN) {
 			switch (slot) {
 				case 13 -> promptTreasuryFund(player);
@@ -468,6 +484,7 @@ public final class MenuManager {
 			case "close" -> player.closeInventory();
 			case "plugin_list" -> openPluginList(player, 0);
 			case "economy_admin" -> openAdminPanel(player);
+			case "hub_panel" -> openHubPanel(player);
 			case "daily" -> {
 				player.performCommand("daily");
 				open(player);
@@ -501,6 +518,68 @@ public final class MenuManager {
 			);
 			default -> throw new IllegalStateException("未处理的菜单动作：" + button.action());
 		}
+	}
+
+	private void runHubCommand(Player player, String command) {
+		player.closeInventory();
+		player.performCommand(command);
+	}
+
+	/**
+	 * 大厅子页：进入/返回/信息 + 管理员工具（设置出生点、重建、自检）。
+	 */
+	public void openHubPanel(Player player) {
+		MenuHolder holder = new MenuHolder(54, "&8主城大厅", Map.of(), MenuHolder.Page.HUB, 0);
+		if (filler != null) {
+			for (int slot = 0; slot < 54; slot++) {
+				holder.setButtonItem(slot, filler.clone());
+			}
+		}
+		boolean installed = plugin.getServer().getPluginManager().isPluginEnabled("hub");
+		if (!installed) {
+			holder.setButtonItem(22, navigationItem(Material.BARRIER, "&c主城插件未加载"));
+			holder.setButtonItem(45, navigationItem(Material.ARROW, "&e返回菜单"));
+			holder.setButtonItem(49, navigationItem(Material.BARRIER, "&c关闭"));
+			player.openInventory(holder.getInventory());
+			return;
+		}
+
+		holder.setButtonItem(4, adminItem(Material.NETHER_STAR, "&6主城大厅", List.of(
+			"&7独立虚空维度，安全无怪",
+			"&7进入后随时可以回到传送前的位置",
+			"&8/hub 进入 · /hub back 返回"
+		)));
+		holder.setButtonItem(20, adminItem(Material.LODESTONE, "&a进入主城大厅", List.of(
+			"&7传送到大厅出生点",
+			"&8点击进入"
+		)));
+		holder.setButtonItem(22, adminItem(Material.COMPASS, "&e返回原位置", List.of(
+			"&7回到进入主城前的位置",
+			"&8位置已保存，重启后仍可用"
+		)));
+		holder.setButtonItem(24, adminItem(Material.MAP, "&b主城信息", List.of(
+			"&7维度名、出生点与在线人数",
+			"&8结果显示在聊天栏"
+		)));
+		if (player.hasPermission("hub.admin")) {
+			holder.setButtonItem(29, adminItem(Material.RESPAWN_ANCHOR, "&e设置出生点", List.of(
+				"&7把当前位置设为大厅出生点",
+				"&8站在大厅里点击"
+			)));
+			holder.setButtonItem(31, adminItem(Material.BRICKS, "&e重建大厅", List.of(
+				"&7清空并重新生成大厅建筑",
+				"&8会删除大厅范围内的方块"
+			)));
+			holder.setButtonItem(33, adminItem(Material.WRITABLE_BOOK, "&e结构自检", List.of(
+				"&7检查喷泉、柱子、屋顶天窗与大门",
+				"&8结果显示在聊天栏"
+			)));
+		} else {
+			holder.setButtonItem(31, navigationItem(Material.GRAY_DYE, "&8管理员工具已隐藏"));
+		}
+		holder.setButtonItem(45, navigationItem(Material.ARROW, "&e返回菜单"));
+		holder.setButtonItem(49, navigationItem(Material.BARRIER, "&c关闭"));
+		player.openInventory(holder.getInventory());
 	}
 
 	private ItemStack createItem(Player player, MenuButton button) {

@@ -7,19 +7,18 @@ import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.UUID;
 
 /**
- * 进主城 / 返回原位置。返回点在内存里保存，重启后退回主世界出生点。
+ * 进主城 / 返回原位置。返回点写入 returns.yml，重启后依然可用。
  */
 public final class HubManager {
 	private final HubPlugin plugin;
-	private final Map<UUID, Location> returnPoints = new HashMap<>();
+	private final HubReturns returns;
 
-	public HubManager(HubPlugin plugin) {
+	public HubManager(HubPlugin plugin, HubReturns returns) {
 		this.plugin = plugin;
+		this.returns = returns;
 	}
 
 	public boolean enter(Player player) {
@@ -31,7 +30,7 @@ public final class HubManager {
 		Location target = plugin.hubWorld().spawn(config);
 		Location from = player.getLocation();
 		if (!plugin.hubWorld().isHub(from)) {
-			returnPoints.put(player.getUniqueId(), from);
+			returns.remember(player.getUniqueId(), from);
 		}
 		if (!player.teleport(target)) {
 			player.sendMessage(HubText.component("&c传送失败，请稍后再试。"));
@@ -45,11 +44,19 @@ public final class HubManager {
 		return true;
 	}
 
+	/** 其他方式（菜单、传送命令、其它插件）把玩家送进主城时也记下返回点。 */
+	public void rememberOnEnter(Player player, Location from) {
+		if (from == null || plugin.hubWorld().isHub(from)) {
+			return;
+		}
+		returns.remember(player.getUniqueId(), from);
+	}
+
 	public boolean back(Player player) {
-		Location target = returnPoints.remove(player.getUniqueId());
-		if (target == null) {
+		Location target = returns.take(player.getUniqueId());
+		if (target == null || target.getWorld() == null) {
 			target = fallbackPoint(player);
-			player.sendMessage(HubText.component("&7没有记录到传送前的位置，已回到主世界出生点。"));
+			player.sendMessage(HubText.component("&7没有找到传送前的位置，已回到主世界出生点。"));
 		}
 		if (target.getWorld() == null) {
 			player.sendMessage(HubText.component("&c找不到可返回的世界。"));
@@ -59,7 +66,7 @@ public final class HubManager {
 	}
 
 	public void forget(UUID playerId) {
-		returnPoints.remove(playerId);
+		returns.forget(playerId);
 	}
 
 	private Location fallbackPoint(Player player) {

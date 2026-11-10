@@ -13,6 +13,7 @@ public final class HubPlugin extends JavaPlugin {
 	private HubConfig settings;
 	private HubWorld hubWorld;
 	private HubManager hubManager;
+	private HubReturns hubReturns;
 
 	@Override
 	public void onEnable() {
@@ -27,7 +28,9 @@ public final class HubPlugin extends JavaPlugin {
 		}
 		hubWorld.ensureLobby(settings, false);
 
-		hubManager = new HubManager(this);
+		hubReturns = new HubReturns(getDataFolder(), getLogger());
+		hubReturns.load();
+		hubManager = new HubManager(this, hubReturns);
 		getServer().getPluginManager().registerEvents(new HubListener(this), this);
 		PluginCommand command = getCommand("hub");
 		if (command != null) {
@@ -61,5 +64,9 @@ public final class HubPlugin extends JavaPlugin {
 
 	public HubManager hubManager() {
 		return hubManager;
+	}
+
+	public HubReturns hubReturns() {
+		return hubReturns;
 	}
 }

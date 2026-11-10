@@ -1,4 +1,4 @@
-config-version: 9
+config-version: 10
 menu:
   title: "&8服务器菜单"
   rows: 6
@@ -105,9 +105,8 @@ menu:
       name: "&a主城大厅"
       lore:
         - "&7独立虚空主城，安全无怪"
-        - "&8点击进入"
-      action: player_command
-      value: "hub"
+        - "&8点击打开大厅子页"
+      action: hub_panel
       permission: hub.use
     "39":
       material: PLAYER_HEAD
