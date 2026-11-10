@@ -148,7 +148,7 @@ public final class LlmChatPlugin extends JavaPlugin implements Listener {
 		}
 
 		getLogger().info("LLM 请求: " + speaker + " session=" + session + " model=" + current.api().model());
-		service.ask(session, text).whenComplete((reply, throwable) -> runMain(() -> {
+		service.ask(session, speaker, text).whenComplete((reply, throwable) -> runMain(() -> {
 			if (throwable != null) {
 				reportFailure("LLM 请求", throwable, player);
 				return;
@@ -272,6 +272,8 @@ public final class LlmChatPlugin extends JavaPlugin implements Listener {
 
 	private void reply(String content, Player player, boolean broadcast) {
 		Component message = format(content);
+		// 后台留一份，便于核对 NPC 是否真的记住了上下文（不含密钥）
+		getLogger().info("回复: " + content);
 		if (broadcast) {
 			sendToAll(message);
 		} else if (player != null && player.isOnline()) {

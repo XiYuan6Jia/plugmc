@@ -45,7 +45,14 @@ record LlmConfig(Api api, Npc npc, Welcome welcome, Banter banter) {
 		}
 	}
 
-	record Npc(String name, String triggerPrefix, String replyPrefix, int historyTurns, boolean broadcast) {
+	record Npc(
+		String name,
+		String triggerPrefix,
+		String replyPrefix,
+		int historyTurns,
+		boolean broadcast,
+		boolean sharedHistory
+	) {
 	}
 
 	record Welcome(boolean enabled, String message, boolean broadcast) {
@@ -69,7 +76,7 @@ record LlmConfig(Api api, Npc npc, Welcome welcome, Banter banter) {
 	static LlmConfig defaults() {
 		return new LlmConfig(
 			new Api(DEFAULT_BASE_URL, DEFAULT_MODEL, "", 0.7, 256, 60, false, DEFAULT_SYSTEM_PROMPT),
-			new Npc("小页", "@npc", "[小页] ", 6, true),
+			new Npc("小页", "@npc", "[小页] ", 6, true, true),
 			new Welcome(true, DEFAULT_WELCOME, true),
 			new Banter(true, true, true, 0.12, 45, 3, 300, 3, 80, true, DEFAULT_BANTER_PROMPT)
 		);
@@ -118,7 +125,8 @@ record LlmConfig(Api api, Npc npc, Welcome welcome, Banter banter) {
 				string(npc, "triggerPrefix", "@npc"),
 				string(npc, "replyPrefix", "[小页] "),
 				clamp(integer(npc, "historyTurns", 6), 0, 20),
-				bool(npc, "broadcast", true)
+				bool(npc, "broadcast", true),
+				bool(npc, "sharedHistory", true)
 			),
 			new Welcome(
 				bool(welcome, "enabled", true),
@@ -161,6 +169,7 @@ record LlmConfig(Api api, Npc npc, Welcome welcome, Banter banter) {
 		npcJson.addProperty("replyPrefix", npc.replyPrefix());
 		npcJson.addProperty("historyTurns", npc.historyTurns());
 		npcJson.addProperty("broadcast", npc.broadcast());
+		npcJson.addProperty("sharedHistory", npc.sharedHistory());
 		root.add("npc", npcJson);
 
 		JsonObject welcomeJson = new JsonObject();

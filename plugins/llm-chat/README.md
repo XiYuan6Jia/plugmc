@@ -43,6 +43,7 @@ python scripts/deploy_paper.py --plugin llm-chat --upload-file llm-chat=.local/l
 | `npc.triggerPrefix` | 聊天触发前缀，默认 `@npc`，大小写不敏感 |
 | `npc.replyPrefix` | 回复前缀，默认 `[小页] ` |
 | `npc.historyTurns` | 保留的历史对话轮数（0 表示不带上下文） |
+| `npc.sharedHistory` | `true`（默认）全服共用一段记忆，任何玩家都能接着上文聊；`false` 每个玩家独立记忆 |
 | `npc.broadcast` | `true` 广播回复；`false` 只回给提问者 |
 | `welcome.enabled` | 是否在玩家进服时发送欢迎语 |
 | `welcome.message` | 欢迎语模板，支持 `{player}`、`{online}` 占位符 |
@@ -62,8 +63,8 @@ python scripts/deploy_paper.py --plugin llm-chat --upload-file llm-chat=.local/l
 
 | 命令 | 权限 | 作用 |
 | --- | --- | --- |
-| `/npc status` | `plugmc.npc` | 查看接口、模型、密钥掩码、会话数 |
-| `/npc clear` | `plugmc.npc` | 清空自己的对话历史；控制台执行会清空全部 |
+| `/npc status` | `plugmc.npc` | 查看接口、模型、密钥掩码、记忆模式与会话数 |
+| `/npc clear` | `plugmc.npc` | 清空对话记忆（共享记忆模式下清空全服共享上下文） |
 | `/npc chat <内容>` | `plugmc.npc` | 通过命令直接对话（便于控制台测试） |
 | `/npc welcome <玩家名>` | `plugmc.npc.admin` | 手动发送欢迎语（离线名称只写入日志） |
 | `/npc banter <内容>` | `plugmc.npc.admin` | 手动触发一次吐槽（跳过概率与冷却） |

@@ -24,6 +24,7 @@ import java.util.concurrent.ThreadLocalRandom;
 final class LlmChatService {
 	private final LlmClient client;
 	private final Map<UUID, Deque<ChatTurn>> histories = new HashMap<>();
+	private final Deque<ChatTurn> sharedHistory = new ArrayDeque<>();
 	private final Set<UUID> inFlight = new HashSet<>();
 	private final Deque<Long> banterTimes = new ArrayDeque<>();
 	private LlmConfig config;
@@ -48,13 +49,20 @@ final class LlmChatService {
 		this.config = newConfig;
 		this.generation++;
 		histories.clear();
+		sharedHistory.clear();
 		inFlight.clear();
 		banterTimes.clear();
 		banterInFlight = false;
 	}
 
 	synchronized int sessionCount() {
-		return histories.size();
+		return config.npc().sharedHistory()
+			? (sharedHistory.isEmpty() ? 0 : 1)
+			: histories.size();
+	}
+
+	synchronized boolean shared() {
+		return config.npc().sharedHistory();
 	}
 
 	synchronized int inFlightCount() {
@@ -62,18 +70,24 @@ final class LlmChatService {
 	}
 
 	synchronized void clear(UUID session) {
+		if (config.npc().sharedHistory()) {
+			sharedHistory.clear();
+			return;
+		}
 		histories.remove(session);
 	}
 
 	synchronized void clearAll() {
 		histories.clear();
+		sharedHistory.clear();
 	}
 
 	/** 单轮提问；异常经由返回的 future 传递给调用方。 */
-	CompletableFuture<String> ask(UUID session, String text) {
+	CompletableFuture<String> ask(UUID session, String speaker, String text) {
 		LlmConfig current;
 		long requestGeneration;
 		Deque<ChatTurn> history;
+		String userContent;
 		JsonArray messages = new JsonArray();
 
 		synchronized (this) {
@@ -87,14 +101,24 @@ final class LlmChatService {
 				return CompletableFuture.failedFuture(new LlmClient.LlmException("还在思考上一条消息，请稍候"));
 			}
 			requestGeneration = generation;
-			history = histories.computeIfAbsent(session, key -> new ArrayDeque<>());
+			// 共享记忆：所有玩家与同一段对话，用户消息带上说话人，模型能接上上一位玩家的话
+			boolean shared = current.npc().sharedHistory();
+			history = shared ? sharedHistory : histories.computeIfAbsent(session, key -> new ArrayDeque<>());
+			userContent = shared && speaker != null && !speaker.isBlank()
+				? speaker + "：" + text
+				: text;
 
-			messages.add(LlmClient.turn("system", current.api().systemPrompt()));
+			String systemPrompt = current.api().systemPrompt();
+			if (shared) {
+				systemPrompt = systemPrompt + " 当前对话为服务器聊天栏共享记忆，可能有多个玩家先后发言，"
+					+ "用户消息里的「名字：」前缀表示说话者。";
+			}
+			messages.add(LlmClient.turn("system", systemPrompt));
 			for (ChatTurn item : new ArrayList<>(history)) {
 				messages.add(LlmClient.turn(item.role(), item.content()));
 			}
 		}
-		messages.add(LlmClient.turn("user", text));
+		messages.add(LlmClient.turn("user", userContent));
 
 		CompletableFuture<String> future;
 		try {
@@ -119,7 +143,7 @@ final class LlmChatService {
 				if (reply.isEmpty()) {
 					throw new CompletionException(new LlmClient.LlmException("模型没有返回内容"));
 				}
-				history.addLast(new ChatTurn("user", text));
+				history.addLast(new ChatTurn("user", userContent));
 				history.addLast(new ChatTurn("assistant", reply));
 				trimHistory(history, current.npc().historyTurns());
 				return reply;

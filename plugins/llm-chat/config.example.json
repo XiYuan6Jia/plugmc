@@ -14,7 +14,8 @@
     "triggerPrefix": "@npc",
     "replyPrefix": "[小页] ",
     "historyTurns": 6,
-    "broadcast": true
+    "broadcast": true,
+    "sharedHistory": true
   },
   "welcome": {
     "enabled": true,

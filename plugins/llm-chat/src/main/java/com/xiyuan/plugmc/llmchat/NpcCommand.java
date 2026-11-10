@@ -76,9 +76,11 @@ final class NpcCommand implements TabExecutor {
 	private void status(CommandSender sender) {
 		LlmConfig current = plugin.service().config();
 		LlmConfig.Banter banter = current.banter();
+		boolean shared = plugin.service().shared();
 		String summary = "endpoint=" + current.api().endpoint()
 			+ " model=" + current.api().model()
 			+ " key=" + mask(current.api().apiKey())
+			+ " 记忆=" + (shared ? "共享(" + current.npc().historyTurns() + " 轮)" : "独立")
 			+ " 会话=" + plugin.service().sessionCount()
 			+ " 进行中=" + plugin.service().inFlightCount()
 			+ " 欢迎=" + (current.welcome().enabled() ? "on" : "off")
@@ -91,6 +93,11 @@ final class NpcCommand implements TabExecutor {
 
 	private void clear(CommandSender sender) {
 		if (sender instanceof Player player) {
+			if (plugin.service().shared()) {
+				plugin.service().clearAll();
+				sender.sendMessage(text("已清空共享对话记忆（所有玩家可见）"));
+				return;
+			}
 			plugin.service().clear(player.getUniqueId());
 			sender.sendMessage(text("已清空你的对话历史"));
 		} else {
