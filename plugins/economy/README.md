@@ -151,10 +151,10 @@ rewards:
 
 ```yaml
 categories:
-  building:
-    display: "建筑"
+  stone:
+    display: "石材与砖块"
     icon: BRICKS
-    items: [stone, oak_log, glass]
+    items: [stone, stone_bricks, deepslate_tiles]
 
 items:
   stone:
@@ -165,6 +165,10 @@ items:
     daily-sell: 256
     aliases: [石头]
 ```
+
+内置目录覆盖 **11 个分类、580+ 种商品**：石材与砖块、木材、玻璃、羊毛与地毯、混凝土、陶瓦、
+照明、装饰与功能、矿物、食物、杂项。`/shop` 主界面显示前 6 个常用分类，其余收进「更多分类」
+翻页列表；单个分类超过 45 种商品时自动分页。
 
 - `buy` 是玩家购买价，`sell` 是商店回收价，必须 `buy > sell`。
 - `sellable` 默认 `false`：目前只有粗铜、粗铁、粗金、钻石与远古残骸标 `sellable: true`，

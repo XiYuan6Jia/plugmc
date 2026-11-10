@@ -37,7 +37,9 @@ public final class ShopGui {
 
 		List<ShopCategory> categories = service.goods().categories();
 		int[] slots = {10, 11, 12, 13, 14, 15, 16};
-		for (int index = 0; index < categories.size() && index < slots.length; index++) {
+		boolean hasMore = categories.size() > slots.length;
+		int shown = hasMore ? slots.length - 1 : categories.size();
+		for (int index = 0; index < shown; index++) {
 			ShopCategory category = categories.get(index);
 			ItemStack icon = button(
 				category.icon(),
@@ -47,7 +49,14 @@ public final class ShopGui {
 					"&8点击打开"
 				)
 			);
-			holder.set(slots[index], icon, p -> openCategory(p, category, 0));
+			holder.set(slots[index], icon, p -> openCategory(p, category, 0, ShopGui.this::openMain));
+		}
+		if (hasMore) {
+			holder.set(slots[shown], button(
+				Material.BOOKSHELF,
+				"&6更多分类 &7(" + categories.size() + ")",
+				List.of("&7查看全部商品分类")
+			), p -> openCategoryList(p, 0));
 		}
 
 		holder.set(
@@ -91,9 +100,48 @@ public final class ShopGui {
 		player.openInventory(holder.getInventory());
 	}
 
-	private void openCategory(Player player, ShopCategory category, int page) {
+	private void openCategory(Player player, ShopCategory category, int page, Consumer<Player> back) {
 		List<ShopItem> items = service.goods().itemsForCategory(category.id());
-		openItemList(player, "&8" + category.displayName(), items, page, p -> openMain(p));
+		openItemList(player, "&8" + category.displayName(), items, page, back);
+	}
+
+	private void openCategoryList(Player player, int page) {
+		List<ShopCategory> categories = service.goods().categories();
+		int pageSize = 45;
+		int pageCount = Math.max(1, (categories.size() + pageSize - 1) / pageSize);
+		int current = Math.max(0, Math.min(page, pageCount - 1));
+
+		EconomyMenuHolder holder = new EconomyMenuHolder(
+			6,
+			"&8商品分类 &7(" + (current + 1) + "/" + pageCount + ")"
+		);
+		holder.fill(filler());
+
+		int start = current * pageSize;
+		for (int index = 0; index < pageSize && start + index < categories.size(); index++) {
+			ShopCategory category = categories.get(start + index);
+			holder.set(index, button(
+				category.icon(),
+				"&6" + category.displayName(),
+				List.of(
+					"&7浏览该分类下的商品",
+					"&8点击打开"
+				)
+			), p -> openCategory(p, category, 0, target -> openCategoryList(target, current)));
+		}
+
+		if (current > 0) {
+			holder.set(45, button(Material.ARROW, "&e上一页", List.of()), p ->
+				openCategoryList(p, current - 1)
+			);
+		}
+		holder.set(49, button(Material.ARROW, "&e返回", List.of()), ShopGui.this::openMain);
+		if (current + 1 < pageCount) {
+			holder.set(53, button(Material.ARROW, "&e下一页", List.of()), p ->
+				openCategoryList(p, current + 1)
+			);
+		}
+		player.openInventory(holder.getInventory());
 	}
 
 	private void openItemList(

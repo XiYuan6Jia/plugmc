@@ -1,215 +1,3611 @@
-# sellable: 是否允许卖回系统商店。默认 false，只有矿石原矿开启；
-# 锭、方块和成品只能购买，不能回收。
+# sellable: 是否允许卖回系统商店。默认 false，目前只有粗铜、粗铁、粗金、钻石、
+# 远古残骸 sellable: true；其余建材只能购买、不能回收。
 categories:
-  building:
-    display: "建筑"
+  stone:
+    display: 石材与砖块
     icon: BRICKS
-    items: [stone, oak_log, glass, bricks, quartz_block]
+    items:
+    - stone
+    - stone_stairs
+    - stone_slab
+    - smooth_stone
+    - smooth_stone_slab
+    - cobblestone
+    - cobblestone_stairs
+    - cobblestone_slab
+    - cobblestone_wall
+    - mossy_cobblestone
+    - mossy_cobblestone_stairs
+    - mossy_cobblestone_slab
+    - mossy_cobblestone_wall
+    - stone_bricks
+    - stone_bricks_stairs
+    - stone_bricks_slab
+    - stone_bricks_wall
+    - mossy_stone_bricks
+    - mossy_stone_bricks_stairs
+    - mossy_stone_bricks_slab
+    - mossy_stone_bricks_wall
+    - cracked_stone_bricks
+    - chiseled_stone_bricks
+    - granite
+    - granite_stairs
+    - granite_slab
+    - granite_wall
+    - polished_granite
+    - polished_granite_stairs
+    - polished_granite_slab
+    - diorite
+    - diorite_stairs
+    - diorite_slab
+    - diorite_wall
+    - polished_diorite
+    - polished_diorite_stairs
+    - polished_diorite_slab
+    - andesite
+    - andesite_stairs
+    - andesite_slab
+    - andesite_wall
+    - polished_andesite
+    - polished_andesite_stairs
+    - polished_andesite_slab
+    - deepslate
+    - cobbled_deepslate
+    - cobbled_deepslate_stairs
+    - cobbled_deepslate_slab
+    - cobbled_deepslate_wall
+    - polished_deepslate
+    - polished_deepslate_stairs
+    - polished_deepslate_slab
+    - polished_deepslate_wall
+    - deepslate_bricks
+    - deepslate_bricks_stairs
+    - deepslate_bricks_slab
+    - deepslate_bricks_wall
+    - cracked_deepslate_bricks
+    - deepslate_tiles
+    - deepslate_tiles_stairs
+    - deepslate_tiles_slab
+    - deepslate_tiles_wall
+    - cracked_deepslate_tiles
+    - chiseled_deepslate
+    - tuff
+    - tuff_stairs
+    - tuff_slab
+    - tuff_wall
+    - polished_tuff
+    - polished_tuff_stairs
+    - polished_tuff_slab
+    - polished_tuff_wall
+    - chiseled_tuff
+    - tuff_bricks
+    - tuff_bricks_stairs
+    - tuff_bricks_slab
+    - tuff_bricks_wall
+    - chiseled_tuff_bricks
+    - calcite
+    - dripstone_block
+    - sandstone
+    - sandstone_stairs
+    - sandstone_slab
+    - sandstone_wall
+    - chiseled_sandstone
+    - cut_sandstone
+    - cut_sandstone_slab
+    - smooth_sandstone
+    - smooth_sandstone_stairs
+    - smooth_sandstone_slab
+    - red_sandstone
+    - red_sandstone_stairs
+    - red_sandstone_slab
+    - red_sandstone_wall
+    - chiseled_red_sandstone
+    - cut_red_sandstone
+    - cut_red_sandstone_slab
+    - smooth_red_sandstone
+    - smooth_red_sandstone_stairs
+    - smooth_red_sandstone_slab
+    - bricks
+    - bricks_stairs
+    - bricks_slab
+    - bricks_wall
+    - mud_bricks
+    - mud_bricks_stairs
+    - mud_bricks_slab
+    - mud_bricks_wall
+    - packed_mud
+    - mud
+    - prismarine
+    - prismarine_stairs
+    - prismarine_slab
+    - prismarine_wall
+    - prismarine_bricks
+    - prismarine_bricks_stairs
+    - prismarine_bricks_slab
+    - dark_prismarine
+    - dark_prismarine_stairs
+    - dark_prismarine_slab
+    - purpur_block
+    - purpur_block_stairs
+    - purpur_block_slab
+    - purpur_pillar
+    - end_stone_bricks
+    - end_stone_bricks_stairs
+    - end_stone_bricks_slab
+    - end_stone_bricks_wall
+    - nether_bricks
+    - nether_bricks_stairs
+    - nether_bricks_slab
+    - nether_bricks_wall
+    - cracked_nether_bricks
+    - chiseled_nether_bricks
+    - red_nether_bricks
+    - red_nether_bricks_stairs
+    - red_nether_bricks_slab
+    - red_nether_bricks_wall
+    - blackstone
+    - blackstone_stairs
+    - blackstone_slab
+    - blackstone_wall
+    - polished_blackstone
+    - polished_blackstone_stairs
+    - polished_blackstone_slab
+    - polished_blackstone_wall
+    - polished_blackstone_bricks
+    - polished_blackstone_bricks_stairs
+    - polished_blackstone_bricks_slab
+    - polished_blackstone_bricks_wall
+    - cracked_polished_blackstone_bricks
+    - chiseled_polished_blackstone
+    - gilded_blackstone
+    - basalt
+    - smooth_basalt
+    - polished_basalt
+    - obsidian
+    - crying_obsidian
+    - magma_block
+    - quartz_block
+    - quartz_block_stairs
+    - quartz_block_slab
+    - chiseled_quartz_block
+    - quartz_bricks
+    - quartz_pillar
+    - smooth_quartz
+    - smooth_quartz_stairs
+    - smooth_quartz_slab
+    - copper_block
+    - exposed_copper
+    - weathered_copper
+    - oxidized_copper
+    - waxed_copper_block
+    - waxed_exposed_copper
+    - waxed_weathered_copper
+    - waxed_oxidized_copper
+    - cut_copper
+    - cut_copper_stairs
+    - cut_copper_slab
+    - exposed_cut_copper
+    - exposed_cut_copper_stairs
+    - exposed_cut_copper_slab
+    - weathered_cut_copper
+    - weathered_cut_copper_stairs
+    - weathered_cut_copper_slab
+    - oxidized_cut_copper
+    - oxidized_cut_copper_stairs
+    - oxidized_cut_copper_slab
+    - waxed_cut_copper
+    - waxed_cut_copper_stairs
+    - waxed_cut_copper_slab
+    - waxed_exposed_cut_copper
+    - waxed_exposed_cut_copper_stairs
+    - waxed_exposed_cut_copper_slab
+    - waxed_weathered_cut_copper
+    - waxed_weathered_cut_copper_stairs
+    - waxed_weathered_cut_copper_slab
+    - waxed_oxidized_cut_copper
+    - waxed_oxidized_cut_copper_stairs
+    - waxed_oxidized_cut_copper_slab
+  wood:
+    display: 木材
+    icon: OAK_LOG
+    items:
+    - oak_log
+    - stripped_oak_log
+    - oak_wood
+    - stripped_oak_wood
+    - oak_planks
+    - oak_stairs
+    - oak_slab
+    - oak_fence
+    - oak_fence_gate
+    - oak_door
+    - oak_trapdoor
+    - oak_sign
+    - oak_hanging_sign
+    - spruce_log
+    - stripped_spruce_log
+    - spruce_wood
+    - stripped_spruce_wood
+    - spruce_planks
+    - spruce_stairs
+    - spruce_slab
+    - spruce_fence
+    - spruce_fence_gate
+    - spruce_door
+    - spruce_trapdoor
+    - spruce_sign
+    - spruce_hanging_sign
+    - birch_log
+    - stripped_birch_log
+    - birch_wood
+    - stripped_birch_wood
+    - birch_planks
+    - birch_stairs
+    - birch_slab
+    - birch_fence
+    - birch_fence_gate
+    - birch_door
+    - birch_trapdoor
+    - birch_sign
+    - birch_hanging_sign
+    - jungle_log
+    - stripped_jungle_log
+    - jungle_wood
+    - stripped_jungle_wood
+    - jungle_planks
+    - jungle_stairs
+    - jungle_slab
+    - jungle_fence
+    - jungle_fence_gate
+    - jungle_door
+    - jungle_trapdoor
+    - jungle_sign
+    - jungle_hanging_sign
+    - acacia_log
+    - stripped_acacia_log
+    - acacia_wood
+    - stripped_acacia_wood
+    - acacia_planks
+    - acacia_stairs
+    - acacia_slab
+    - acacia_fence
+    - acacia_fence_gate
+    - acacia_door
+    - acacia_trapdoor
+    - acacia_sign
+    - acacia_hanging_sign
+    - dark_oak_log
+    - stripped_dark_oak_log
+    - dark_oak_wood
+    - stripped_dark_oak_wood
+    - dark_oak_planks
+    - dark_oak_stairs
+    - dark_oak_slab
+    - dark_oak_fence
+    - dark_oak_fence_gate
+    - dark_oak_door
+    - dark_oak_trapdoor
+    - dark_oak_sign
+    - dark_oak_hanging_sign
+    - mangrove_log
+    - stripped_mangrove_log
+    - mangrove_wood
+    - stripped_mangrove_wood
+    - mangrove_planks
+    - mangrove_stairs
+    - mangrove_slab
+    - mangrove_fence
+    - mangrove_fence_gate
+    - mangrove_door
+    - mangrove_trapdoor
+    - mangrove_sign
+    - mangrove_hanging_sign
+    - cherry_log
+    - stripped_cherry_log
+    - cherry_wood
+    - stripped_cherry_wood
+    - cherry_planks
+    - cherry_stairs
+    - cherry_slab
+    - cherry_fence
+    - cherry_fence_gate
+    - cherry_door
+    - cherry_trapdoor
+    - cherry_sign
+    - cherry_hanging_sign
+    - pale_oak_log
+    - stripped_pale_oak_log
+    - pale_oak_wood
+    - stripped_pale_oak_wood
+    - pale_oak_planks
+    - pale_oak_stairs
+    - pale_oak_slab
+    - pale_oak_fence
+    - pale_oak_fence_gate
+    - pale_oak_door
+    - pale_oak_trapdoor
+    - pale_oak_sign
+    - pale_oak_hanging_sign
+    - bamboo_block
+    - stripped_bamboo_block
+    - bamboo_mosaic
+    - bamboo_mosaic_stairs
+    - bamboo_mosaic_slab
+    - bamboo_planks
+    - bamboo_stairs
+    - bamboo_slab
+    - bamboo_fence
+    - bamboo_fence_gate
+    - bamboo_door
+    - bamboo_trapdoor
+    - bamboo_sign
+    - bamboo_hanging_sign
+    - crimson_stem
+    - stripped_crimson_stem
+    - crimson_hyphae
+    - stripped_crimson_hyphae
+    - crimson_planks
+    - crimson_stairs
+    - crimson_slab
+    - crimson_fence
+    - crimson_fence_gate
+    - crimson_door
+    - crimson_trapdoor
+    - crimson_sign
+    - crimson_hanging_sign
+    - warped_stem
+    - stripped_warped_stem
+    - warped_hyphae
+    - stripped_warped_hyphae
+    - warped_planks
+    - warped_stairs
+    - warped_slab
+    - warped_fence
+    - warped_fence_gate
+    - warped_door
+    - warped_trapdoor
+    - warped_sign
+    - warped_hanging_sign
+  glass:
+    display: 玻璃
+    icon: GLASS
+    items:
+    - glass
+    - glass_pane
+    - tinted_glass
+    - white_stained_glass
+    - white_stained_glass_pane
+    - orange_stained_glass
+    - orange_stained_glass_pane
+    - magenta_stained_glass
+    - magenta_stained_glass_pane
+    - light_blue_stained_glass
+    - light_blue_stained_glass_pane
+    - yellow_stained_glass
+    - yellow_stained_glass_pane
+    - lime_stained_glass
+    - lime_stained_glass_pane
+    - pink_stained_glass
+    - pink_stained_glass_pane
+    - gray_stained_glass
+    - gray_stained_glass_pane
+    - light_gray_stained_glass
+    - light_gray_stained_glass_pane
+    - cyan_stained_glass
+    - cyan_stained_glass_pane
+    - purple_stained_glass
+    - purple_stained_glass_pane
+    - blue_stained_glass
+    - blue_stained_glass_pane
+    - brown_stained_glass
+    - brown_stained_glass_pane
+    - green_stained_glass
+    - green_stained_glass_pane
+    - red_stained_glass
+    - red_stained_glass_pane
+    - black_stained_glass
+    - black_stained_glass_pane
+  wool:
+    display: 羊毛与地毯
+    icon: WHITE_WOOL
+    items:
+    - white_wool
+    - white_carpet
+    - orange_wool
+    - orange_carpet
+    - magenta_wool
+    - magenta_carpet
+    - light_blue_wool
+    - light_blue_carpet
+    - yellow_wool
+    - yellow_carpet
+    - lime_wool
+    - lime_carpet
+    - pink_wool
+    - pink_carpet
+    - gray_wool
+    - gray_carpet
+    - light_gray_wool
+    - light_gray_carpet
+    - cyan_wool
+    - cyan_carpet
+    - purple_wool
+    - purple_carpet
+    - blue_wool
+    - blue_carpet
+    - brown_wool
+    - brown_carpet
+    - green_wool
+    - green_carpet
+    - red_wool
+    - red_carpet
+    - black_wool
+    - black_carpet
+  concrete:
+    display: 混凝土
+    icon: WHITE_CONCRETE
+    items:
+    - white_concrete
+    - white_concrete_powder
+    - orange_concrete
+    - orange_concrete_powder
+    - magenta_concrete
+    - magenta_concrete_powder
+    - light_blue_concrete
+    - light_blue_concrete_powder
+    - yellow_concrete
+    - yellow_concrete_powder
+    - lime_concrete
+    - lime_concrete_powder
+    - pink_concrete
+    - pink_concrete_powder
+    - gray_concrete
+    - gray_concrete_powder
+    - light_gray_concrete
+    - light_gray_concrete_powder
+    - cyan_concrete
+    - cyan_concrete_powder
+    - purple_concrete
+    - purple_concrete_powder
+    - blue_concrete
+    - blue_concrete_powder
+    - brown_concrete
+    - brown_concrete_powder
+    - green_concrete
+    - green_concrete_powder
+    - red_concrete
+    - red_concrete_powder
+    - black_concrete
+    - black_concrete_powder
+  terracotta:
+    display: 陶瓦
+    icon: TERRACOTTA
+    items:
+    - terracotta
+    - white_terracotta
+    - orange_terracotta
+    - magenta_terracotta
+    - light_blue_terracotta
+    - yellow_terracotta
+    - lime_terracotta
+    - pink_terracotta
+    - gray_terracotta
+    - light_gray_terracotta
+    - cyan_terracotta
+    - purple_terracotta
+    - blue_terracotta
+    - brown_terracotta
+    - green_terracotta
+    - red_terracotta
+    - black_terracotta
+  light:
+    display: 照明
+    icon: LANTERN
+    items:
+    - torch
+    - soul_torch
+    - lantern
+    - soul_lantern
+    - sea_lantern
+    - glowstone
+    - shroomlight
+    - ochre_froglight
+    - verdant_froglight
+    - pearlescent_froglight
+    - end_rod
+    - jack_o_lantern
+    - redstone_lamp
+    - campfire
+    - soul_campfire
+    - candle
+    - white_candle
+    - orange_candle
+    - magenta_candle
+    - light_blue_candle
+    - yellow_candle
+    - lime_candle
+    - pink_candle
+    - gray_candle
+    - light_gray_candle
+    - cyan_candle
+    - purple_candle
+    - blue_candle
+    - brown_candle
+    - green_candle
+    - red_candle
+    - black_candle
+  decor:
+    display: 装饰与功能
+    icon: CRAFTING_TABLE
+    items:
+    - bookshelf
+    - chiseled_bookshelf
+    - crafting_table
+    - cartography_table
+    - fletching_table
+    - smithing_table
+    - loom
+    - barrel
+    - composter
+    - chest
+    - trapped_chest
+    - ender_chest
+    - furnace
+    - blast_furnace
+    - smoker
+    - stonecutter
+    - grindstone
+    - anvil
+    - chipped_anvil
+    - damaged_anvil
+    - lectern
+    - jukebox
+    - note_block
+    - hay_block
+    - dried_kelp_block
+    - sponge
+    - wet_sponge
+    - ice
+    - packed_ice
+    - blue_ice
+    - snow_block
+    - moss_block
+    - moss_carpet
+    - ladder
+    - scaffolding
+    - iron_bars
+    - iron_chain
+    - copper_chain
+    - exposed_copper_chain
+    - weathered_copper_chain
+    - oxidized_copper_chain
+    - waxed_copper_chain
+    - waxed_exposed_copper_chain
+    - waxed_weathered_copper_chain
+    - waxed_oxidized_copper_chain
+    - flower_pot
+    - armor_stand
+    - item_frame
+    - glow_item_frame
+    - painting
+    - bell
+    - beacon
+    - lodestone
+    - target
+    - lightning_rod
   mineral:
-    display: "矿物"
+    display: 矿物
     icon: DIAMOND
-    items: [coal, raw_copper, raw_iron, raw_gold, iron_ingot, copper_ingot, gold_ingot, redstone, lapis_lazuli, diamond, emerald, quartz, ancient_debris]
+    items:
+    - coal
+    - raw_copper
+    - raw_iron
+    - raw_gold
+    - iron_ingot
+    - copper_ingot
+    - gold_ingot
+    - redstone
+    - lapis_lazuli
+    - diamond
+    - emerald
+    - quartz
+    - ancient_debris
   food:
-    display: "食物"
+    display: 食物
     icon: BREAD
-    items: [bread, cooked_beef, golden_carrot, apple]
+    items:
+    - bread
+    - cooked_beef
+    - golden_carrot
+    - apple
   utility:
-    display: "杂项"
+    display: 杂项
     icon: TORCH
-    items: [torch, arrow, stick, string, gunpowder]
-
+    items:
+    - arrow
+    - stick
+    - string
+    - gunpowder
 items:
   stone:
     material: STONE
-    buy: "2.00"
-    sell: "1.00"
-    daily-buy: 256
-    daily-sell: 256
-    aliases: [石头]
+    buy: '2.00'
+    aliases:
+    - 石头
   oak_log:
     material: OAK_LOG
-    buy: "3.00"
-    sell: "1.50"
-    daily-buy: 256
-    daily-sell: 256
-    aliases: [橡木原木, 原木]
+    buy: '3.00'
+    aliases:
+    - 橡木原木
   glass:
     material: GLASS
-    buy: "4.00"
-    sell: "2.00"
-    daily-buy: 256
-    daily-sell: 256
-    aliases: [玻璃]
+    buy: '4.00'
+    aliases:
+    - 玻璃
   bricks:
     material: BRICKS
-    buy: "5.00"
-    sell: "2.50"
-    daily-buy: 256
-    daily-sell: 256
-    aliases: [砖块]
+    buy: '4.00'
+    aliases:
+    - 砖块
   quartz_block:
     material: QUARTZ_BLOCK
-    buy: "12.00"
-    sell: "6.00"
-    daily-buy: 128
-    daily-sell: 128
-    aliases: [石英块]
+    buy: '6.00'
+    aliases:
+    - 石英块
   coal:
     material: COAL
-    buy: "8.00"
-    sell: "4.00"
+    buy: '8.00'
+    sell: '4.00'
     daily-buy: 256
     daily-sell: 256
-    aliases: [煤炭, 煤]
+    aliases:
+    - 煤炭
+    - 煤
   iron_ingot:
     material: IRON_INGOT
-    buy: "30.00"
-    sell: "15.00"
+    buy: '30.00'
+    sell: '15.00'
     daily-buy: 128
     daily-sell: 128
-    aliases: [铁锭, 铁]
+    aliases:
+    - 铁锭
+    - 铁
   copper_ingot:
     material: COPPER_INGOT
-    buy: "12.00"
-    sell: "6.00"
+    buy: '12.00'
+    sell: '6.00'
     daily-buy: 128
     daily-sell: 128
-    aliases: [铜锭, 铜]
+    aliases:
+    - 铜锭
+    - 铜
   gold_ingot:
     material: GOLD_INGOT
-    buy: "40.00"
-    sell: "20.00"
+    buy: '40.00'
+    sell: '20.00'
     daily-buy: 128
     daily-sell: 128
-    aliases: [金锭, 金]
+    aliases:
+    - 金锭
+    - 金
   redstone:
     material: REDSTONE
-    buy: "6.00"
-    sell: "3.00"
+    buy: '6.00'
+    sell: '3.00'
     daily-buy: 256
     daily-sell: 256
-    aliases: [红石]
+    aliases:
+    - 红石
   lapis_lazuli:
     material: LAPIS_LAZULI
-    buy: "12.00"
-    sell: "6.00"
+    buy: '12.00'
+    sell: '6.00'
     daily-buy: 256
     daily-sell: 256
-    aliases: [青金石]
+    aliases:
+    - 青金石
   diamond:
     material: DIAMOND
-    buy: "120.00"
-    sell: "60.00"
+    buy: '120.00'
+    sell: '60.00'
     sellable: true
     daily-buy: 64
     daily-sell: 64
-    aliases: [钻石]
+    aliases:
+    - 钻石
   emerald:
     material: EMERALD
-    buy: "100.00"
-    sell: "50.00"
+    buy: '100.00'
+    sell: '50.00'
     daily-buy: 64
     daily-sell: 64
-    aliases: [绿宝石]
+    aliases:
+    - 绿宝石
   ancient_debris:
     material: ANCIENT_DEBRIS
-    buy: "240.00"
-    sell: "120.00"
+    buy: '240.00'
+    sell: '120.00'
     sellable: true
     daily-buy: 64
     daily-sell: 64
-    aliases: [远古残骸]
+    aliases:
+    - 远古残骸
   bread:
     material: BREAD
-    buy: "6.00"
-    sell: "3.00"
+    buy: '6.00'
+    sell: '3.00'
     daily-buy: 128
     daily-sell: 128
-    aliases: [面包]
+    aliases:
+    - 面包
   cooked_beef:
     material: COOKED_BEEF
-    buy: "10.00"
-    sell: "5.00"
+    buy: '10.00'
+    sell: '5.00'
     daily-buy: 128
     daily-sell: 128
-    aliases: [熟牛肉, 牛排]
+    aliases:
+    - 熟牛肉
+    - 牛排
   golden_carrot:
     material: GOLDEN_CARROT
-    buy: "20.00"
-    sell: "10.00"
+    buy: '20.00'
+    sell: '10.00'
     daily-buy: 64
     daily-sell: 64
-    aliases: [金胡萝卜]
+    aliases:
+    - 金胡萝卜
   apple:
     material: APPLE
-    buy: "4.00"
-    sell: "2.00"
+    buy: '4.00'
+    sell: '2.00'
     daily-buy: 128
     daily-sell: 128
-    aliases: [苹果]
+    aliases:
+    - 苹果
   torch:
     material: TORCH
-    buy: "1.00"
-    sell: "0.50"
-    daily-buy: 512
-    daily-sell: 512
-    aliases: [火把]
+    buy: '1.00'
+    aliases:
+    - 火把
   arrow:
     material: ARROW
-    buy: "1.00"
-    sell: "0.50"
+    buy: '1.00'
+    sell: '0.50'
     daily-buy: 512
     daily-sell: 512
-    aliases: [箭]
+    aliases:
+    - 箭
   stick:
     material: STICK
-    buy: "0.50"
-    sell: "0.25"
+    buy: '0.50'
+    sell: '0.25'
     daily-buy: 512
     daily-sell: 512
-    aliases: [木棍]
+    aliases:
+    - 木棍
   string:
     material: STRING
-    buy: "2.00"
-    sell: "1.00"
+    buy: '2.00'
+    sell: '1.00'
     daily-buy: 256
     daily-sell: 256
-    aliases: [线]
+    aliases:
+    - 线
   gunpowder:
     material: GUNPOWDER
-    buy: "6.00"
-    sell: "3.00"
+    buy: '6.00'
+    sell: '3.00'
     daily-buy: 256
     daily-sell: 256
-    aliases: [火药]
+    aliases:
+    - 火药
   raw_copper:
     material: RAW_COPPER
-    buy: "10.00"
-    sell: "5.00"
+    buy: '10.00'
+    sell: '5.00'
     sellable: true
     daily-buy: 256
     daily-sell: 256
-    aliases: [粗铜, 铜原矿]
+    aliases:
+    - 粗铜
+    - 铜原矿
   raw_iron:
     material: RAW_IRON
-    buy: "24.00"
-    sell: "12.00"
+    buy: '24.00'
+    sell: '12.00'
     sellable: true
     daily-buy: 256
     daily-sell: 256
-    aliases: [粗铁, 铁原矿]
+    aliases:
+    - 粗铁
+    - 铁原矿
   raw_gold:
     material: RAW_GOLD
-    buy: "32.00"
-    sell: "16.00"
+    buy: '32.00'
+    sell: '16.00'
     sellable: true
     daily-buy: 128
     daily-sell: 128
-    aliases: [粗金, 金原矿]
+    aliases:
+    - 粗金
+    - 金原矿
   quartz:
     material: QUARTZ
-    buy: "10.00"
-    sell: "5.00"
+    buy: '10.00'
+    sell: '5.00'
     daily-buy: 256
     daily-sell: 256
-    aliases: [下界石英, 石英]
+    aliases:
+    - 下界石英
+    - 石英
+  stone_stairs:
+    material: STONE_STAIRS
+    buy: '3.00'
+    aliases:
+    - 石头楼梯
+  stone_slab:
+    material: STONE_SLAB
+    buy: '3.00'
+    aliases:
+    - 石头台阶
+  smooth_stone:
+    material: SMOOTH_STONE
+    buy: '3.00'
+    aliases:
+    - 平滑石头
+  smooth_stone_slab:
+    material: SMOOTH_STONE_SLAB
+    buy: '4.00'
+    aliases:
+    - 平滑石头台阶
+  cobblestone:
+    material: COBBLESTONE
+    buy: '2.00'
+    aliases:
+    - 圆石
+  cobblestone_stairs:
+    material: COBBLESTONE_STAIRS
+    buy: '3.00'
+    aliases:
+    - 圆石楼梯
+  cobblestone_slab:
+    material: COBBLESTONE_SLAB
+    buy: '3.00'
+    aliases:
+    - 圆石台阶
+  cobblestone_wall:
+    material: COBBLESTONE_WALL
+    buy: '3.00'
+    aliases:
+    - 圆石墙
+  mossy_cobblestone:
+    material: MOSSY_COBBLESTONE
+    buy: '3.00'
+    aliases:
+    - 苔石
+  mossy_cobblestone_stairs:
+    material: MOSSY_COBBLESTONE_STAIRS
+    buy: '4.00'
+    aliases:
+    - 苔石楼梯
+  mossy_cobblestone_slab:
+    material: MOSSY_COBBLESTONE_SLAB
+    buy: '4.00'
+    aliases:
+    - 苔石台阶
+  mossy_cobblestone_wall:
+    material: MOSSY_COBBLESTONE_WALL
+    buy: '4.00'
+    aliases:
+    - 苔石墙
+  stone_bricks:
+    material: STONE_BRICKS
+    buy: '4.00'
+    aliases:
+    - 石砖
+  stone_bricks_stairs:
+    material: STONE_BRICK_STAIRS
+    buy: '5.00'
+    aliases:
+    - 石砖楼梯
+  stone_bricks_slab:
+    material: STONE_BRICK_SLAB
+    buy: '5.00'
+    aliases:
+    - 石砖台阶
+  stone_bricks_wall:
+    material: STONE_BRICK_WALL
+    buy: '5.00'
+    aliases:
+    - 石砖墙
+  mossy_stone_bricks:
+    material: MOSSY_STONE_BRICKS
+    buy: '5.00'
+    aliases:
+    - 苔石砖
+  mossy_stone_bricks_stairs:
+    material: MOSSY_STONE_BRICK_STAIRS
+    buy: '6.00'
+    aliases:
+    - 苔石砖楼梯
+  mossy_stone_bricks_slab:
+    material: MOSSY_STONE_BRICK_SLAB
+    buy: '6.00'
+    aliases:
+    - 苔石砖台阶
+  mossy_stone_bricks_wall:
+    material: MOSSY_STONE_BRICK_WALL
+    buy: '6.00'
+    aliases:
+    - 苔石砖墙
+  cracked_stone_bricks:
+    material: CRACKED_STONE_BRICKS
+    buy: '5.00'
+    aliases:
+    - 裂纹石砖
+  chiseled_stone_bricks:
+    material: CHISELED_STONE_BRICKS
+    buy: '6.00'
+    aliases:
+    - 雕纹石砖
+  granite:
+    material: GRANITE
+    buy: '3.00'
+    aliases:
+    - 花岗岩
+  granite_stairs:
+    material: GRANITE_STAIRS
+    buy: '4.00'
+    aliases:
+    - 花岗岩楼梯
+  granite_slab:
+    material: GRANITE_SLAB
+    buy: '4.00'
+    aliases:
+    - 花岗岩台阶
+  granite_wall:
+    material: GRANITE_WALL
+    buy: '4.00'
+    aliases:
+    - 花岗岩墙
+  polished_granite:
+    material: POLISHED_GRANITE
+    buy: '4.00'
+    aliases:
+    - 磨制花岗岩
+  polished_granite_stairs:
+    material: POLISHED_GRANITE_STAIRS
+    buy: '5.00'
+    aliases:
+    - 磨制花岗岩楼梯
+  polished_granite_slab:
+    material: POLISHED_GRANITE_SLAB
+    buy: '5.00'
+    aliases:
+    - 磨制花岗岩台阶
+  diorite:
+    material: DIORITE
+    buy: '3.00'
+    aliases:
+    - 闪长岩
+  diorite_stairs:
+    material: DIORITE_STAIRS
+    buy: '4.00'
+    aliases:
+    - 闪长岩楼梯
+  diorite_slab:
+    material: DIORITE_SLAB
+    buy: '4.00'
+    aliases:
+    - 闪长岩台阶
+  diorite_wall:
+    material: DIORITE_WALL
+    buy: '4.00'
+    aliases:
+    - 闪长岩墙
+  polished_diorite:
+    material: POLISHED_DIORITE
+    buy: '4.00'
+    aliases:
+    - 磨制闪长岩
+  polished_diorite_stairs:
+    material: POLISHED_DIORITE_STAIRS
+    buy: '5.00'
+    aliases:
+    - 磨制闪长岩楼梯
+  polished_diorite_slab:
+    material: POLISHED_DIORITE_SLAB
+    buy: '5.00'
+    aliases:
+    - 磨制闪长岩台阶
+  andesite:
+    material: ANDESITE
+    buy: '3.00'
+    aliases:
+    - 安山岩
+  andesite_stairs:
+    material: ANDESITE_STAIRS
+    buy: '4.00'
+    aliases:
+    - 安山岩楼梯
+  andesite_slab:
+    material: ANDESITE_SLAB
+    buy: '4.00'
+    aliases:
+    - 安山岩台阶
+  andesite_wall:
+    material: ANDESITE_WALL
+    buy: '4.00'
+    aliases:
+    - 安山岩墙
+  polished_andesite:
+    material: POLISHED_ANDESITE
+    buy: '4.00'
+    aliases:
+    - 磨制安山岩
+  polished_andesite_stairs:
+    material: POLISHED_ANDESITE_STAIRS
+    buy: '5.00'
+    aliases:
+    - 磨制安山岩楼梯
+  polished_andesite_slab:
+    material: POLISHED_ANDESITE_SLAB
+    buy: '5.00'
+    aliases:
+    - 磨制安山岩台阶
+  deepslate:
+    material: DEEPSLATE
+    buy: '3.00'
+    aliases:
+    - 深板岩
+  cobbled_deepslate:
+    material: COBBLED_DEEPSLATE
+    buy: '3.00'
+    aliases:
+    - 深板岩圆石
+  cobbled_deepslate_stairs:
+    material: COBBLED_DEEPSLATE_STAIRS
+    buy: '4.00'
+    aliases:
+    - 深板岩圆石楼梯
+  cobbled_deepslate_slab:
+    material: COBBLED_DEEPSLATE_SLAB
+    buy: '4.00'
+    aliases:
+    - 深板岩圆石台阶
+  cobbled_deepslate_wall:
+    material: COBBLED_DEEPSLATE_WALL
+    buy: '4.00'
+    aliases:
+    - 深板岩圆石墙
+  polished_deepslate:
+    material: POLISHED_DEEPSLATE
+    buy: '4.00'
+    aliases:
+    - 磨制深板岩
+  polished_deepslate_stairs:
+    material: POLISHED_DEEPSLATE_STAIRS
+    buy: '5.00'
+    aliases:
+    - 磨制深板岩楼梯
+  polished_deepslate_slab:
+    material: POLISHED_DEEPSLATE_SLAB
+    buy: '5.00'
+    aliases:
+    - 磨制深板岩台阶
+  polished_deepslate_wall:
+    material: POLISHED_DEEPSLATE_WALL
+    buy: '5.00'
+    aliases:
+    - 磨制深板岩墙
+  deepslate_bricks:
+    material: DEEPSLATE_BRICKS
+    buy: '5.00'
+    aliases:
+    - 深板岩砖
+  deepslate_bricks_stairs:
+    material: DEEPSLATE_BRICK_STAIRS
+    buy: '6.00'
+    aliases:
+    - 深板岩砖楼梯
+  deepslate_bricks_slab:
+    material: DEEPSLATE_BRICK_SLAB
+    buy: '6.00'
+    aliases:
+    - 深板岩砖台阶
+  deepslate_bricks_wall:
+    material: DEEPSLATE_BRICK_WALL
+    buy: '6.00'
+    aliases:
+    - 深板岩砖墙
+  cracked_deepslate_bricks:
+    material: CRACKED_DEEPSLATE_BRICKS
+    buy: '5.00'
+    aliases:
+    - 裂纹深板岩砖
+  deepslate_tiles:
+    material: DEEPSLATE_TILES
+    buy: '5.00'
+    aliases:
+    - 深板岩瓦
+  deepslate_tiles_stairs:
+    material: DEEPSLATE_TILE_STAIRS
+    buy: '6.00'
+    aliases:
+    - 深板岩瓦楼梯
+  deepslate_tiles_slab:
+    material: DEEPSLATE_TILE_SLAB
+    buy: '6.00'
+    aliases:
+    - 深板岩瓦台阶
+  deepslate_tiles_wall:
+    material: DEEPSLATE_TILE_WALL
+    buy: '6.00'
+    aliases:
+    - 深板岩瓦墙
+  cracked_deepslate_tiles:
+    material: CRACKED_DEEPSLATE_TILES
+    buy: '5.00'
+    aliases:
+    - 裂纹深板岩瓦
+  chiseled_deepslate:
+    material: CHISELED_DEEPSLATE
+    buy: '6.00'
+    aliases:
+    - 雕纹深板岩
+  tuff:
+    material: TUFF
+    buy: '3.00'
+    aliases:
+    - 凝灰岩
+  tuff_stairs:
+    material: TUFF_STAIRS
+    buy: '4.00'
+    aliases:
+    - 凝灰岩楼梯
+  tuff_slab:
+    material: TUFF_SLAB
+    buy: '4.00'
+    aliases:
+    - 凝灰岩台阶
+  tuff_wall:
+    material: TUFF_WALL
+    buy: '4.00'
+    aliases:
+    - 凝灰岩墙
+  polished_tuff:
+    material: POLISHED_TUFF
+    buy: '4.00'
+    aliases:
+    - 磨制凝灰岩
+  polished_tuff_stairs:
+    material: POLISHED_TUFF_STAIRS
+    buy: '5.00'
+    aliases:
+    - 磨制凝灰岩楼梯
+  polished_tuff_slab:
+    material: POLISHED_TUFF_SLAB
+    buy: '5.00'
+    aliases:
+    - 磨制凝灰岩台阶
+  polished_tuff_wall:
+    material: POLISHED_TUFF_WALL
+    buy: '5.00'
+    aliases:
+    - 磨制凝灰岩墙
+  chiseled_tuff:
+    material: CHISELED_TUFF
+    buy: '5.00'
+    aliases:
+    - 雕纹凝灰岩
+  tuff_bricks:
+    material: TUFF_BRICKS
+    buy: '5.00'
+    aliases:
+    - 凝灰岩砖
+  tuff_bricks_stairs:
+    material: TUFF_BRICK_STAIRS
+    buy: '6.00'
+    aliases:
+    - 凝灰岩砖楼梯
+  tuff_bricks_slab:
+    material: TUFF_BRICK_SLAB
+    buy: '6.00'
+    aliases:
+    - 凝灰岩砖台阶
+  tuff_bricks_wall:
+    material: TUFF_BRICK_WALL
+    buy: '6.00'
+    aliases:
+    - 凝灰岩砖墙
+  chiseled_tuff_bricks:
+    material: CHISELED_TUFF_BRICKS
+    buy: '6.00'
+    aliases:
+    - 雕纹凝灰岩砖
+  calcite:
+    material: CALCITE
+    buy: '4.00'
+    aliases:
+    - 方解石
+  dripstone_block:
+    material: DRIPSTONE_BLOCK
+    buy: '4.00'
+    aliases:
+    - 滴水石块
+  sandstone:
+    material: SANDSTONE
+    buy: '3.00'
+    aliases:
+    - 砂岩
+  sandstone_stairs:
+    material: SANDSTONE_STAIRS
+    buy: '4.00'
+    aliases:
+    - 砂岩楼梯
+  sandstone_slab:
+    material: SANDSTONE_SLAB
+    buy: '4.00'
+    aliases:
+    - 砂岩台阶
+  sandstone_wall:
+    material: SANDSTONE_WALL
+    buy: '4.00'
+    aliases:
+    - 砂岩墙
+  chiseled_sandstone:
+    material: CHISELED_SANDSTONE
+    buy: '5.00'
+    aliases:
+    - 雕纹砂岩
+  cut_sandstone:
+    material: CUT_SANDSTONE
+    buy: '4.00'
+    aliases:
+    - 切制砂岩
+  cut_sandstone_slab:
+    material: CUT_SANDSTONE_SLAB
+    buy: '5.00'
+    aliases:
+    - 切制砂岩台阶
+  smooth_sandstone:
+    material: SMOOTH_SANDSTONE
+    buy: '4.00'
+    aliases:
+    - 平滑砂岩
+  smooth_sandstone_stairs:
+    material: SMOOTH_SANDSTONE_STAIRS
+    buy: '5.00'
+    aliases:
+    - 平滑砂岩楼梯
+  smooth_sandstone_slab:
+    material: SMOOTH_SANDSTONE_SLAB
+    buy: '5.00'
+    aliases:
+    - 平滑砂岩台阶
+  red_sandstone:
+    material: RED_SANDSTONE
+    buy: '3.00'
+    aliases:
+    - 红砂岩
+  red_sandstone_stairs:
+    material: RED_SANDSTONE_STAIRS
+    buy: '4.00'
+    aliases:
+    - 红砂岩楼梯
+  red_sandstone_slab:
+    material: RED_SANDSTONE_SLAB
+    buy: '4.00'
+    aliases:
+    - 红砂岩台阶
+  red_sandstone_wall:
+    material: RED_SANDSTONE_WALL
+    buy: '4.00'
+    aliases:
+    - 红砂岩墙
+  chiseled_red_sandstone:
+    material: CHISELED_RED_SANDSTONE
+    buy: '5.00'
+    aliases:
+    - 雕纹红砂岩
+  cut_red_sandstone:
+    material: CUT_RED_SANDSTONE
+    buy: '4.00'
+    aliases:
+    - 切制红砂岩
+  cut_red_sandstone_slab:
+    material: CUT_RED_SANDSTONE_SLAB
+    buy: '5.00'
+    aliases:
+    - 切制红砂岩台阶
+  smooth_red_sandstone:
+    material: SMOOTH_RED_SANDSTONE
+    buy: '4.00'
+    aliases:
+    - 平滑红砂岩
+  smooth_red_sandstone_stairs:
+    material: SMOOTH_RED_SANDSTONE_STAIRS
+    buy: '5.00'
+    aliases:
+    - 平滑红砂岩楼梯
+  smooth_red_sandstone_slab:
+    material: SMOOTH_RED_SANDSTONE_SLAB
+    buy: '5.00'
+    aliases:
+    - 平滑红砂岩台阶
+  bricks_stairs:
+    material: BRICK_STAIRS
+    buy: '5.00'
+    aliases:
+    - 砖块楼梯
+  bricks_slab:
+    material: BRICK_SLAB
+    buy: '5.00'
+    aliases:
+    - 砖块台阶
+  bricks_wall:
+    material: BRICK_WALL
+    buy: '5.00'
+    aliases:
+    - 砖块墙
+  mud_bricks:
+    material: MUD_BRICKS
+    buy: '4.00'
+    aliases:
+    - 泥砖
+  mud_bricks_stairs:
+    material: MUD_BRICK_STAIRS
+    buy: '5.00'
+    aliases:
+    - 泥砖楼梯
+  mud_bricks_slab:
+    material: MUD_BRICK_SLAB
+    buy: '5.00'
+    aliases:
+    - 泥砖台阶
+  mud_bricks_wall:
+    material: MUD_BRICK_WALL
+    buy: '5.00'
+    aliases:
+    - 泥砖墙
+  packed_mud:
+    material: PACKED_MUD
+    buy: '3.00'
+    aliases:
+    - 泥坯
+  mud:
+    material: MUD
+    buy: '2.00'
+    aliases:
+    - 泥
+  prismarine:
+    material: PRISMARINE
+    buy: '4.00'
+    aliases:
+    - 海晶石
+  prismarine_stairs:
+    material: PRISMARINE_STAIRS
+    buy: '5.00'
+    aliases:
+    - 海晶石楼梯
+  prismarine_slab:
+    material: PRISMARINE_SLAB
+    buy: '5.00'
+    aliases:
+    - 海晶石台阶
+  prismarine_wall:
+    material: PRISMARINE_WALL
+    buy: '5.00'
+    aliases:
+    - 海晶石墙
+  prismarine_bricks:
+    material: PRISMARINE_BRICKS
+    buy: '5.00'
+    aliases:
+    - 海晶石砖
+  prismarine_bricks_stairs:
+    material: PRISMARINE_BRICK_STAIRS
+    buy: '6.00'
+    aliases:
+    - 海晶石砖楼梯
+  prismarine_bricks_slab:
+    material: PRISMARINE_BRICK_SLAB
+    buy: '6.00'
+    aliases:
+    - 海晶石砖台阶
+  dark_prismarine:
+    material: DARK_PRISMARINE
+    buy: '5.00'
+    aliases:
+    - 暗海晶石
+  dark_prismarine_stairs:
+    material: DARK_PRISMARINE_STAIRS
+    buy: '6.00'
+    aliases:
+    - 暗海晶石楼梯
+  dark_prismarine_slab:
+    material: DARK_PRISMARINE_SLAB
+    buy: '6.00'
+    aliases:
+    - 暗海晶石台阶
+  purpur_block:
+    material: PURPUR_BLOCK
+    buy: '5.00'
+    aliases:
+    - 紫珀块
+  purpur_block_stairs:
+    material: PURPUR_STAIRS
+    buy: '6.00'
+    aliases:
+    - 紫珀块楼梯
+  purpur_block_slab:
+    material: PURPUR_SLAB
+    buy: '6.00'
+    aliases:
+    - 紫珀块台阶
+  purpur_pillar:
+    material: PURPUR_PILLAR
+    buy: '5.00'
+    aliases:
+    - 紫珀柱
+  end_stone_bricks:
+    material: END_STONE_BRICKS
+    buy: '5.00'
+    aliases:
+    - 末地石砖
+  end_stone_bricks_stairs:
+    material: END_STONE_BRICK_STAIRS
+    buy: '6.00'
+    aliases:
+    - 末地石砖楼梯
+  end_stone_bricks_slab:
+    material: END_STONE_BRICK_SLAB
+    buy: '6.00'
+    aliases:
+    - 末地石砖台阶
+  end_stone_bricks_wall:
+    material: END_STONE_BRICK_WALL
+    buy: '6.00'
+    aliases:
+    - 末地石砖墙
+  nether_bricks:
+    material: NETHER_BRICKS
+    buy: '4.00'
+    aliases:
+    - 下界砖块
+  nether_bricks_stairs:
+    material: NETHER_BRICK_STAIRS
+    buy: '5.00'
+    aliases:
+    - 下界砖块楼梯
+  nether_bricks_slab:
+    material: NETHER_BRICK_SLAB
+    buy: '5.00'
+    aliases:
+    - 下界砖块台阶
+  nether_bricks_wall:
+    material: NETHER_BRICK_WALL
+    buy: '5.00'
+    aliases:
+    - 下界砖块墙
+  cracked_nether_bricks:
+    material: CRACKED_NETHER_BRICKS
+    buy: '5.00'
+    aliases:
+    - 裂纹下界砖块
+  chiseled_nether_bricks:
+    material: CHISELED_NETHER_BRICKS
+    buy: '6.00'
+    aliases:
+    - 雕纹下界砖块
+  red_nether_bricks:
+    material: RED_NETHER_BRICKS
+    buy: '5.00'
+    aliases:
+    - 红色下界砖块
+  red_nether_bricks_stairs:
+    material: RED_NETHER_BRICK_STAIRS
+    buy: '6.00'
+    aliases:
+    - 红色下界砖块楼梯
+  red_nether_bricks_slab:
+    material: RED_NETHER_BRICK_SLAB
+    buy: '6.00'
+    aliases:
+    - 红色下界砖块台阶
+  red_nether_bricks_wall:
+    material: RED_NETHER_BRICK_WALL
+    buy: '6.00'
+    aliases:
+    - 红色下界砖块墙
+  blackstone:
+    material: BLACKSTONE
+    buy: '3.00'
+    aliases:
+    - 黑石
+  blackstone_stairs:
+    material: BLACKSTONE_STAIRS
+    buy: '4.00'
+    aliases:
+    - 黑石楼梯
+  blackstone_slab:
+    material: BLACKSTONE_SLAB
+    buy: '4.00'
+    aliases:
+    - 黑石台阶
+  blackstone_wall:
+    material: BLACKSTONE_WALL
+    buy: '4.00'
+    aliases:
+    - 黑石墙
+  polished_blackstone:
+    material: POLISHED_BLACKSTONE
+    buy: '4.00'
+    aliases:
+    - 磨制黑石
+  polished_blackstone_stairs:
+    material: POLISHED_BLACKSTONE_STAIRS
+    buy: '5.00'
+    aliases:
+    - 磨制黑石楼梯
+  polished_blackstone_slab:
+    material: POLISHED_BLACKSTONE_SLAB
+    buy: '5.00'
+    aliases:
+    - 磨制黑石台阶
+  polished_blackstone_wall:
+    material: POLISHED_BLACKSTONE_WALL
+    buy: '5.00'
+    aliases:
+    - 磨制黑石墙
+  polished_blackstone_bricks:
+    material: POLISHED_BLACKSTONE_BRICKS
+    buy: '5.00'
+    aliases:
+    - 磨制黑石砖
+  polished_blackstone_bricks_stairs:
+    material: POLISHED_BLACKSTONE_BRICK_STAIRS
+    buy: '6.00'
+    aliases:
+    - 磨制黑石砖楼梯
+  polished_blackstone_bricks_slab:
+    material: POLISHED_BLACKSTONE_BRICK_SLAB
+    buy: '6.00'
+    aliases:
+    - 磨制黑石砖台阶
+  polished_blackstone_bricks_wall:
+    material: POLISHED_BLACKSTONE_BRICK_WALL
+    buy: '6.00'
+    aliases:
+    - 磨制黑石砖墙
+  cracked_polished_blackstone_bricks:
+    material: CRACKED_POLISHED_BLACKSTONE_BRICKS
+    buy: '5.00'
+    aliases:
+    - 裂纹磨制黑石砖
+  chiseled_polished_blackstone:
+    material: CHISELED_POLISHED_BLACKSTONE
+    buy: '6.00'
+    aliases:
+    - 雕纹磨制黑石
+  gilded_blackstone:
+    material: GILDED_BLACKSTONE
+    buy: '8.00'
+    aliases:
+    - 镶金黑石
+  basalt:
+    material: BASALT
+    buy: '3.00'
+    aliases:
+    - 玄武岩
+  smooth_basalt:
+    material: SMOOTH_BASALT
+    buy: '3.00'
+    aliases:
+    - 平滑玄武岩
+  polished_basalt:
+    material: POLISHED_BASALT
+    buy: '3.00'
+    aliases:
+    - 磨制玄武岩
+  obsidian:
+    material: OBSIDIAN
+    buy: '8.00'
+    aliases:
+    - 黑曜石
+  crying_obsidian:
+    material: CRYING_OBSIDIAN
+    buy: '10.00'
+    aliases:
+    - 哭泣的黑曜石
+  magma_block:
+    material: MAGMA_BLOCK
+    buy: '4.00'
+    aliases:
+    - 岩浆块
+  quartz_block_stairs:
+    material: QUARTZ_STAIRS
+    buy: '7.00'
+    aliases:
+    - 石英块楼梯
+  quartz_block_slab:
+    material: QUARTZ_SLAB
+    buy: '7.00'
+    aliases:
+    - 石英块台阶
+  chiseled_quartz_block:
+    material: CHISELED_QUARTZ_BLOCK
+    buy: '7.00'
+    aliases:
+    - 雕纹石英块
+  quartz_bricks:
+    material: QUARTZ_BRICKS
+    buy: '7.00'
+    aliases:
+    - 石英砖
+  quartz_pillar:
+    material: QUARTZ_PILLAR
+    buy: '6.00'
+    aliases:
+    - 石英柱
+  smooth_quartz:
+    material: SMOOTH_QUARTZ
+    buy: '6.00'
+    aliases:
+    - 平滑石英
+  smooth_quartz_stairs:
+    material: SMOOTH_QUARTZ_STAIRS
+    buy: '7.00'
+    aliases:
+    - 平滑石英楼梯
+  smooth_quartz_slab:
+    material: SMOOTH_QUARTZ_SLAB
+    buy: '7.00'
+    aliases:
+    - 平滑石英台阶
+  copper_block:
+    material: COPPER_BLOCK
+    buy: '10.00'
+    aliases:
+    - 铜块
+  exposed_copper:
+    material: EXPOSED_COPPER
+    buy: '10.00'
+    aliases:
+    - 斑驳的铜块
+  weathered_copper:
+    material: WEATHERED_COPPER
+    buy: '10.00'
+    aliases:
+    - 风化的铜块
+  oxidized_copper:
+    material: OXIDIZED_COPPER
+    buy: '10.00'
+    aliases:
+    - 氧化的铜块
+  waxed_copper_block:
+    material: WAXED_COPPER_BLOCK
+    buy: '12.00'
+    aliases:
+    - 涂蜡铜块
+  waxed_exposed_copper:
+    material: WAXED_EXPOSED_COPPER
+    buy: '12.00'
+    aliases:
+    - 涂蜡斑驳铜块
+  waxed_weathered_copper:
+    material: WAXED_WEATHERED_COPPER
+    buy: '12.00'
+    aliases:
+    - 涂蜡风化铜块
+  waxed_oxidized_copper:
+    material: WAXED_OXIDIZED_COPPER
+    buy: '12.00'
+    aliases:
+    - 涂蜡氧化铜块
+  cut_copper:
+    material: CUT_COPPER
+    buy: '12.00'
+    aliases:
+    - 切制铜块
+  cut_copper_stairs:
+    material: CUT_COPPER_STAIRS
+    buy: '13.00'
+    aliases:
+    - 切制铜块楼梯
+  cut_copper_slab:
+    material: CUT_COPPER_SLAB
+    buy: '13.00'
+    aliases:
+    - 切制铜块台阶
+  exposed_cut_copper:
+    material: EXPOSED_CUT_COPPER
+    buy: '12.00'
+    aliases:
+    - 斑驳切制铜块
+  exposed_cut_copper_stairs:
+    material: EXPOSED_CUT_COPPER_STAIRS
+    buy: '13.00'
+    aliases:
+    - 斑驳切制铜块楼梯
+  exposed_cut_copper_slab:
+    material: EXPOSED_CUT_COPPER_SLAB
+    buy: '13.00'
+    aliases:
+    - 斑驳切制铜块台阶
+  weathered_cut_copper:
+    material: WEATHERED_CUT_COPPER
+    buy: '12.00'
+    aliases:
+    - 风化切制铜块
+  weathered_cut_copper_stairs:
+    material: WEATHERED_CUT_COPPER_STAIRS
+    buy: '13.00'
+    aliases:
+    - 风化切制铜块楼梯
+  weathered_cut_copper_slab:
+    material: WEATHERED_CUT_COPPER_SLAB
+    buy: '13.00'
+    aliases:
+    - 风化切制铜块台阶
+  oxidized_cut_copper:
+    material: OXIDIZED_CUT_COPPER
+    buy: '12.00'
+    aliases:
+    - 氧化切制铜块
+  oxidized_cut_copper_stairs:
+    material: OXIDIZED_CUT_COPPER_STAIRS
+    buy: '13.00'
+    aliases:
+    - 氧化切制铜块楼梯
+  oxidized_cut_copper_slab:
+    material: OXIDIZED_CUT_COPPER_SLAB
+    buy: '13.00'
+    aliases:
+    - 氧化切制铜块台阶
+  waxed_cut_copper:
+    material: WAXED_CUT_COPPER
+    buy: '14.00'
+    aliases:
+    - 涂蜡切制铜块
+  waxed_cut_copper_stairs:
+    material: WAXED_CUT_COPPER_STAIRS
+    buy: '15.00'
+    aliases:
+    - 涂蜡切制铜块楼梯
+  waxed_cut_copper_slab:
+    material: WAXED_CUT_COPPER_SLAB
+    buy: '15.00'
+    aliases:
+    - 涂蜡切制铜块台阶
+  waxed_exposed_cut_copper:
+    material: WAXED_EXPOSED_CUT_COPPER
+    buy: '14.00'
+    aliases:
+    - 涂蜡斑驳切制铜块
+  waxed_exposed_cut_copper_stairs:
+    material: WAXED_EXPOSED_CUT_COPPER_STAIRS
+    buy: '15.00'
+    aliases:
+    - 涂蜡斑驳切制铜块楼梯
+  waxed_exposed_cut_copper_slab:
+    material: WAXED_EXPOSED_CUT_COPPER_SLAB
+    buy: '15.00'
+    aliases:
+    - 涂蜡斑驳切制铜块台阶
+  waxed_weathered_cut_copper:
+    material: WAXED_WEATHERED_CUT_COPPER
+    buy: '14.00'
+    aliases:
+    - 涂蜡风化切制铜块
+  waxed_weathered_cut_copper_stairs:
+    material: WAXED_WEATHERED_CUT_COPPER_STAIRS
+    buy: '15.00'
+    aliases:
+    - 涂蜡风化切制铜块楼梯
+  waxed_weathered_cut_copper_slab:
+    material: WAXED_WEATHERED_CUT_COPPER_SLAB
+    buy: '15.00'
+    aliases:
+    - 涂蜡风化切制铜块台阶
+  waxed_oxidized_cut_copper:
+    material: WAXED_OXIDIZED_CUT_COPPER
+    buy: '14.00'
+    aliases:
+    - 涂蜡氧化切制铜块
+  waxed_oxidized_cut_copper_stairs:
+    material: WAXED_OXIDIZED_CUT_COPPER_STAIRS
+    buy: '15.00'
+    aliases:
+    - 涂蜡氧化切制铜块楼梯
+  waxed_oxidized_cut_copper_slab:
+    material: WAXED_OXIDIZED_CUT_COPPER_SLAB
+    buy: '15.00'
+    aliases:
+    - 涂蜡氧化切制铜块台阶
+  stripped_oak_log:
+    material: STRIPPED_OAK_LOG
+    buy: '4.00'
+    aliases:
+    - 去皮橡木原木
+  oak_wood:
+    material: OAK_WOOD
+    buy: '4.00'
+    aliases:
+    - 橡木木头
+  stripped_oak_wood:
+    material: STRIPPED_OAK_WOOD
+    buy: '5.00'
+    aliases:
+    - 去皮橡木木头
+  oak_planks:
+    material: OAK_PLANKS
+    buy: '2.00'
+    aliases:
+    - 橡木木板
+  oak_stairs:
+    material: OAK_STAIRS
+    buy: '3.00'
+    aliases:
+    - 橡木楼梯
+  oak_slab:
+    material: OAK_SLAB
+    buy: '2.00'
+    aliases:
+    - 橡木台阶
+  oak_fence:
+    material: OAK_FENCE
+    buy: '4.00'
+    aliases:
+    - 橡木栅栏
+  oak_fence_gate:
+    material: OAK_FENCE_GATE
+    buy: '4.00'
+    aliases:
+    - 橡木栅栏门
+  oak_door:
+    material: OAK_DOOR
+    buy: '5.00'
+    aliases:
+    - 橡木门
+  oak_trapdoor:
+    material: OAK_TRAPDOOR
+    buy: '4.00'
+    aliases:
+    - 橡木活板门
+  oak_sign:
+    material: OAK_SIGN
+    buy: '4.00'
+    aliases:
+    - 橡木告示牌
+  oak_hanging_sign:
+    material: OAK_HANGING_SIGN
+    buy: '4.00'
+    aliases:
+    - 橡木悬挂告示牌
+  spruce_log:
+    material: SPRUCE_LOG
+    buy: '3.00'
+    aliases:
+    - 云杉原木
+  stripped_spruce_log:
+    material: STRIPPED_SPRUCE_LOG
+    buy: '4.00'
+    aliases:
+    - 去皮云杉原木
+  spruce_wood:
+    material: SPRUCE_WOOD
+    buy: '4.00'
+    aliases:
+    - 云杉木头
+  stripped_spruce_wood:
+    material: STRIPPED_SPRUCE_WOOD
+    buy: '5.00'
+    aliases:
+    - 去皮云杉木头
+  spruce_planks:
+    material: SPRUCE_PLANKS
+    buy: '2.00'
+    aliases:
+    - 云杉木板
+  spruce_stairs:
+    material: SPRUCE_STAIRS
+    buy: '3.00'
+    aliases:
+    - 云杉楼梯
+  spruce_slab:
+    material: SPRUCE_SLAB
+    buy: '2.00'
+    aliases:
+    - 云杉台阶
+  spruce_fence:
+    material: SPRUCE_FENCE
+    buy: '4.00'
+    aliases:
+    - 云杉栅栏
+  spruce_fence_gate:
+    material: SPRUCE_FENCE_GATE
+    buy: '4.00'
+    aliases:
+    - 云杉栅栏门
+  spruce_door:
+    material: SPRUCE_DOOR
+    buy: '5.00'
+    aliases:
+    - 云杉门
+  spruce_trapdoor:
+    material: SPRUCE_TRAPDOOR
+    buy: '4.00'
+    aliases:
+    - 云杉活板门
+  spruce_sign:
+    material: SPRUCE_SIGN
+    buy: '4.00'
+    aliases:
+    - 云杉告示牌
+  spruce_hanging_sign:
+    material: SPRUCE_HANGING_SIGN
+    buy: '4.00'
+    aliases:
+    - 云杉悬挂告示牌
+  birch_log:
+    material: BIRCH_LOG
+    buy: '3.00'
+    aliases:
+    - 白桦原木
+  stripped_birch_log:
+    material: STRIPPED_BIRCH_LOG
+    buy: '4.00'
+    aliases:
+    - 去皮白桦原木
+  birch_wood:
+    material: BIRCH_WOOD
+    buy: '4.00'
+    aliases:
+    - 白桦木头
+  stripped_birch_wood:
+    material: STRIPPED_BIRCH_WOOD
+    buy: '5.00'
+    aliases:
+    - 去皮白桦木头
+  birch_planks:
+    material: BIRCH_PLANKS
+    buy: '2.00'
+    aliases:
+    - 白桦木板
+  birch_stairs:
+    material: BIRCH_STAIRS
+    buy: '3.00'
+    aliases:
+    - 白桦楼梯
+  birch_slab:
+    material: BIRCH_SLAB
+    buy: '2.00'
+    aliases:
+    - 白桦台阶
+  birch_fence:
+    material: BIRCH_FENCE
+    buy: '4.00'
+    aliases:
+    - 白桦栅栏
+  birch_fence_gate:
+    material: BIRCH_FENCE_GATE
+    buy: '4.00'
+    aliases:
+    - 白桦栅栏门
+  birch_door:
+    material: BIRCH_DOOR
+    buy: '5.00'
+    aliases:
+    - 白桦门
+  birch_trapdoor:
+    material: BIRCH_TRAPDOOR
+    buy: '4.00'
+    aliases:
+    - 白桦活板门
+  birch_sign:
+    material: BIRCH_SIGN
+    buy: '4.00'
+    aliases:
+    - 白桦告示牌
+  birch_hanging_sign:
+    material: BIRCH_HANGING_SIGN
+    buy: '4.00'
+    aliases:
+    - 白桦悬挂告示牌
+  jungle_log:
+    material: JUNGLE_LOG
+    buy: '3.00'
+    aliases:
+    - 丛林原木
+  stripped_jungle_log:
+    material: STRIPPED_JUNGLE_LOG
+    buy: '4.00'
+    aliases:
+    - 去皮丛林原木
+  jungle_wood:
+    material: JUNGLE_WOOD
+    buy: '4.00'
+    aliases:
+    - 丛林木头
+  stripped_jungle_wood:
+    material: STRIPPED_JUNGLE_WOOD
+    buy: '5.00'
+    aliases:
+    - 去皮丛林木头
+  jungle_planks:
+    material: JUNGLE_PLANKS
+    buy: '2.00'
+    aliases:
+    - 丛林木板
+  jungle_stairs:
+    material: JUNGLE_STAIRS
+    buy: '3.00'
+    aliases:
+    - 丛林楼梯
+  jungle_slab:
+    material: JUNGLE_SLAB
+    buy: '2.00'
+    aliases:
+    - 丛林台阶
+  jungle_fence:
+    material: JUNGLE_FENCE
+    buy: '4.00'
+    aliases:
+    - 丛林栅栏
+  jungle_fence_gate:
+    material: JUNGLE_FENCE_GATE
+    buy: '4.00'
+    aliases:
+    - 丛林栅栏门
+  jungle_door:
+    material: JUNGLE_DOOR
+    buy: '5.00'
+    aliases:
+    - 丛林门
+  jungle_trapdoor:
+    material: JUNGLE_TRAPDOOR
+    buy: '4.00'
+    aliases:
+    - 丛林活板门
+  jungle_sign:
+    material: JUNGLE_SIGN
+    buy: '4.00'
+    aliases:
+    - 丛林告示牌
+  jungle_hanging_sign:
+    material: JUNGLE_HANGING_SIGN
+    buy: '4.00'
+    aliases:
+    - 丛林悬挂告示牌
+  acacia_log:
+    material: ACACIA_LOG
+    buy: '3.00'
+    aliases:
+    - 金合欢原木
+  stripped_acacia_log:
+    material: STRIPPED_ACACIA_LOG
+    buy: '4.00'
+    aliases:
+    - 去皮金合欢原木
+  acacia_wood:
+    material: ACACIA_WOOD
+    buy: '4.00'
+    aliases:
+    - 金合欢木头
+  stripped_acacia_wood:
+    material: STRIPPED_ACACIA_WOOD
+    buy: '5.00'
+    aliases:
+    - 去皮金合欢木头
+  acacia_planks:
+    material: ACACIA_PLANKS
+    buy: '2.00'
+    aliases:
+    - 金合欢木板
+  acacia_stairs:
+    material: ACACIA_STAIRS
+    buy: '3.00'
+    aliases:
+    - 金合欢楼梯
+  acacia_slab:
+    material: ACACIA_SLAB
+    buy: '2.00'
+    aliases:
+    - 金合欢台阶
+  acacia_fence:
+    material: ACACIA_FENCE
+    buy: '4.00'
+    aliases:
+    - 金合欢栅栏
+  acacia_fence_gate:
+    material: ACACIA_FENCE_GATE
+    buy: '4.00'
+    aliases:
+    - 金合欢栅栏门
+  acacia_door:
+    material: ACACIA_DOOR
+    buy: '5.00'
+    aliases:
+    - 金合欢门
+  acacia_trapdoor:
+    material: ACACIA_TRAPDOOR
+    buy: '4.00'
+    aliases:
+    - 金合欢活板门
+  acacia_sign:
+    material: ACACIA_SIGN
+    buy: '4.00'
+    aliases:
+    - 金合欢告示牌
+  acacia_hanging_sign:
+    material: ACACIA_HANGING_SIGN
+    buy: '4.00'
+    aliases:
+    - 金合欢悬挂告示牌
+  dark_oak_log:
+    material: DARK_OAK_LOG
+    buy: '3.00'
+    aliases:
+    - 深色橡木原木
+  stripped_dark_oak_log:
+    material: STRIPPED_DARK_OAK_LOG
+    buy: '4.00'
+    aliases:
+    - 去皮深色橡木原木
+  dark_oak_wood:
+    material: DARK_OAK_WOOD
+    buy: '4.00'
+    aliases:
+    - 深色橡木木头
+  stripped_dark_oak_wood:
+    material: STRIPPED_DARK_OAK_WOOD
+    buy: '5.00'
+    aliases:
+    - 去皮深色橡木木头
+  dark_oak_planks:
+    material: DARK_OAK_PLANKS
+    buy: '2.00'
+    aliases:
+    - 深色橡木木板
+  dark_oak_stairs:
+    material: DARK_OAK_STAIRS
+    buy: '3.00'
+    aliases:
+    - 深色橡木楼梯
+  dark_oak_slab:
+    material: DARK_OAK_SLAB
+    buy: '2.00'
+    aliases:
+    - 深色橡木台阶
+  dark_oak_fence:
+    material: DARK_OAK_FENCE
+    buy: '4.00'
+    aliases:
+    - 深色橡木栅栏
+  dark_oak_fence_gate:
+    material: DARK_OAK_FENCE_GATE
+    buy: '4.00'
+    aliases:
+    - 深色橡木栅栏门
+  dark_oak_door:
+    material: DARK_OAK_DOOR
+    buy: '5.00'
+    aliases:
+    - 深色橡木门
+  dark_oak_trapdoor:
+    material: DARK_OAK_TRAPDOOR
+    buy: '4.00'
+    aliases:
+    - 深色橡木活板门
+  dark_oak_sign:
+    material: DARK_OAK_SIGN
+    buy: '4.00'
+    aliases:
+    - 深色橡木告示牌
+  dark_oak_hanging_sign:
+    material: DARK_OAK_HANGING_SIGN
+    buy: '4.00'
+    aliases:
+    - 深色橡木悬挂告示牌
+  mangrove_log:
+    material: MANGROVE_LOG
+    buy: '3.00'
+    aliases:
+    - 红树原木
+  stripped_mangrove_log:
+    material: STRIPPED_MANGROVE_LOG
+    buy: '4.00'
+    aliases:
+    - 去皮红树原木
+  mangrove_wood:
+    material: MANGROVE_WOOD
+    buy: '4.00'
+    aliases:
+    - 红树木头
+  stripped_mangrove_wood:
+    material: STRIPPED_MANGROVE_WOOD
+    buy: '5.00'
+    aliases:
+    - 去皮红树木头
+  mangrove_planks:
+    material: MANGROVE_PLANKS
+    buy: '2.00'
+    aliases:
+    - 红树木板
+  mangrove_stairs:
+    material: MANGROVE_STAIRS
+    buy: '3.00'
+    aliases:
+    - 红树楼梯
+  mangrove_slab:
+    material: MANGROVE_SLAB
+    buy: '2.00'
+    aliases:
+    - 红树台阶
+  mangrove_fence:
+    material: MANGROVE_FENCE
+    buy: '4.00'
+    aliases:
+    - 红树栅栏
+  mangrove_fence_gate:
+    material: MANGROVE_FENCE_GATE
+    buy: '4.00'
+    aliases:
+    - 红树栅栏门
+  mangrove_door:
+    material: MANGROVE_DOOR
+    buy: '5.00'
+    aliases:
+    - 红树门
+  mangrove_trapdoor:
+    material: MANGROVE_TRAPDOOR
+    buy: '4.00'
+    aliases:
+    - 红树活板门
+  mangrove_sign:
+    material: MANGROVE_SIGN
+    buy: '4.00'
+    aliases:
+    - 红树告示牌
+  mangrove_hanging_sign:
+    material: MANGROVE_HANGING_SIGN
+    buy: '4.00'
+    aliases:
+    - 红树悬挂告示牌
+  cherry_log:
+    material: CHERRY_LOG
+    buy: '3.00'
+    aliases:
+    - 樱花原木
+  stripped_cherry_log:
+    material: STRIPPED_CHERRY_LOG
+    buy: '4.00'
+    aliases:
+    - 去皮樱花原木
+  cherry_wood:
+    material: CHERRY_WOOD
+    buy: '4.00'
+    aliases:
+    - 樱花木头
+  stripped_cherry_wood:
+    material: STRIPPED_CHERRY_WOOD
+    buy: '5.00'
+    aliases:
+    - 去皮樱花木头
+  cherry_planks:
+    material: CHERRY_PLANKS
+    buy: '2.00'
+    aliases:
+    - 樱花木板
+  cherry_stairs:
+    material: CHERRY_STAIRS
+    buy: '3.00'
+    aliases:
+    - 樱花楼梯
+  cherry_slab:
+    material: CHERRY_SLAB
+    buy: '2.00'
+    aliases:
+    - 樱花台阶
+  cherry_fence:
+    material: CHERRY_FENCE
+    buy: '4.00'
+    aliases:
+    - 樱花栅栏
+  cherry_fence_gate:
+    material: CHERRY_FENCE_GATE
+    buy: '4.00'
+    aliases:
+    - 樱花栅栏门
+  cherry_door:
+    material: CHERRY_DOOR
+    buy: '5.00'
+    aliases:
+    - 樱花门
+  cherry_trapdoor:
+    material: CHERRY_TRAPDOOR
+    buy: '4.00'
+    aliases:
+    - 樱花活板门
+  cherry_sign:
+    material: CHERRY_SIGN
+    buy: '4.00'
+    aliases:
+    - 樱花告示牌
+  cherry_hanging_sign:
+    material: CHERRY_HANGING_SIGN
+    buy: '4.00'
+    aliases:
+    - 樱花悬挂告示牌
+  pale_oak_log:
+    material: PALE_OAK_LOG
+    buy: '3.00'
+    aliases:
+    - 苍白橡木原木
+  stripped_pale_oak_log:
+    material: STRIPPED_PALE_OAK_LOG
+    buy: '4.00'
+    aliases:
+    - 去皮苍白橡木原木
+  pale_oak_wood:
+    material: PALE_OAK_WOOD
+    buy: '4.00'
+    aliases:
+    - 苍白橡木木头
+  stripped_pale_oak_wood:
+    material: STRIPPED_PALE_OAK_WOOD
+    buy: '5.00'
+    aliases:
+    - 去皮苍白橡木木头
+  pale_oak_planks:
+    material: PALE_OAK_PLANKS
+    buy: '2.00'
+    aliases:
+    - 苍白橡木木板
+  pale_oak_stairs:
+    material: PALE_OAK_STAIRS
+    buy: '3.00'
+    aliases:
+    - 苍白橡木楼梯
+  pale_oak_slab:
+    material: PALE_OAK_SLAB
+    buy: '2.00'
+    aliases:
+    - 苍白橡木台阶
+  pale_oak_fence:
+    material: PALE_OAK_FENCE
+    buy: '4.00'
+    aliases:
+    - 苍白橡木栅栏
+  pale_oak_fence_gate:
+    material: PALE_OAK_FENCE_GATE
+    buy: '4.00'
+    aliases:
+    - 苍白橡木栅栏门
+  pale_oak_door:
+    material: PALE_OAK_DOOR
+    buy: '5.00'
+    aliases:
+    - 苍白橡木门
+  pale_oak_trapdoor:
+    material: PALE_OAK_TRAPDOOR
+    buy: '4.00'
+    aliases:
+    - 苍白橡木活板门
+  pale_oak_sign:
+    material: PALE_OAK_SIGN
+    buy: '4.00'
+    aliases:
+    - 苍白橡木告示牌
+  pale_oak_hanging_sign:
+    material: PALE_OAK_HANGING_SIGN
+    buy: '4.00'
+    aliases:
+    - 苍白橡木悬挂告示牌
+  bamboo_block:
+    material: BAMBOO_BLOCK
+    buy: '3.00'
+    aliases:
+    - 竹块
+  stripped_bamboo_block:
+    material: STRIPPED_BAMBOO_BLOCK
+    buy: '4.00'
+    aliases:
+    - 去皮竹块
+  bamboo_mosaic:
+    material: BAMBOO_MOSAIC
+    buy: '3.00'
+    aliases:
+    - 竹马赛克
+  bamboo_mosaic_stairs:
+    material: BAMBOO_MOSAIC_STAIRS
+    buy: '4.00'
+    aliases:
+    - 竹马赛克楼梯
+  bamboo_mosaic_slab:
+    material: BAMBOO_MOSAIC_SLAB
+    buy: '3.00'
+    aliases:
+    - 竹马赛克台阶
+  bamboo_planks:
+    material: BAMBOO_PLANKS
+    buy: '2.00'
+    aliases:
+    - 竹木板
+  bamboo_stairs:
+    material: BAMBOO_STAIRS
+    buy: '3.00'
+    aliases:
+    - 竹楼梯
+  bamboo_slab:
+    material: BAMBOO_SLAB
+    buy: '2.00'
+    aliases:
+    - 竹台阶
+  bamboo_fence:
+    material: BAMBOO_FENCE
+    buy: '4.00'
+    aliases:
+    - 竹栅栏
+  bamboo_fence_gate:
+    material: BAMBOO_FENCE_GATE
+    buy: '4.00'
+    aliases:
+    - 竹栅栏门
+  bamboo_door:
+    material: BAMBOO_DOOR
+    buy: '5.00'
+    aliases:
+    - 竹门
+  bamboo_trapdoor:
+    material: BAMBOO_TRAPDOOR
+    buy: '4.00'
+    aliases:
+    - 竹活板门
+  bamboo_sign:
+    material: BAMBOO_SIGN
+    buy: '4.00'
+    aliases:
+    - 竹告示牌
+  bamboo_hanging_sign:
+    material: BAMBOO_HANGING_SIGN
+    buy: '4.00'
+    aliases:
+    - 竹悬挂告示牌
+  crimson_planks:
+    material: CRIMSON_PLANKS
+    buy: '2.00'
+    aliases:
+    - 绯红木板
+  crimson_stairs:
+    material: CRIMSON_STAIRS
+    buy: '3.00'
+    aliases:
+    - 绯红楼梯
+  crimson_slab:
+    material: CRIMSON_SLAB
+    buy: '2.00'
+    aliases:
+    - 绯红台阶
+  crimson_fence:
+    material: CRIMSON_FENCE
+    buy: '4.00'
+    aliases:
+    - 绯红栅栏
+  crimson_fence_gate:
+    material: CRIMSON_FENCE_GATE
+    buy: '4.00'
+    aliases:
+    - 绯红栅栏门
+  crimson_door:
+    material: CRIMSON_DOOR
+    buy: '5.00'
+    aliases:
+    - 绯红门
+  crimson_trapdoor:
+    material: CRIMSON_TRAPDOOR
+    buy: '4.00'
+    aliases:
+    - 绯红活板门
+  crimson_sign:
+    material: CRIMSON_SIGN
+    buy: '4.00'
+    aliases:
+    - 绯红告示牌
+  crimson_hanging_sign:
+    material: CRIMSON_HANGING_SIGN
+    buy: '4.00'
+    aliases:
+    - 绯红悬挂告示牌
+  warped_planks:
+    material: WARPED_PLANKS
+    buy: '2.00'
+    aliases:
+    - 诡异木板
+  warped_stairs:
+    material: WARPED_STAIRS
+    buy: '3.00'
+    aliases:
+    - 诡异楼梯
+  warped_slab:
+    material: WARPED_SLAB
+    buy: '2.00'
+    aliases:
+    - 诡异台阶
+  warped_fence:
+    material: WARPED_FENCE
+    buy: '4.00'
+    aliases:
+    - 诡异栅栏
+  warped_fence_gate:
+    material: WARPED_FENCE_GATE
+    buy: '4.00'
+    aliases:
+    - 诡异栅栏门
+  warped_door:
+    material: WARPED_DOOR
+    buy: '5.00'
+    aliases:
+    - 诡异门
+  warped_trapdoor:
+    material: WARPED_TRAPDOOR
+    buy: '4.00'
+    aliases:
+    - 诡异活板门
+  warped_sign:
+    material: WARPED_SIGN
+    buy: '4.00'
+    aliases:
+    - 诡异告示牌
+  warped_hanging_sign:
+    material: WARPED_HANGING_SIGN
+    buy: '4.00'
+    aliases:
+    - 诡异悬挂告示牌
+  glass_pane:
+    material: GLASS_PANE
+    buy: '2.00'
+    aliases:
+    - 玻璃板
+  tinted_glass:
+    material: TINTED_GLASS
+    buy: '6.00'
+    aliases:
+    - 遮光玻璃
+  white_stained_glass:
+    material: WHITE_STAINED_GLASS
+    buy: '6.00'
+    aliases:
+    - 白色染色玻璃
+  white_stained_glass_pane:
+    material: WHITE_STAINED_GLASS_PANE
+    buy: '4.00'
+    aliases:
+    - 白色染色玻璃板
+  orange_stained_glass:
+    material: ORANGE_STAINED_GLASS
+    buy: '6.00'
+    aliases:
+    - 橙色染色玻璃
+  orange_stained_glass_pane:
+    material: ORANGE_STAINED_GLASS_PANE
+    buy: '4.00'
+    aliases:
+    - 橙色染色玻璃板
+  magenta_stained_glass:
+    material: MAGENTA_STAINED_GLASS
+    buy: '6.00'
+    aliases:
+    - 品红色染色玻璃
+  magenta_stained_glass_pane:
+    material: MAGENTA_STAINED_GLASS_PANE
+    buy: '4.00'
+    aliases:
+    - 品红色染色玻璃板
+  light_blue_stained_glass:
+    material: LIGHT_BLUE_STAINED_GLASS
+    buy: '6.00'
+    aliases:
+    - 淡蓝色染色玻璃
+  light_blue_stained_glass_pane:
+    material: LIGHT_BLUE_STAINED_GLASS_PANE
+    buy: '4.00'
+    aliases:
+    - 淡蓝色染色玻璃板
+  yellow_stained_glass:
+    material: YELLOW_STAINED_GLASS
+    buy: '6.00'
+    aliases:
+    - 黄色染色玻璃
+  yellow_stained_glass_pane:
+    material: YELLOW_STAINED_GLASS_PANE
+    buy: '4.00'
+    aliases:
+    - 黄色染色玻璃板
+  lime_stained_glass:
+    material: LIME_STAINED_GLASS
+    buy: '6.00'
+    aliases:
+    - 黄绿色染色玻璃
+  lime_stained_glass_pane:
+    material: LIME_STAINED_GLASS_PANE
+    buy: '4.00'
+    aliases:
+    - 黄绿色染色玻璃板
+  pink_stained_glass:
+    material: PINK_STAINED_GLASS
+    buy: '6.00'
+    aliases:
+    - 粉红色染色玻璃
+  pink_stained_glass_pane:
+    material: PINK_STAINED_GLASS_PANE
+    buy: '4.00'
+    aliases:
+    - 粉红色染色玻璃板
+  gray_stained_glass:
+    material: GRAY_STAINED_GLASS
+    buy: '6.00'
+    aliases:
+    - 灰色染色玻璃
+  gray_stained_glass_pane:
+    material: GRAY_STAINED_GLASS_PANE
+    buy: '4.00'
+    aliases:
+    - 灰色染色玻璃板
+  light_gray_stained_glass:
+    material: LIGHT_GRAY_STAINED_GLASS
+    buy: '6.00'
+    aliases:
+    - 淡灰色染色玻璃
+  light_gray_stained_glass_pane:
+    material: LIGHT_GRAY_STAINED_GLASS_PANE
+    buy: '4.00'
+    aliases:
+    - 淡灰色染色玻璃板
+  cyan_stained_glass:
+    material: CYAN_STAINED_GLASS
+    buy: '6.00'
+    aliases:
+    - 青色染色玻璃
+  cyan_stained_glass_pane:
+    material: CYAN_STAINED_GLASS_PANE
+    buy: '4.00'
+    aliases:
+    - 青色染色玻璃板
+  purple_stained_glass:
+    material: PURPLE_STAINED_GLASS
+    buy: '6.00'
+    aliases:
+    - 紫色染色玻璃
+  purple_stained_glass_pane:
+    material: PURPLE_STAINED_GLASS_PANE
+    buy: '4.00'
+    aliases:
+    - 紫色染色玻璃板
+  blue_stained_glass:
+    material: BLUE_STAINED_GLASS
+    buy: '6.00'
+    aliases:
+    - 蓝色染色玻璃
+  blue_stained_glass_pane:
+    material: BLUE_STAINED_GLASS_PANE
+    buy: '4.00'
+    aliases:
+    - 蓝色染色玻璃板
+  brown_stained_glass:
+    material: BROWN_STAINED_GLASS
+    buy: '6.00'
+    aliases:
+    - 棕色染色玻璃
+  brown_stained_glass_pane:
+    material: BROWN_STAINED_GLASS_PANE
+    buy: '4.00'
+    aliases:
+    - 棕色染色玻璃板
+  green_stained_glass:
+    material: GREEN_STAINED_GLASS
+    buy: '6.00'
+    aliases:
+    - 绿色染色玻璃
+  green_stained_glass_pane:
+    material: GREEN_STAINED_GLASS_PANE
+    buy: '4.00'
+    aliases:
+    - 绿色染色玻璃板
+  red_stained_glass:
+    material: RED_STAINED_GLASS
+    buy: '6.00'
+    aliases:
+    - 红色染色玻璃
+  red_stained_glass_pane:
+    material: RED_STAINED_GLASS_PANE
+    buy: '4.00'
+    aliases:
+    - 红色染色玻璃板
+  black_stained_glass:
+    material: BLACK_STAINED_GLASS
+    buy: '6.00'
+    aliases:
+    - 黑色染色玻璃
+  black_stained_glass_pane:
+    material: BLACK_STAINED_GLASS_PANE
+    buy: '4.00'
+    aliases:
+    - 黑色染色玻璃板
+  white_wool:
+    material: WHITE_WOOL
+    buy: '6.00'
+    aliases:
+    - 白色羊毛
+  white_carpet:
+    material: WHITE_CARPET
+    buy: '3.00'
+    aliases:
+    - 白色地毯
+  orange_wool:
+    material: ORANGE_WOOL
+    buy: '6.00'
+    aliases:
+    - 橙色羊毛
+  orange_carpet:
+    material: ORANGE_CARPET
+    buy: '3.00'
+    aliases:
+    - 橙色地毯
+  magenta_wool:
+    material: MAGENTA_WOOL
+    buy: '6.00'
+    aliases:
+    - 品红色羊毛
+  magenta_carpet:
+    material: MAGENTA_CARPET
+    buy: '3.00'
+    aliases:
+    - 品红色地毯
+  light_blue_wool:
+    material: LIGHT_BLUE_WOOL
+    buy: '6.00'
+    aliases:
+    - 淡蓝色羊毛
+  light_blue_carpet:
+    material: LIGHT_BLUE_CARPET
+    buy: '3.00'
+    aliases:
+    - 淡蓝色地毯
+  yellow_wool:
+    material: YELLOW_WOOL
+    buy: '6.00'
+    aliases:
+    - 黄色羊毛
+  yellow_carpet:
+    material: YELLOW_CARPET
+    buy: '3.00'
+    aliases:
+    - 黄色地毯
+  lime_wool:
+    material: LIME_WOOL
+    buy: '6.00'
+    aliases:
+    - 黄绿色羊毛
+  lime_carpet:
+    material: LIME_CARPET
+    buy: '3.00'
+    aliases:
+    - 黄绿色地毯
+  pink_wool:
+    material: PINK_WOOL
+    buy: '6.00'
+    aliases:
+    - 粉红色羊毛
+  pink_carpet:
+    material: PINK_CARPET
+    buy: '3.00'
+    aliases:
+    - 粉红色地毯
+  gray_wool:
+    material: GRAY_WOOL
+    buy: '6.00'
+    aliases:
+    - 灰色羊毛
+  gray_carpet:
+    material: GRAY_CARPET
+    buy: '3.00'
+    aliases:
+    - 灰色地毯
+  light_gray_wool:
+    material: LIGHT_GRAY_WOOL
+    buy: '6.00'
+    aliases:
+    - 淡灰色羊毛
+  light_gray_carpet:
+    material: LIGHT_GRAY_CARPET
+    buy: '3.00'
+    aliases:
+    - 淡灰色地毯
+  cyan_wool:
+    material: CYAN_WOOL
+    buy: '6.00'
+    aliases:
+    - 青色羊毛
+  cyan_carpet:
+    material: CYAN_CARPET
+    buy: '3.00'
+    aliases:
+    - 青色地毯
+  purple_wool:
+    material: PURPLE_WOOL
+    buy: '6.00'
+    aliases:
+    - 紫色羊毛
+  purple_carpet:
+    material: PURPLE_CARPET
+    buy: '3.00'
+    aliases:
+    - 紫色地毯
+  blue_wool:
+    material: BLUE_WOOL
+    buy: '6.00'
+    aliases:
+    - 蓝色羊毛
+  blue_carpet:
+    material: BLUE_CARPET
+    buy: '3.00'
+    aliases:
+    - 蓝色地毯
+  brown_wool:
+    material: BROWN_WOOL
+    buy: '6.00'
+    aliases:
+    - 棕色羊毛
+  brown_carpet:
+    material: BROWN_CARPET
+    buy: '3.00'
+    aliases:
+    - 棕色地毯
+  green_wool:
+    material: GREEN_WOOL
+    buy: '6.00'
+    aliases:
+    - 绿色羊毛
+  green_carpet:
+    material: GREEN_CARPET
+    buy: '3.00'
+    aliases:
+    - 绿色地毯
+  red_wool:
+    material: RED_WOOL
+    buy: '6.00'
+    aliases:
+    - 红色羊毛
+  red_carpet:
+    material: RED_CARPET
+    buy: '3.00'
+    aliases:
+    - 红色地毯
+  black_wool:
+    material: BLACK_WOOL
+    buy: '6.00'
+    aliases:
+    - 黑色羊毛
+  black_carpet:
+    material: BLACK_CARPET
+    buy: '3.00'
+    aliases:
+    - 黑色地毯
+  white_concrete:
+    material: WHITE_CONCRETE
+    buy: '8.00'
+    aliases:
+    - 白色混凝土
+  white_concrete_powder:
+    material: WHITE_CONCRETE_POWDER
+    buy: '6.00'
+    aliases:
+    - 白色混凝土粉末
+  orange_concrete:
+    material: ORANGE_CONCRETE
+    buy: '8.00'
+    aliases:
+    - 橙色混凝土
+  orange_concrete_powder:
+    material: ORANGE_CONCRETE_POWDER
+    buy: '6.00'
+    aliases:
+    - 橙色混凝土粉末
+  magenta_concrete:
+    material: MAGENTA_CONCRETE
+    buy: '8.00'
+    aliases:
+    - 品红色混凝土
+  magenta_concrete_powder:
+    material: MAGENTA_CONCRETE_POWDER
+    buy: '6.00'
+    aliases:
+    - 品红色混凝土粉末
+  light_blue_concrete:
+    material: LIGHT_BLUE_CONCRETE
+    buy: '8.00'
+    aliases:
+    - 淡蓝色混凝土
+  light_blue_concrete_powder:
+    material: LIGHT_BLUE_CONCRETE_POWDER
+    buy: '6.00'
+    aliases:
+    - 淡蓝色混凝土粉末
+  yellow_concrete:
+    material: YELLOW_CONCRETE
+    buy: '8.00'
+    aliases:
+    - 黄色混凝土
+  yellow_concrete_powder:
+    material: YELLOW_CONCRETE_POWDER
+    buy: '6.00'
+    aliases:
+    - 黄色混凝土粉末
+  lime_concrete:
+    material: LIME_CONCRETE
+    buy: '8.00'
+    aliases:
+    - 黄绿色混凝土
+  lime_concrete_powder:
+    material: LIME_CONCRETE_POWDER
+    buy: '6.00'
+    aliases:
+    - 黄绿色混凝土粉末
+  pink_concrete:
+    material: PINK_CONCRETE
+    buy: '8.00'
+    aliases:
+    - 粉红色混凝土
+  pink_concrete_powder:
+    material: PINK_CONCRETE_POWDER
+    buy: '6.00'
+    aliases:
+    - 粉红色混凝土粉末
+  gray_concrete:
+    material: GRAY_CONCRETE
+    buy: '8.00'
+    aliases:
+    - 灰色混凝土
+  gray_concrete_powder:
+    material: GRAY_CONCRETE_POWDER
+    buy: '6.00'
+    aliases:
+    - 灰色混凝土粉末
+  light_gray_concrete:
+    material: LIGHT_GRAY_CONCRETE
+    buy: '8.00'
+    aliases:
+    - 淡灰色混凝土
+  light_gray_concrete_powder:
+    material: LIGHT_GRAY_CONCRETE_POWDER
+    buy: '6.00'
+    aliases:
+    - 淡灰色混凝土粉末
+  cyan_concrete:
+    material: CYAN_CONCRETE
+    buy: '8.00'
+    aliases:
+    - 青色混凝土
+  cyan_concrete_powder:
+    material: CYAN_CONCRETE_POWDER
+    buy: '6.00'
+    aliases:
+    - 青色混凝土粉末
+  purple_concrete:
+    material: PURPLE_CONCRETE
+    buy: '8.00'
+    aliases:
+    - 紫色混凝土
+  purple_concrete_powder:
+    material: PURPLE_CONCRETE_POWDER
+    buy: '6.00'
+    aliases:
+    - 紫色混凝土粉末
+  blue_concrete:
+    material: BLUE_CONCRETE
+    buy: '8.00'
+    aliases:
+    - 蓝色混凝土
+  blue_concrete_powder:
+    material: BLUE_CONCRETE_POWDER
+    buy: '6.00'
+    aliases:
+    - 蓝色混凝土粉末
+  brown_concrete:
+    material: BROWN_CONCRETE
+    buy: '8.00'
+    aliases:
+    - 棕色混凝土
+  brown_concrete_powder:
+    material: BROWN_CONCRETE_POWDER
+    buy: '6.00'
+    aliases:
+    - 棕色混凝土粉末
+  green_concrete:
+    material: GREEN_CONCRETE
+    buy: '8.00'
+    aliases:
+    - 绿色混凝土
+  green_concrete_powder:
+    material: GREEN_CONCRETE_POWDER
+    buy: '6.00'
+    aliases:
+    - 绿色混凝土粉末
+  red_concrete:
+    material: RED_CONCRETE
+    buy: '8.00'
+    aliases:
+    - 红色混凝土
+  red_concrete_powder:
+    material: RED_CONCRETE_POWDER
+    buy: '6.00'
+    aliases:
+    - 红色混凝土粉末
+  black_concrete:
+    material: BLACK_CONCRETE
+    buy: '8.00'
+    aliases:
+    - 黑色混凝土
+  black_concrete_powder:
+    material: BLACK_CONCRETE_POWDER
+    buy: '6.00'
+    aliases:
+    - 黑色混凝土粉末
+  terracotta:
+    material: TERRACOTTA
+    buy: '6.00'
+    aliases:
+    - 陶瓦
+  white_terracotta:
+    material: WHITE_TERRACOTTA
+    buy: '8.00'
+    aliases:
+    - 白色陶瓦
+  orange_terracotta:
+    material: ORANGE_TERRACOTTA
+    buy: '8.00'
+    aliases:
+    - 橙色陶瓦
+  magenta_terracotta:
+    material: MAGENTA_TERRACOTTA
+    buy: '8.00'
+    aliases:
+    - 品红色陶瓦
+  light_blue_terracotta:
+    material: LIGHT_BLUE_TERRACOTTA
+    buy: '8.00'
+    aliases:
+    - 淡蓝色陶瓦
+  yellow_terracotta:
+    material: YELLOW_TERRACOTTA
+    buy: '8.00'
+    aliases:
+    - 黄色陶瓦
+  lime_terracotta:
+    material: LIME_TERRACOTTA
+    buy: '8.00'
+    aliases:
+    - 黄绿色陶瓦
+  pink_terracotta:
+    material: PINK_TERRACOTTA
+    buy: '8.00'
+    aliases:
+    - 粉红色陶瓦
+  gray_terracotta:
+    material: GRAY_TERRACOTTA
+    buy: '8.00'
+    aliases:
+    - 灰色陶瓦
+  light_gray_terracotta:
+    material: LIGHT_GRAY_TERRACOTTA
+    buy: '8.00'
+    aliases:
+    - 淡灰色陶瓦
+  cyan_terracotta:
+    material: CYAN_TERRACOTTA
+    buy: '8.00'
+    aliases:
+    - 青色陶瓦
+  purple_terracotta:
+    material: PURPLE_TERRACOTTA
+    buy: '8.00'
+    aliases:
+    - 紫色陶瓦
+  blue_terracotta:
+    material: BLUE_TERRACOTTA
+    buy: '8.00'
+    aliases:
+    - 蓝色陶瓦
+  brown_terracotta:
+    material: BROWN_TERRACOTTA
+    buy: '8.00'
+    aliases:
+    - 棕色陶瓦
+  green_terracotta:
+    material: GREEN_TERRACOTTA
+    buy: '8.00'
+    aliases:
+    - 绿色陶瓦
+  red_terracotta:
+    material: RED_TERRACOTTA
+    buy: '8.00'
+    aliases:
+    - 红色陶瓦
+  black_terracotta:
+    material: BLACK_TERRACOTTA
+    buy: '8.00'
+    aliases:
+    - 黑色陶瓦
+  soul_torch:
+    material: SOUL_TORCH
+    buy: '2.00'
+    aliases:
+    - 灵魂火把
+  lantern:
+    material: LANTERN
+    buy: '6.00'
+    aliases:
+    - 灯笼
+  soul_lantern:
+    material: SOUL_LANTERN
+    buy: '7.00'
+    aliases:
+    - 灵魂灯笼
+  sea_lantern:
+    material: SEA_LANTERN
+    buy: '10.00'
+    aliases:
+    - 海晶灯
+  glowstone:
+    material: GLOWSTONE
+    buy: '8.00'
+    aliases:
+    - 荧石
+  shroomlight:
+    material: SHROOMLIGHT
+    buy: '8.00'
+    aliases:
+    - 菌光体
+  ochre_froglight:
+    material: OCHRE_FROGLIGHT
+    buy: '10.00'
+    aliases:
+    - 赭黄蛙明灯
+  verdant_froglight:
+    material: VERDANT_FROGLIGHT
+    buy: '10.00'
+    aliases:
+    - 青翠蛙明灯
+  pearlescent_froglight:
+    material: PEARLESCENT_FROGLIGHT
+    buy: '10.00'
+    aliases:
+    - 珠紫蛙明灯
+  end_rod:
+    material: END_ROD
+    buy: '6.00'
+    aliases:
+    - 末地烛
+  jack_o_lantern:
+    material: JACK_O_LANTERN
+    buy: '5.00'
+    aliases:
+    - 南瓜灯
+  redstone_lamp:
+    material: REDSTONE_LAMP
+    buy: '8.00'
+    aliases:
+    - 红石灯
+  campfire:
+    material: CAMPFIRE
+    buy: '6.00'
+    aliases:
+    - 营火
+  soul_campfire:
+    material: SOUL_CAMPFIRE
+    buy: '7.00'
+    aliases:
+    - 灵魂营火
+  candle:
+    material: CANDLE
+    buy: '4.00'
+    aliases:
+    - 蜡烛
+  white_candle:
+    material: WHITE_CANDLE
+    buy: '4.00'
+    aliases:
+    - 白色蜡烛
+  orange_candle:
+    material: ORANGE_CANDLE
+    buy: '4.00'
+    aliases:
+    - 橙色蜡烛
+  magenta_candle:
+    material: MAGENTA_CANDLE
+    buy: '4.00'
+    aliases:
+    - 品红色蜡烛
+  light_blue_candle:
+    material: LIGHT_BLUE_CANDLE
+    buy: '4.00'
+    aliases:
+    - 淡蓝色蜡烛
+  yellow_candle:
+    material: YELLOW_CANDLE
+    buy: '4.00'
+    aliases:
+    - 黄色蜡烛
+  lime_candle:
+    material: LIME_CANDLE
+    buy: '4.00'
+    aliases:
+    - 黄绿色蜡烛
+  pink_candle:
+    material: PINK_CANDLE
+    buy: '4.00'
+    aliases:
+    - 粉红色蜡烛
+  gray_candle:
+    material: GRAY_CANDLE
+    buy: '4.00'
+    aliases:
+    - 灰色蜡烛
+  light_gray_candle:
+    material: LIGHT_GRAY_CANDLE
+    buy: '4.00'
+    aliases:
+    - 淡灰色蜡烛
+  cyan_candle:
+    material: CYAN_CANDLE
+    buy: '4.00'
+    aliases:
+    - 青色蜡烛
+  purple_candle:
+    material: PURPLE_CANDLE
+    buy: '4.00'
+    aliases:
+    - 紫色蜡烛
+  blue_candle:
+    material: BLUE_CANDLE
+    buy: '4.00'
+    aliases:
+    - 蓝色蜡烛
+  brown_candle:
+    material: BROWN_CANDLE
+    buy: '4.00'
+    aliases:
+    - 棕色蜡烛
+  green_candle:
+    material: GREEN_CANDLE
+    buy: '4.00'
+    aliases:
+    - 绿色蜡烛
+  red_candle:
+    material: RED_CANDLE
+    buy: '4.00'
+    aliases:
+    - 红色蜡烛
+  black_candle:
+    material: BLACK_CANDLE
+    buy: '4.00'
+    aliases:
+    - 黑色蜡烛
+  bookshelf:
+    material: BOOKSHELF
+    buy: '5.00'
+    aliases:
+    - 书架
+  chiseled_bookshelf:
+    material: CHISELED_BOOKSHELF
+    buy: '6.00'
+    aliases:
+    - 雕纹书架
+  crafting_table:
+    material: CRAFTING_TABLE
+    buy: '3.00'
+    aliases:
+    - 工作台
+  cartography_table:
+    material: CARTOGRAPHY_TABLE
+    buy: '5.00'
+    aliases:
+    - 制图台
+  fletching_table:
+    material: FLETCHING_TABLE
+    buy: '5.00'
+    aliases:
+    - 制箭台
+  smithing_table:
+    material: SMITHING_TABLE
+    buy: '5.00'
+    aliases:
+    - 锻造台
+  loom:
+    material: LOOM
+    buy: '5.00'
+    aliases:
+    - 织布机
+  barrel:
+    material: BARREL
+    buy: '4.00'
+    aliases:
+    - 木桶
+  composter:
+    material: COMPOSTER
+    buy: '4.00'
+    aliases:
+    - 堆肥桶
+  chest:
+    material: CHEST
+    buy: '4.00'
+    aliases:
+    - 箱子
+  trapped_chest:
+    material: TRAPPED_CHEST
+    buy: '6.00'
+    aliases:
+    - 陷阱箱
+  ender_chest:
+    material: ENDER_CHEST
+    buy: '10.00'
+    aliases:
+    - 末影箱
+  furnace:
+    material: FURNACE
+    buy: '4.00'
+    aliases:
+    - 熔炉
+  blast_furnace:
+    material: BLAST_FURNACE
+    buy: '8.00'
+    aliases:
+    - 高炉
+  smoker:
+    material: SMOKER
+    buy: '8.00'
+    aliases:
+    - 烟熏炉
+  stonecutter:
+    material: STONECUTTER
+    buy: '6.00'
+    aliases:
+    - 切石机
+  grindstone:
+    material: GRINDSTONE
+    buy: '6.00'
+    aliases:
+    - 砂轮
+  anvil:
+    material: ANVIL
+    buy: '12.00'
+    aliases:
+    - 铁砧
+  chipped_anvil:
+    material: CHIPPED_ANVIL
+    buy: '10.00'
+    aliases:
+    - 开裂的铁砧
+  damaged_anvil:
+    material: DAMAGED_ANVIL
+    buy: '8.00'
+    aliases:
+    - 损坏的铁砧
+  lectern:
+    material: LECTERN
+    buy: '6.00'
+    aliases:
+    - 讲台
+  jukebox:
+    material: JUKEBOX
+    buy: '8.00'
+    aliases:
+    - 唱片机
+  note_block:
+    material: NOTE_BLOCK
+    buy: '6.00'
+    aliases:
+    - 音符盒
+  hay_block:
+    material: HAY_BLOCK
+    buy: '4.00'
+    aliases:
+    - 干草捆
+  dried_kelp_block:
+    material: DRIED_KELP_BLOCK
+    buy: '4.00'
+    aliases:
+    - 干海带块
+  sponge:
+    material: SPONGE
+    buy: '10.00'
+    aliases:
+    - 海绵
+  wet_sponge:
+    material: WET_SPONGE
+    buy: '8.00'
+    aliases:
+    - 湿海绵
+  ice:
+    material: ICE
+    buy: '3.00'
+    aliases:
+    - 冰
+  packed_ice:
+    material: PACKED_ICE
+    buy: '4.00'
+    aliases:
+    - 浮冰
+  blue_ice:
+    material: BLUE_ICE
+    buy: '6.00'
+    aliases:
+    - 蓝冰
+  snow_block:
+    material: SNOW_BLOCK
+    buy: '2.00'
+    aliases:
+    - 雪块
+  moss_block:
+    material: MOSS_BLOCK
+    buy: '4.00'
+    aliases:
+    - 苔藓块
+  moss_carpet:
+    material: MOSS_CARPET
+    buy: '2.00'
+    aliases:
+    - 苔藓毯
+  ladder:
+    material: LADDER
+    buy: '2.00'
+    aliases:
+    - 梯子
+  scaffolding:
+    material: SCAFFOLDING
+    buy: '3.00'
+    aliases:
+    - 脚手架
+  iron_bars:
+    material: IRON_BARS
+    buy: '4.00'
+    aliases:
+    - 铁栏杆
+  flower_pot:
+    material: FLOWER_POT
+    buy: '3.00'
+    aliases:
+    - 花盆
+  armor_stand:
+    material: ARMOR_STAND
+    buy: '6.00'
+    aliases:
+    - 盔甲架
+  item_frame:
+    material: ITEM_FRAME
+    buy: '3.00'
+    aliases:
+    - 物品展示框
+  glow_item_frame:
+    material: GLOW_ITEM_FRAME
+    buy: '4.00'
+    aliases:
+    - 荧光物品展示框
+  painting:
+    material: PAINTING
+    buy: '4.00'
+    aliases:
+    - 画
+  bell:
+    material: BELL
+    buy: '10.00'
+    aliases:
+    - 钟
+  beacon:
+    material: BEACON
+    buy: '30.00'
+    aliases:
+    - 信标
+  lodestone:
+    material: LODESTONE
+    buy: '20.00'
+    aliases:
+    - 磁石
+  target:
+    material: TARGET
+    buy: '6.00'
+    aliases:
+    - 标靶
+  lightning_rod:
+    material: LIGHTNING_ROD
+    buy: '10.00'
+    aliases:
+    - 避雷针
+  crimson_stem:
+    material: CRIMSON_STEM
+    buy: '3.00'
+    aliases:
+    - 绯红菌柄
+  stripped_crimson_stem:
+    material: STRIPPED_CRIMSON_STEM
+    buy: '4.00'
+    aliases:
+    - 去皮绯红菌柄
+  crimson_hyphae:
+    material: CRIMSON_HYPHAE
+    buy: '4.00'
+    aliases:
+    - 绯红菌核
+  stripped_crimson_hyphae:
+    material: STRIPPED_CRIMSON_HYPHAE
+    buy: '5.00'
+    aliases:
+    - 去皮绯红菌核
+  warped_stem:
+    material: WARPED_STEM
+    buy: '3.00'
+    aliases:
+    - 诡异菌柄
+  stripped_warped_stem:
+    material: STRIPPED_WARPED_STEM
+    buy: '4.00'
+    aliases:
+    - 去皮诡异菌柄
+  warped_hyphae:
+    material: WARPED_HYPHAE
+    buy: '4.00'
+    aliases:
+    - 诡异菌核
+  stripped_warped_hyphae:
+    material: STRIPPED_WARPED_HYPHAE
+    buy: '5.00'
+    aliases:
+    - 去皮诡异菌核
+  iron_chain:
+    material: IRON_CHAIN
+    buy: '4.00'
+    aliases:
+    - 铁链
+  copper_chain:
+    material: COPPER_CHAIN
+    buy: '8.00'
+    aliases:
+    - 铜链
+  exposed_copper_chain:
+    material: EXPOSED_COPPER_CHAIN
+    buy: '10.00'
+    aliases:
+    - 斑驳的铜链
+  weathered_copper_chain:
+    material: WEATHERED_COPPER_CHAIN
+    buy: '10.00'
+    aliases:
+    - 风化的铜链
+  oxidized_copper_chain:
+    material: OXIDIZED_COPPER_CHAIN
+    buy: '10.00'
+    aliases:
+    - 氧化的铜链
+  waxed_copper_chain:
+    material: WAXED_COPPER_CHAIN
+    buy: '12.00'
+    aliases:
+    - 涂蜡铜链
+  waxed_exposed_copper_chain:
+    material: WAXED_EXPOSED_COPPER_CHAIN
+    buy: '12.00'
+    aliases:
+    - 涂蜡斑驳铜链
+  waxed_weathered_copper_chain:
+    material: WAXED_WEATHERED_COPPER_CHAIN
+    buy: '12.00'
+    aliases:
+    - 涂蜡风化铜链
+  waxed_oxidized_copper_chain:
+    material: WAXED_OXIDIZED_COPPER_CHAIN
+    buy: '12.00'
+    aliases:
+    - 涂蜡氧化铜链
