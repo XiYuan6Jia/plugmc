@@ -1,6 +1,10 @@
 package com.xiyuan.plugmc.economy.trade;
 
+import com.xiyuan.plugmc.economy.gui.MenuText;
 import com.xiyuan.plugmc.economy.internal.InventoryUtil;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.event.ClickEvent;
+import net.kyori.adventure.text.event.HoverEvent;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -52,20 +56,106 @@ public final class TradeManager implements Listener {
 			return;
 		}
 		requests.put(target.getUniqueId(), PendingRequest.create(from.getUniqueId(), from.getName()));
-		from.sendMessage("已向 " + target.getName() + " 发送交易请求。");
-		target.sendMessage(from.getName() + " 请求与你交易，输入 /trade accept " + from.getName() + " 接受（60 秒内有效）。");
+
+		from.sendMessage(MenuText.component("&a已向 &e" + target.getName() + " &a发送交易请求。")
+			.append(Component.text(" "))
+			.append(button("&c[取消申请]", "trade cancel " + target.getName(), "点击撤回这条交易申请")));
+
+		target.sendMessage(MenuText.component("&e" + from.getName() + " &f请求与你交易：")
+			.append(Component.text(" "))
+			.append(button("&a&l[点击接受]", "trade accept " + from.getName(), "接受后立即打开交易窗口"))
+			.append(Component.text(" "))
+			.append(button("&c&l[拒绝]", "trade deny " + from.getName(), "拒绝这条交易申请")));
+		target.sendMessage(MenuText.component("&7也可以按 &fShift+F &7打开菜单，在「直接交易」里处理（60 秒内有效）。"));
+	}
+
+	/**
+	 * 聊天栏可点击按钮：点击后执行对应命令，不需要手动输入。
+	 */
+	private static Component button(String label, String command, String hover) {
+		return MenuText.component(label)
+			.clickEvent(ClickEvent.runCommand(command))
+			.hoverEvent(HoverEvent.showText(MenuText.component("&7" + hover)));
+	}
+
+	/**
+	 * 取目标玩家当前待处理交易申请的发起者名字，没有则返回 null。
+	 */
+	public String pendingRequesterName(Player target) {
+		PendingRequest request = requests.get(target.getUniqueId());
+		if (request == null) {
+			return null;
+		}
+		if (request.expiresAt() < System.currentTimeMillis()) {
+			requests.remove(target.getUniqueId());
+			return null;
+		}
+		return request.fromName();
+	}
+
+	/**
+	 * 拒绝交易申请，并通知发起者。
+	 */
+	public boolean deny(Player target, String requesterName) {
+		PendingRequest request = requests.get(target.getUniqueId());
+		if (request == null) {
+			target.sendMessage(MenuText.component("&7当前没有待处理的交易申请。"));
+			return false;
+		}
+		if (requesterName != null && !requesterName.isBlank()
+			&& !request.fromName().equalsIgnoreCase(requesterName)) {
+			target.sendMessage(MenuText.component("&c没有来自 " + requesterName + " 的交易申请。"));
+			return false;
+		}
+		requests.remove(target.getUniqueId());
+		target.sendMessage(MenuText.component("&7已拒绝 " + request.fromName() + " 的交易申请。"));
+		Player requester = Bukkit.getPlayer(request.from());
+		if (requester != null) {
+			requester.sendMessage(MenuText.component("&c" + target.getName() + " 拒绝了你的交易申请。"));
+		}
+		return true;
+	}
+
+	/**
+	 * 发起者撤回自己发出的申请。
+	 */
+	public boolean cancelRequest(Player requester, String targetName) {
+		for (Map.Entry<UUID, PendingRequest> entry : new HashMap<>(requests).entrySet()) {
+			PendingRequest request = entry.getValue();
+			if (!request.from().equals(requester.getUniqueId())) {
+				continue;
+			}
+			Player target = Bukkit.getPlayer(entry.getKey());
+			if (targetName != null && !targetName.isBlank()
+				&& (target == null || !target.getName().equalsIgnoreCase(targetName))) {
+				continue;
+			}
+			requests.remove(entry.getKey());
+			requester.sendMessage(MenuText.component("&7已撤回对 "
+				+ (target == null ? "对方" : target.getName()) + " 的交易申请。"));
+			if (target != null) {
+				target.sendMessage(MenuText.component("&7" + requester.getName() + " 撤回了交易申请。"));
+			}
+			return true;
+		}
+		requester.sendMessage(MenuText.component("&7没有可撤回的交易申请。"));
+		return false;
 	}
 
 	public void accept(Player target, String requesterName) {
 		PendingRequest request = requests.get(target.getUniqueId());
 		if (request == null || request.expiresAt() < System.currentTimeMillis()) {
 			requests.remove(target.getUniqueId());
-			target.sendMessage("没有来自 " + requesterName + " 的有效交易请求。");
+			target.sendMessage("没有有效" + (requesterName == null || requesterName.isBlank()
+				? ""
+				: "来自 " + requesterName + " 的") + "交易请求。");
 			return;
 		}
 		Player requester = Bukkit.getPlayer(request.from());
-		if (requester == null || !requester.getName().equalsIgnoreCase(requesterName)) {
-			target.sendMessage("发起交易的玩家已离线。");
+		if (requester == null
+			|| (requesterName != null && !requesterName.isBlank()
+				&& !requester.getName().equalsIgnoreCase(requesterName))) {
+			target.sendMessage("发起交易的玩家已离线或请求不匹配。");
 			requests.remove(target.getUniqueId());
 			return;
 		}

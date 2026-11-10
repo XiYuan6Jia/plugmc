@@ -2,7 +2,7 @@ plugins {
 	java
 }
 
-version = "0.6.1"
+version = "0.6.2"
 
 dependencies {
 	testImplementation(platform("org.junit:junit-bom:5.11.4"))

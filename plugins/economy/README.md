@@ -43,6 +43,8 @@ Paper 经济插件。当前版本使用**复式记账账本**：玩家余额、�
 | `/auction reload` | 重载拍卖行配置 | `economy.auction.admin` |
 | `/trade <玩家>` | 发起直接交易请求（60 秒有效） | `economy.trade.use`（默认所有玩家） |
 | `/trade accept <玩家>` | 接受交易请求并打开交易窗口 | `economy.trade.use` |
+| `/trade deny [玩家]` | 拒绝交易请求 | `economy.trade.use` |
+| `/trade cancel [玩家]` | 撤回自己发出的交易请求 | `economy.trade.use` |
 | `/daily` | 领取每日签到奖励（连签递增） | `economy.reward.daily` |
 | `/daily status` | 查看今日签到状态 | `economy.reward.daily` |
 | `/daily reload` | 重载奖励配置 | `economy.reward.admin` |
@@ -213,6 +215,8 @@ items:
 
 - `/trade <玩家>` 发出请求，对方在 60 秒内执行 `/trade accept <对方>` 打开交易窗口。
   也可以直接执行 `/trade` 打开在线玩家列表：点击头颅发起请求，收到请求时对应头颅会高亮，点击即接受。
+- 请求消息带可点击按钮：对方看到 `[点击接受]` / `[拒绝]`，发起者看到 `[取消申请]`；
+  `/trade accept`、`/trade deny`、`/trade cancel` 均可省略玩家名，直接处理最近一条请求。
 - 交易窗口 6 行：上方 2 行为自己可放置的物品区，中间 2 行实时展示对方物品（只读），
   下方为取消 / 确认 / 状态按钮。
 - 双方都点击确认后才交换物品；任一方关闭窗口、点取消或掉线，双方物品立即退回各自背包。

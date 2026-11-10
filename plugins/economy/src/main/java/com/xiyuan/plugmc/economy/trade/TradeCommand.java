@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.Locale;
 
 public final class TradeCommand implements CommandExecutor, TabCompleter {
-	private static final List<String> SUBCOMMANDS = List.of("accept", "cancel");
+	private static final List<String> SUBCOMMANDS = List.of("accept", "deny", "cancel");
 
 	private final TradeManager manager;
 	private final TradeGui gui;
@@ -37,21 +37,18 @@ public final class TradeCommand implements CommandExecutor, TabCompleter {
 			gui.open(player);
 			return true;
 		}
-		if (args[0].equalsIgnoreCase("accept")) {
-			if (args.length < 2) {
-				player.sendMessage("用法：/trade accept <玩家>");
-				return true;
+		switch (args[0].toLowerCase(Locale.ROOT)) {
+			case "accept" -> manager.accept(player, args.length >= 2 ? args[1] : null);
+			case "deny", "reject" -> manager.deny(player, args.length >= 2 ? args[1] : null);
+			case "cancel" -> {
+				if (manager.inSession(player)) {
+					player.sendMessage("请点击交易窗口里的「取消交易」结束交易。");
+				} else {
+					manager.cancelRequest(player, args.length >= 2 ? args[1] : null);
+				}
 			}
-			manager.accept(player, args[1]);
-			return true;
+			default -> manager.request(player, args[0]);
 		}
-		if (args[0].equalsIgnoreCase("cancel")) {
-			player.sendMessage(manager.inSession(player)
-				? "请点击交易窗口里的「取消交易」结束交易。"
-				: "当前没有进行中的交易。");
-			return true;
-		}
-		manager.request(player, args[0]);
 		return true;
 	}
 
@@ -72,7 +69,7 @@ public final class TradeCommand implements CommandExecutor, TabCompleter {
 			}
 			return options;
 		}
-		if (args.length == 2 && args[0].equalsIgnoreCase("accept")) {
+		if (args.length == 2 && List.of("accept", "deny", "reject").contains(args[0].toLowerCase(Locale.ROOT))) {
 			String prefix = args[1].toLowerCase(Locale.ROOT);
 			return Bukkit.getOnlinePlayers().stream()
 				.filter(online -> online != sender)

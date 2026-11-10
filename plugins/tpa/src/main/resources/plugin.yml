@@ -1,0 +1,32 @@
+name: tpa
+version: '${version}'
+main: com.xiyuan.plugmc.tpa.TpaPlugin
+api-version: '${api_version}'
+authors: [XiYuan6Jia]
+description: "申请传送：一键接受/拒绝，无需手输指令"
+commands:
+  tpa:
+    description: "申请传送到玩家，或打开在线玩家列表"
+    usage: /tpa [玩家]
+    aliases: [tpapply]
+  tpahere:
+    description: "申请把玩家传送到你这里"
+    usage: /tpahere <玩家>
+  tpaccept:
+    description: "接受传送申请"
+    usage: /tpaccept [玩家]
+    aliases: [tpyes]
+  tpadeny:
+    description: "拒绝传送申请"
+    usage: /tpadeny [玩家]
+    aliases: [tpdeny, tpano]
+  tpcancel:
+    description: "撤回自己发出的传送申请"
+    usage: /tpcancel [玩家]
+permissions:
+  tpa.use:
+    description: "使用申请传送"
+    default: true
+  tpa.admin:
+    description: "重载传送配置"
+    default: op

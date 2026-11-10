@@ -2,6 +2,7 @@ package com.xiyuan.plugmc.economy.mail;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.xiyuan.plugmc.economy.gui.MenuText;
 import com.xiyuan.plugmc.economy.internal.EconomyStore;
 import com.xiyuan.plugmc.economy.internal.InventoryUtil;
 import com.xiyuan.plugmc.economy.internal.JournalRecord;
@@ -147,7 +148,14 @@ public final class MailService {
 	public void notify(Player player) {
 		long count = entries(player.getUniqueId()).size();
 		if (count > 0) {
-			player.sendMessage("你有 " + count + " 封未领取的邮件，使用 /mail 查看。");
+			player.sendMessage(
+				MenuText.component("&e你有 " + count + " 封未领取的邮件 ")
+					.append(MenuText.component("&a&l[点击打开邮箱]")
+						.clickEvent(net.kyori.adventure.text.event.ClickEvent.runCommand("mail"))
+						.hoverEvent(net.kyori.adventure.text.event.HoverEvent.showText(
+							MenuText.component("&7点击直接打开邮箱")
+						)))
+			);
 		}
 	}
 

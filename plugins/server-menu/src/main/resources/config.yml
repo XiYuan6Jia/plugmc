@@ -1,4 +1,4 @@
-config-version: 7
+config-version: 8
 menu:
   title: "&8服务器菜单"
   rows: 6
@@ -109,6 +109,15 @@ menu:
       action: player_command
       value: "trade"
       permission: economy.trade.use
+    "37":
+      material: ENDER_PEARL
+      name: "&b申请传送"
+      lore:
+        - "&7点击在线玩家头像发送传送申请"
+        - "&8对方可在聊天栏一键接受"
+      action: player_command
+      value: "tpa"
+      permission: tpa.use
     "41":
       material: BOOKSHELF
       name: "&b插件列表"

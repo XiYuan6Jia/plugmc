@@ -6,6 +6,7 @@
 当前包含：
 
 - `demo/`：最小示例，注册一条命令，用于验证构建、部署与本地开发服链路。
+- `tpa/`：申请传送，`/tpa`、`/tpahere` 发起申请，对方在聊天栏一键接受/拒绝，带读秒热身与冷却，详见 [tpa/README.md](tpa/README.md)。
 - `economy/`：复式记账经济系统，支持余额查询、转账、管理员管理、系统商店 GUI、玩家市场、收购订单、邮箱、商品每日限额、账本自检与备份，并保留可供其他插件调用的 `EconomyService` API，详见 [economy/README.md](economy/README.md)。
 - `server-menu/`：测试服功能菜单，支持 `Shift+F` 打开、右侧金币 HUD、已启用插件目录及可配置菜单操作，详见 [server-menu/README.md](server-menu/README.md)。
 - `llm-chat/`：聊天栏常驻大模型 NPC，`@npc <内容>` 触发对话、进服欢迎、按概率吐槽；
