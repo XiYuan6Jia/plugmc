@@ -214,7 +214,45 @@ def upload(
         transport.close()
 
 
-def wait_ready_after_restart(api: "dt.Api", before: str, timeout: int) -> str:
+LOG_PATH = "/logs/latest.log"
+LOG_TAIL_BYTES = 400_000
+
+
+def read_log(api: "dt.Api", env: dict[str, str]) -> str:
+    """读取 latest.log；面板接口只支持 ≤1MB，超过时退回 SFTP 读尾部。"""
+    try:
+        return api.log()
+    except SystemExit as exc:
+        print(f"    接口读取日志失败（{exc}），改用 SFTP 读取尾部")
+    return read_log_tail(env, LOG_TAIL_BYTES)
+
+
+def read_log_tail(env: dict[str, str], tail_bytes: int) -> str:
+    import paramiko
+
+    host = dt.need(env, "MINEKUAI_SFTP_HOST")
+    port = int(dt.need(env, "MINEKUAI_SFTP_PORT"))
+    user = dt.need(env, "MINEKUAI_SFTP_USER")
+    password = dt.need(env, "MINEKUAI_SFTP_PASSWORD")
+    transport = paramiko.Transport((host, port))
+    transport.banner_timeout = 30
+    transport.connect(username=user, password=password)
+    data = b""
+    try:
+        sftp = paramiko.SFTPClient.from_transport(transport)
+        try:
+            with sftp.open(LOG_PATH, "rb") as handle:
+                size = handle.stat().st_size
+                handle.seek(max(0, size - tail_bytes))
+                data = handle.read()
+        finally:
+            sftp.close()
+    finally:
+        transport.close()
+    return data.decode("utf-8", "replace") if isinstance(data, bytes) else str(data)
+
+
+def wait_ready_after_restart(api: "dt.Api", env: dict[str, str], before: str, timeout: int) -> str:
     """重启后等待就绪。
 
     刚发出 restart 时实例可能还是 running、日志也还是重启前那一份，
@@ -233,7 +271,7 @@ def wait_ready_after_restart(api: "dt.Api", before: str, timeout: int) -> str:
             last_state = state
         if state != "running":
             left_running = True
-        log = api.log()
+        log = read_log(api, env)
         if state == "running" and dt.DONE_MARKER in log and (left_running or log != before):
             return log
         time.sleep(5)
@@ -243,10 +281,10 @@ def wait_ready_after_restart(api: "dt.Api", before: str, timeout: int) -> str:
     sys.exit("服务端未在限定时间内就绪")
 
 
-def online_players(api: "dt.Api", timeout: float = 10.0) -> int | None:
+def online_players(api: "dt.Api", env: dict[str, str], timeout: float = 10.0) -> int | None:
     """向控制台发 list 命令并解析在线人数；解析失败返回 None。"""
     try:
-        before = api.log()
+        before = read_log(api, env)
         api.request("POST", "/command", json={"command": "list"})
     except SystemExit as exc:
         print(f"    无法查询在线人数：{exc}")
@@ -255,7 +293,7 @@ def online_players(api: "dt.Api", timeout: float = 10.0) -> int | None:
     while time.time() < deadline:
         time.sleep(1.0)
         try:
-            log = api.log()
+            log = read_log(api, env)
         except SystemExit as exc:
             print(f"    无法读取日志：{exc}")
             return None
@@ -359,19 +397,25 @@ def backup_remote_data(
         try:
             def fetch(remote: str, local: pathlib.Path) -> bool:
                 local.parent.mkdir(parents=True, exist_ok=True)
-                if api is not None:
-                    resp = api.request(
-                        "GET", "/files/contents", params={"file": f"/{remote}"}
-                    )
-                    local.write_bytes(resp.content)
-                    return True
+                # 服务器生成的大文件（如唱片 ogg）走 SFTP；API 只支持 ≤1MB
                 try:
                     sftp.get(remote, str(local))
                     return True
                 except (IOError, PermissionError):
+                    pass
+                if api is None:
                     return False
+                try:
+                    resp = api.request(
+                        "GET", "/files/contents", params={"file": f"/{remote}"}
+                    )
+                except SystemExit as exc:
+                    print(f"    跳过 {remote}（{exc}）")
+                    return False
+                local.write_bytes(resp.content)
+                return True
 
-            def download(remote_dir: str, local_dir: pathlib.Path) -> int:
+            def download(remote_dir: str, local_dir: pathlib.Path, skip_names: set[str]) -> int:
                 count = 0
                 try:
                     entries = sftp.listdir_attr(remote_dir)
@@ -382,14 +426,18 @@ def backup_remote_data(
                     remote = f"{remote_dir}/{entry.filename}"
                     local = local_dir / entry.filename
                     if stat.S_ISDIR(entry.st_mode):
-                        count += download(remote, local)
+                        if entry.filename in skip_names:
+                            print(f"    跳过可再生成的目录 {remote}")
+                            continue
+                        count += download(remote, local, skip_names)
                     elif fetch(remote, local):
                         count += 1
                 return count
 
             print(f"==> 备份线上插件数据到 {root}")
             for plugin_id in plugin_ids:
-                count = download(f"{plugins_path}/{plugin_id}", root / plugin_id)
+                skip = {"pack", "datapack"} if plugin_id == "musicdiscs" else set()
+                count = download(f"{plugins_path}/{plugin_id}", root / plugin_id, skip)
                 downloaded += count
                 if count:
                     print(f"    {plugin_id}: {count} 个文件")
@@ -459,7 +507,7 @@ def main() -> None:
     )
 
     if args.check_only:
-        report(api.log(), targets)
+        report(read_log(api, env), targets)
         return
 
     if not args.skip_build:
@@ -492,7 +540,7 @@ def main() -> None:
         return
 
     if args.announce_seconds > 0:
-        players = online_players(api)
+        players = online_players(api, env)
         if players == 0:
             print("==> 当前没有玩家在线，跳过重启公告，直接重启")
         else:
@@ -501,9 +549,9 @@ def main() -> None:
             announce_restart(api, args.announce_seconds)
 
     print("==> 重启实例")
-    before = api.log()
+    before = read_log(api, env)
     api.power("restart")
-    report(wait_ready_after_restart(api, before, args.timeout), targets)
+    report(wait_ready_after_restart(api, env, before, args.timeout), targets)
 
 
 if __name__ == "__main__":

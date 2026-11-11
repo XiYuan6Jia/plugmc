@@ -24,6 +24,7 @@ public record MusicConfig(
 	boolean stopOnQuit,
 	int datapackFormat,
 	String namespace,
+	boolean autoInstallDatapack,
 	long uploadMaxBytes,
 	int uploadMaxSeconds,
 	int uploadTokenSeconds
@@ -62,6 +63,7 @@ public record MusicConfig(
 			config.getBoolean("playback.stop-on-quit", true),
 			config.getInt("datapack.format", 121),
 			config.getString("datapack.namespace", "plugmc"),
+			config.getBoolean("datapack.auto-install", true),
 			config.getLong("upload.max-bytes", 5L * 1024 * 1024),
 			config.getInt("upload.max-seconds", 360),
 			config.getInt("upload.token-seconds", 900)

@@ -27,6 +27,7 @@
 | `/music` | 打开唱片列表（左键试听、Shift+左键领取自己的唱片） | `music.use` |
 | `/music upload` | 申请上传码并显示上传网址 | `music.upload`（默认所有玩家） |
 | `/music get` | 领取自己的唱片（背包里已有时不重复发） | `music.use` |
+| `/music fix` | 把背包里的旧版唱片升级成新格式（可放进原版唱机） | `music.use` |
 | `/music mine` | 查看自己上传的唱片 | `music.use` |
 | `/music play <ID>` / `/music stop` | 试听 / 停止 | `music.use` |
 | `/music list` / `/music info <ID>` | 列表 / 详情 | `music.use` |
@@ -56,12 +57,14 @@
 - 声音按唱片机音效分类在附近播放，`playback.range` 内玩家都能听到；
 - 时长来自 OGG 元数据，到点自动停止。
 
-**数据包 + 原版唱机（可选）**
+**数据包 + 原版唱机（推荐）**
 
-- `/music export` 生成 `plugins/musicdiscs/datapack/plugmc-music/`：
-  `data/<ns>/jukebox_song/<ID>.json`、`data/<ns>/function/give_<ID>.mcfunction`、`pack.mcmeta`；
-- 复制到 `<世界存档>/datapacks/` 后重启或 `/reload`；
-- 加载后 `/music give` 发出的唱片自动带 `minecraft:jukebox_playable`，放进原版唱机即可播放；
+- 插件会把 `jukebox_song` 数据包**自动写入主世界存档**（`<存档>/datapacks/plugmc-music/`）
+  并尝试启用；`datapack.auto-install: false` 可关闭；
+- 数据包加载后，唱片自动带 `minecraft:jukebox_playable`，**右键唱机即可插碟播放、再右键取出**；
+- 注意：`jukebox_song` 属于**注册表**，只在服务端启动时载入，因此**新增曲目后需要重启一次**
+  才会出现在原版唱机里（在此之前右键唱机会退化为“在唱机位置直接播放”）；
+- 旧版唱片（没有 `jukebox_playable` 组件）在玩家右键时会自动升级，也可以用 `/music fix` 批量升级；
 - `/music info <ID>` 会显示「数据包注册表：已加载 / 未加载」。
 
 > 音频始终来自资源包，两种方式都需要玩家接受资源包。
@@ -93,6 +96,7 @@
 | `upload.max-seconds` | 时长上限，默认 `360`（6 分钟） |
 | `upload.token-seconds` | 上传码有效期，默认 `900` |
 | `datapack.format` / `datapack.namespace` | 导出数据包格式与命名空间 |
+| `datapack.auto-install` | 自动把数据包写入主世界存档并启用，默认 `true` |
 
 ## 文件结构
 
@@ -109,8 +113,7 @@ plugins/musicdiscs/
 ## 实现要点
 
 - 声音事件 ID：`<namespace>:disc.<ID>`，音频路径 `assets/<ns>/sounds/disc/<ID>.ogg`，
-  `sounds.json` 使用 `"stream": true`；
-- 导入时校验 `OggS` + `\x01vorbis` 头，mp3/wav 直接被拒；
+  `sounds.json` 使用 `"stream": true`；- 导入时校验 `OggS` + `\x01vorbis` 头，mp3/wav 直接被拒；
 - 时长来自最后一个 Ogg 页的 granule position ÷ 采样率，不需要解码；
 - 上传走原始字节 POST（不用 multipart），服务端边读边限长，超过 `upload.max-bytes` 立即拒绝；
 - 上传码绑定玩家 UUID、一次性、15 分钟过期；该账号已有曲目时直接拒绝；

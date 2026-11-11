@@ -40,19 +40,37 @@ public final class MusicListener implements Listener {
 			return;
 		}
 		Player player = event.getPlayer();
-		// 右键唱机时交给原版处理（数据包已注册 jukebox_song 的情况下）
+		Optional<Song> song = plugin.library().find(id);
+		if (song.isEmpty()) {
+			return;
+		}
+		// 旧版唱片（没有 jukebox_playable 组件 / 还在用原版唱片材质）自动升级成新物品
+		if (!plugin.discs().isUpToDate(item, song.get(), plugin.settings())) {
+			event.setCancelled(true);
+			player.getInventory().setItemInMainHand(
+				plugin.discs().create(song.get(), plugin.settings())
+			);
+			player.sendMessage(MusicText.component("&a这张唱片已升级为新版，可以放进唱机了。"));
+			return;
+		}
+		// 右键唱机：数据包已注册时交给原版插碟/取碟；
+		// 未注册时退化成在唱机位置直接播放，避免右键毫无反应。
 		if (event.getClickedBlock() != null
 			&& event.getClickedBlock().getType() == Material.JUKEBOX) {
+			if (plugin.discs().hasJukeboxSong(song.get(), plugin.settings())) {
+				return;
+			}
+			event.setCancelled(true);
+			plugin.playback().playAt(
+				player,
+				song.get(),
+				event.getClickedBlock().getLocation().add(0.5, 0.5, 0.5)
+			);
 			return;
 		}
 		event.setCancelled(true);
 		if (player.isSneaking()) {
 			plugin.playback().stop(player);
-			return;
-		}
-		Optional<Song> song = plugin.library().find(id);
-		if (song.isEmpty()) {
-			player.sendMessage(MusicText.component("&c这张唱片已经不在唱片库里了。"));
 			return;
 		}
 		plugin.playback().play(player, song.get());

@@ -46,3 +46,6 @@ datapack:
   format: 121
   # 数据包命名空间，同时是 jukebox_song 与声音事件的命名空间
   namespace: plugmc
+  # 自动把数据包写进主世界 datapacks/ 并在有新曲目时重载数据，
+  # 这样唱片可以直接放进原版唱机（关掉就只能用 /music export 手动安装）
+  auto-install: true

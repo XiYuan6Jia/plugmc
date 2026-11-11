@@ -6,6 +6,7 @@ import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -19,7 +20,7 @@ import java.util.UUID;
  */
 public final class MusicCommand implements CommandExecutor, TabCompleter {
 	private static final List<String> SUBCOMMANDS = List.of(
-		"list", "play", "stop", "upload", "uploadtoken", "get", "mine", "give",
+		"list", "play", "stop", "upload", "uploadtoken", "get", "fix", "mine", "give",
 		"import", "delete", "info", "reload", "pack", "export"
 	);
 
@@ -47,6 +48,7 @@ public final class MusicCommand implements CommandExecutor, TabCompleter {
 			case "upload", "上传" -> upload(sender);
 			case "uploadtoken", "上传码" -> uploadToken(sender, args);
 			case "get", "领取" -> get(sender);
+			case "fix", "upgrade", "升级" -> fix(sender);
 			case "mine", "我的" -> mine(sender);
 			case "give", "给予" -> give(sender, args);
 			case "import", "导入" -> importSong(sender, args);
@@ -228,6 +230,36 @@ public final class MusicCommand implements CommandExecutor, TabCompleter {
 			return;
 		}
 		player.sendMessage(MusicText.component("&a已领取唱片：&f" + song.displayName()));
+	}
+
+	/**
+	 * 把背包里所有旧版自定义唱片升级成新物品（带 jukebox_playable 组件）。
+	 */
+	private void fix(CommandSender sender) {
+		if (!(sender instanceof Player player)) {
+			sender.sendMessage("只有玩家可以升级自己的唱片。");
+			return;
+		}
+		int fixed = 0;
+		ItemStack[] contents = player.getInventory().getStorageContents();
+		for (int slot = 0; slot < contents.length; slot++) {
+			ItemStack stack = contents[slot];
+			String id = plugin.discs().songId(stack);
+			if (id == null) {
+				continue;
+			}
+			Optional<Song> song = plugin.library().find(id);
+			if (song.isEmpty() || plugin.discs().isUpToDate(stack, song.get(), plugin.settings())) {
+				continue;
+			}
+			player.getInventory().setItem(slot, plugin.discs().create(song.get(), plugin.settings()));
+			fixed++;
+		}
+		if (fixed == 0) {
+			player.sendMessage(MusicText.component("&7背包里没有需要升级的唱片。"));
+			return;
+		}
+		player.sendMessage(MusicText.component("&a已升级 &f" + fixed + " &a张唱片，现在可以放进原版唱机。"));
 	}
 
 	private int countDisc(Player player, String songId) {

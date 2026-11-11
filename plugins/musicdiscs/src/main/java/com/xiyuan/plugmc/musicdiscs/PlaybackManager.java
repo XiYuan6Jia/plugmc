@@ -42,15 +42,24 @@ public final class PlaybackManager {
 	 * 播放一首歌；附近玩家按距离衰减都能听到。
 	 */
 	public void play(Player player, Song song) {
+		playAt(player, song, player.getLocation());
+	}
+
+	/**
+	 * 在指定位置播放（右键唱片机时用唱片机的位置）。
+	 */
+	public void playAt(Player player, Song song, Location origin) {
 		stop(player);
 		if (library.audioFile(song.id()).isEmpty()) {
 			player.sendMessage(MusicText.component("&c这首唱片缺少音频文件，请让管理员重新导入。"));
 			return;
 		}
-		Location origin = player.getLocation().clone();
+		Location center = origin.clone();
 		String sound = song.soundKey(config.namespace());
 		float volume = (float) Math.min(4.0, config.volume() * (config.playbackRange() / 16.0));
-		origin.getWorld().playSound(origin, sound, SoundCategory.RECORDS, volume, 1.0f);
+		if (center.getWorld() != null) {
+			center.getWorld().playSound(center, sound, SoundCategory.RECORDS, volume, 1.0f);
+		}
 		long ticks = Math.max(20L, (long) ((song.seconds() + 1.5) * 20.0));
 		BukkitTask task = Bukkit.getScheduler().runTaskLater(plugin, () -> {
 			Playing current = playing.remove(player.getUniqueId());
@@ -60,7 +69,7 @@ public final class PlaybackManager {
 		}, ticks);
 		playing.put(
 			player.getUniqueId(),
-			new Playing(sound, origin, config.playbackRange(), task)
+			new Playing(sound, center, config.playbackRange(), task)
 		);
 		player.sendMessage(MusicText.component("&a正在播放：&f" + song.displayName()
 			+ " &7(" + song.durationText() + ")，&f/music stop &7可停止。"));

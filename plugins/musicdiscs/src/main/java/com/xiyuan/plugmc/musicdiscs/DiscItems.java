@@ -36,6 +36,19 @@ public final class DiscItems {
 		return songKey;
 	}
 
+	/**
+	 * 物品是否已经是最新格式（材质正确且带 jukebox_playable 组件）。
+	 */
+	public boolean isUpToDate(ItemStack stack, Song song, MusicConfig config) {
+		if (stack == null || stack.getType() != config.discMaterial()) {
+			return false;
+		}
+		if (!hasJukeboxSong(song, config)) {
+			return true;
+		}
+		return stack.getData(DataComponentTypes.JUKEBOX_PLAYABLE) != null;
+	}
+
 	public ItemStack create(Song song, MusicConfig config) {
 		ItemStack stack = new ItemStack(config.discMaterial());
 		ItemMeta meta = stack.getItemMeta();

@@ -77,6 +77,8 @@ public final class MusicPlugin extends JavaPlugin implements Listener {
 			ResourcePackBuilder.BuildResult result = packs.build();
 			packServer.update(result.file(), result.sha1());
 			packServer.ensureStarted(settings);
+			// 每次曲目变动都把 jukebox_song 数据包同步到主世界，保证原版唱机可用
+			datapacks.syncAndReloadIfNeeded();
 			String message = "资源包已更新：" + result.songs() + " 首，" + result.bytes() + " 字节"
 				+ (packServer.running() ? "，下载端口 " + packServer.boundPort() : "");
 			getLogger().info(message);

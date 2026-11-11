@@ -2,8 +2,7 @@ package com.xiyuan.plugmc.musicdiscs;
 
 import org.bukkit.plugin.java.JavaPlugin;
 
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
+import java.io.IOException;import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -16,11 +15,11 @@ import java.util.List;
  * <p>音频仍然来自资源包，因此数据包与资源包必须同时生效。</p>
  */
 public final class DatapackExporter {
-	private final JavaPlugin plugin;
+	private final MusicPlugin plugin;
 	private final SongLibrary library;
 	private final MusicConfig config;
 
-	public DatapackExporter(JavaPlugin plugin, SongLibrary library, MusicConfig config) {
+	public DatapackExporter(MusicPlugin plugin, SongLibrary library, MusicConfig config) {
 		this.plugin = plugin;
 		this.library = library;
 		this.config = config;
@@ -30,11 +29,43 @@ public final class DatapackExporter {
 		return plugin.getDataFolder().toPath().resolve("datapack").resolve("plugmc-music");
 	}
 
+	/**
+	 * 主世界存档里的数据包目录：放这里才能被服务端自动加载。
+	 *
+	 * <p>新版存档把维度拆到了 {@code world/dimensions/minecraft/overworld}，
+	 * {@code getWorldFolder()} 返回的是维度目录，所以向上找到含 {@code level.dat} 的层级根。</p>
+	 */
+	public Path worldDatapackRoot() {
+		List<org.bukkit.World> worlds = plugin.getServer().getWorlds();
+		if (worlds.isEmpty()) {
+			return datapackRoot();
+		}
+		Path candidate = worlds.getFirst().getWorldFolder().toPath();
+		for (int depth = 0; depth < 6 && candidate != null; depth++) {
+			if (Files.isRegularFile(candidate.resolve("level.dat"))) {
+				return candidate.resolve("datapacks").resolve("plugmc-music");
+			}
+			candidate = candidate.getParent();
+		}
+		return worlds.getFirst().getWorldFolder().toPath()
+			.resolve("datapacks").resolve("plugmc-music");
+	}
+
 	public record ExportResult(Path root, int songs, List<String> warnings) {
 	}
 
 	public ExportResult export() throws IOException {
-		Path root = datapackRoot();
+		return exportTo(datapackRoot());
+	}
+
+	/**
+	 * 把数据包写进主世界存档，返回写入了多少首歌。
+	 */
+	public int installToWorld() throws IOException {
+		return exportTo(worldDatapackRoot()).songs();
+	}
+
+	public ExportResult exportTo(Path root) throws IOException {
 		Path songDir = root.resolve("data").resolve(config.namespace()).resolve("jukebox_song");
 		Path functionDir = root.resolve("data").resolve(config.namespace()).resolve("function");
 		deleteRecursively(root.resolve("data"));
@@ -71,6 +102,73 @@ public final class DatapackExporter {
 			warnings.add("唱片库为空，数据包只包含 pack.mcmeta");
 		}
 		return new ExportResult(root, songs.size(), warnings);
+	}
+
+	/**
+	 * 把数据包同步到主世界并在有新曲目时重载数据，让原版唱机立刻能用。
+	 *
+	 * <p>返回 true 表示这次真的触发了重载。</p>
+	 */
+	public boolean syncAndReloadIfNeeded() {
+		MusicConfig settings = config;
+		if (!settings.autoInstallDatapack()) {
+			return false;
+		}
+		boolean missing;
+		try {
+			missing = library.songs().stream()
+				.anyMatch(song -> !plugin.discs().hasJukeboxSong(song, settings));
+			installToWorld();
+		} catch (IOException exception) {
+			plugin.getLogger().warning("同步数据包失败：" + exception.getMessage());
+			return false;
+		}
+		if (!missing && datapackEnabled()) {
+			return false;
+		}
+		// 运行时新增的数据包需要先刷新发现、再启用；注意 jukebox_song 属于注册表，
+		// 只能在服务端启动时载入，所以要让原版唱机可用仍需重启一次。
+		plugin.getServer().getScheduler().runTask(plugin, () -> {
+			try {
+				io.papermc.paper.datapack.DatapackManager manager =
+					plugin.getServer().getDatapackManager();
+				manager.refreshPacks();
+				io.papermc.paper.datapack.Datapack pack = manager.getPacks().stream()
+					.filter(candidate -> candidate.getName() != null
+						&& candidate.getName().contains("plugmc-music"))
+					.findFirst()
+					.orElse(null);
+				if (pack == null) {
+					plugin.getLogger().warning("没有发现数据包 plugmc-music："
+						+ worldDatapackRoot() + " 可能写入失败");
+					return;
+				}
+				if (!pack.isEnabled()) {
+					pack.setEnabled(true);
+				}
+				plugin.getServer().reloadData();
+				if (missing) {
+					plugin.getLogger().warning("数据包 plugmc-music 已安装并启用，"
+						+ "但 jukebox_song 注册表只在启动时载入："
+						+ "重启一次后唱片即可放进原版唱机（插件右键播放不受影响）");
+				}
+			} catch (RuntimeException exception) {
+				plugin.getLogger().warning("启用数据包失败：" + exception.getMessage());
+			}
+		});
+		return true;
+	}
+
+	/**
+	 * 数据包是否已经被服务端发现并启用。
+	 */
+	public boolean datapackEnabled() {
+		try {
+			return plugin.getServer().getDatapackManager().getEnabledPacks().stream()
+				.anyMatch(pack -> pack.getName() != null && pack.getName().contains("plugmc-music"));
+		} catch (RuntimeException exception) {
+			return false;
+		}
 	}
 
 	private String jukeboxSongJson(Song song) {
