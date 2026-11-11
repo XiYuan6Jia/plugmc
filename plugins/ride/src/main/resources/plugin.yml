@@ -1,0 +1,21 @@
+name: ride
+version: '${version}'
+main: com.xiyuan.plugmc.ride.RidePlugin
+api-version: '${api_version}'
+authors: [XiYuan6Jia]
+description: "玩家骑乘：骑到其他玩家身上，暂时只开放给 OP"
+commands:
+  ride:
+    description: "骑到其他玩家身上 / 下来"
+    usage: /ride <玩家> | /ride off | /ride info
+    aliases: [carry, mount]
+permissions:
+  ride.use:
+    description: "使用玩家骑乘（暂时只开放给 OP）"
+    default: op
+  ride.admin:
+    description: "强制让其他玩家下来 / 重载配置"
+    default: op
+  ride.immune:
+    description: "不能被其他玩家骑乘"
+    default: false

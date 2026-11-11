@@ -1,0 +1,16 @@
+# 玩家骑乘（暂时只开放给 OP：ride.use 默认 op）
+enabled: true
+# 同一玩家两次骑乘之间的冷却（秒）
+cooldown-seconds: 5
+# 骑乘时若被骑的玩家移动过快会被自动甩下（格/秒，0 = 不限制）
+max-carrier-speed: 0
+# 受伤害 / 死亡 / 传送 / 换世界时自动下来
+dismount-on-damage: true
+dismount-on-death: true
+dismount-on-teleport: true
+dismount-on-world-change: true
+# 骑乘时禁止骑手与坐骑互相伤害
+deny-mutual-damage: true
+# 骑手可以潜行主动下来
+allow-sneak-dismount: true
+# 进入载具/被其他载具接管时忽略
