@@ -14,6 +14,7 @@ import java.util.Optional;
  */
 public final class OggVorbis {
 	private static final byte[] MAGIC = {'O', 'g', 'g', 'S'};
+	private static final int MAX_TAIL = 65536;
 
 	private OggVorbis() {
 	}
@@ -25,63 +26,63 @@ public final class OggVorbis {
 		if (file == null || !Files.isRegularFile(file)) {
 			return Optional.empty();
 		}
-		long size;
 		try {
-			size = Files.size(file);
-		} catch (IOException exception) {
-			return Optional.empty();
-		}
-		if (size < 32) {
-			return Optional.empty();
-		}
-		try (InputStream input = Files.newInputStream(file)) {
-			byte[] head = input.readNBytes((int) Math.min(8192, size));
-			if (!startsWithOgg(head, 0)) {
-				return Optional.empty();
-			}
-			int headerLength = 27 + (head[26] & 0xFF);
-			if (head.length < headerLength + 16) {
-				return Optional.empty();
-			}
-			int packet = headerLength;
-			// 0x01 'vorbis'
-			if ((head[packet] & 0xFF) != 0x01 || head[packet + 1] != 'v'
-				|| head[packet + 2] != 'o' || head[packet + 3] != 'r'
-				|| head[packet + 4] != 'b' || head[packet + 5] != 'i'
-				|| head[packet + 6] != 's') {
-				return Optional.empty();
-			}
-			int channels = head[packet + 11] & 0xFF;
-			int sampleRate = readIntLE(head, packet + 12);
-			if (sampleRate < 8000 || sampleRate > 192000 || channels < 1 || channels > 8) {
-				return Optional.empty();
-			}
-			long granule = lastGranule(file, size);
-			float seconds = granule <= 0 ? 0f : granule / (float) sampleRate;
-			return Optional.of(new Info(sampleRate, channels, seconds));
+			return probe(Files.readAllBytes(file));
 		} catch (IOException exception) {
 			return Optional.empty();
 		}
 	}
 
-	private static long lastGranule(Path file, long size) throws IOException {
-		int window = (int) Math.min(65536, size);
-		byte[] tail = new byte[window];
-		try (var channel = Files.newByteChannel(file)) {
-			channel.position(size - window);
-			var buffer = java.nio.ByteBuffer.wrap(tail);
-			while (buffer.hasRemaining() && channel.read(buffer) > 0) {
-				// 读取尾部窗口
-			}
+	public static Optional<Info> probe(InputStream input) {
+		try {
+			return probe(input.readAllBytes());
+		} catch (IOException exception) {
+			return Optional.empty();
 		}
-		for (int index = window - 4; index >= 0; index--) {
-			if (startsWithOgg(tail, index) && index + 14 <= window) {
-				long granule = 0;
-				for (int byteIndex = 0; byteIndex < 8; byteIndex++) {
-					granule |= (long) (tail[index + 6 + byteIndex] & 0xFF) << (8 * byteIndex);
-				}
-				return granule;
+	}
+
+	/**
+	 * 直接在内存里解析：第一页取 Vorbis 识别头，最后一页取 granule position 算时长。
+	 */
+	public static Optional<Info> probe(byte[] data) {
+		if (data == null || data.length < 32) {
+			return Optional.empty();
+		}
+		if (!startsWithOgg(data, 0)) {
+			return Optional.empty();
+		}
+		int headerLength = 27 + (data[26] & 0xFF);
+		if (data.length < headerLength + 16) {
+			return Optional.empty();
+		}
+		int packet = headerLength;
+		if ((data[packet] & 0xFF) != 0x01 || data[packet + 1] != 'v'
+			|| data[packet + 2] != 'o' || data[packet + 3] != 'r'
+			|| data[packet + 4] != 'b' || data[packet + 5] != 'i'
+			|| data[packet + 6] != 's') {
+			return Optional.empty();
+		}
+		int channels = data[packet + 11] & 0xFF;
+		int sampleRate = readIntLE(data, packet + 12);
+		if (sampleRate < 8000 || sampleRate > 192000 || channels < 1 || channels > 8) {
+			return Optional.empty();
+		}
+		long granule = lastGranule(data);
+		float seconds = granule <= 0 ? 0f : granule / (float) sampleRate;
+		return Optional.of(new Info(sampleRate, channels, seconds));
+	}
+
+	private static long lastGranule(byte[] data) {
+		int start = Math.max(0, data.length - MAX_TAIL);
+		for (int index = data.length - 4; index >= start; index--) {
+			if (!startsWithOgg(data, index) || index + 14 > data.length) {
+				continue;
 			}
+			long granule = 0;
+			for (int byteIndex = 0; byteIndex < 8; byteIndex++) {
+				granule |= (long) (data[index + 6 + byteIndex] & 0xFF) << (8 * byteIndex);
+			}
+			return granule;
 		}
 		return 0L;
 	}

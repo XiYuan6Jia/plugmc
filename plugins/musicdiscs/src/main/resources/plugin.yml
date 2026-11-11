@@ -3,19 +3,22 @@ version: '${version}'
 main: com.xiyuan.plugmc.musicdiscs.MusicPlugin
 api-version: '${api_version}'
 authors: [XiYuan6Jia]
-description: "自定义唱片：上传 ogg 生成资源包与唱片物品，插件播放并可导出 jukebox_song 数据包"
+description: "自定义唱片：玩家上传 ogg 生成资源包与独立唱片物品，插件播放并可导出 jukebox_song 数据包"
 commands:
   music:
-    description: "自定义唱片：列表、试听、领取、导入、导出数据包"
-    usage: /music [list|play <ID>|stop|give [玩家] <ID>|import <ID> [标题] [作者]|info <ID>|delete <ID>|pack [玩家]|export|reload]
+    description: "自定义唱片：列表、试听、上传、领取、导出数据包"
+    usage: /music [list|play <ID>|stop|upload|get|mine|delete <ID>|info <ID>|give [玩家] <ID>|pack [玩家]|export|reload]
     aliases: [disc, juke, record]
 permissions:
   music.use:
     description: "试听与使用自定义唱片"
     default: true
+  music.upload:
+    description: "上传自己的唱片（每账号一首）"
+    default: true
   music.give:
     description: "领取自定义唱片物品"
-    default: op
+    default: true
   music.admin:
-    description: "导入/删除唱片、导出数据包、下发资源包"
+    description: "导入/删除任意唱片、导出数据包、给他人发唱片或资源包"
     default: op

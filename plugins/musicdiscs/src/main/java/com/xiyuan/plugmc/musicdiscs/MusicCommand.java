@@ -12,11 +12,17 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.UUID;
 
 /**
- * /music 命令：界面、试听、领唱片、导入、导出资源包与数据包。
+ * /music 命令：界面、试听、领取、玩家上传、导入、导出资源包与数据包。
  */
 public final class MusicCommand implements CommandExecutor, TabCompleter {
+	private static final List<String> SUBCOMMANDS = List.of(
+		"list", "play", "stop", "upload", "uploadtoken", "get", "mine", "give",
+		"import", "delete", "info", "reload", "pack", "export"
+	);
+
 	private final MusicPlugin plugin;
 
 	public MusicCommand(MusicPlugin plugin) {
@@ -36,42 +42,19 @@ public final class MusicCommand implements CommandExecutor, TabCompleter {
 		String sub = args[0].toLowerCase(Locale.ROOT);
 		switch (sub) {
 			case "list", "列表" -> list(sender);
-			case "play", "播放" -> {
-				if (!(sender instanceof Player player)) {
-					sender.sendMessage("只有玩家可以试听唱片。");
-					return true;
-				}
-				if (args.length < 2) {
-					player.sendMessage(MusicText.component("&e用法：/music play <ID>"));
-					return true;
-				}
-				Optional<Song> song = plugin.library().find(args[1]);
-				if (song.isEmpty()) {
-					player.sendMessage(MusicText.component("&c没有这首唱片：" + args[1]));
-					return true;
-				}
-				plugin.playback().play(player, song.get());
-			}
-			case "stop", "停止" -> {
-				if (sender instanceof Player player) {
-					if (plugin.playback().isPlaying(player)) {
-						plugin.playback().stop(player);
-						player.sendMessage(MusicText.component("&7播放已停止。"));
-					} else {
-						player.sendMessage(MusicText.component("&7你当前没有在播放唱片。"));
-					}
-				}
-			}
-			case "give", "领取" -> give(sender, args);
+			case "play", "播放" -> play(sender, args);
+			case "stop", "停止" -> stop(sender);
+			case "upload", "上传" -> upload(sender);
+			case "uploadtoken", "上传码" -> uploadToken(sender, args);
+			case "get", "领取" -> get(sender);
+			case "mine", "我的" -> mine(sender);
+			case "give", "给予" -> give(sender, args);
 			case "import", "导入" -> importSong(sender, args);
 			case "delete", "remove", "删除" -> delete(sender, args);
 			case "info", "详情" -> info(sender, args);
 			case "reload", "重载" -> reload(sender);
 			case "pack", "资源包" -> sendPack(sender, args);
 			case "export", "datapack", "导出" -> export(sender);
-			case "deleteall", "清空" -> {
-				sender.sendMessage(MusicText.component("&7已取消该子命令，避免误删整库。"));
-			}
 			default -> usage(sender);
 		}
 		return true;
@@ -80,31 +63,186 @@ public final class MusicCommand implements CommandExecutor, TabCompleter {
 	private void usage(CommandSender sender) {
 		sender.sendMessage(MusicText.component("&6/music 用法："));
 		sender.sendMessage(MusicText.component("&f/music &7打开唱片列表"));
+		sender.sendMessage(MusicText.component("&f/music upload &7上传自己的唱片（每账号一首）"));
+		sender.sendMessage(MusicText.component("&f/music get &7领取自己的唱片 &f/music mine &7查看"));
 		sender.sendMessage(MusicText.component("&f/music play <ID> &7试听 &f/music stop &7停止"));
-		sender.sendMessage(MusicText.component("&f/music give [玩家] <ID> &7领取唱片"));
-		sender.sendMessage(MusicText.component("&f/music import <ID> [标题] [作者] &7导入 incoming/<ID>.ogg"));
-		sender.sendMessage(MusicText.component("&f/music info <ID> &7查看信息 &f/music delete <ID> &7删除"));
-		sender.sendMessage(MusicText.component("&f/music pack [玩家] &7下发资源包 &f/music export &7导出数据包"));
-		sender.sendMessage(MusicText.component("&f/music reload &7重载配置与唱片库"));
+		sender.sendMessage(MusicText.component("&f/music delete <ID> &7删除（自己的或管理员）"));
+		if (sender.hasPermission("music.admin")) {
+			sender.sendMessage(MusicText.component("&f/music import <ID> [标题] [作者] &7导入 incoming/<ID>.ogg"));
+			sender.sendMessage(MusicText.component("&f/music give [玩家] <ID> &7发放"
+				+ " &f/music pack [玩家] &7下发资源包"));
+			sender.sendMessage(MusicText.component("&f/music export &7导出数据包 &f/music reload &7重载"));
+		}
 	}
 
 	private void list(CommandSender sender) {
 		List<Song> songs = plugin.library().songs();
 		if (songs.isEmpty()) {
-			sender.sendMessage(MusicText.component("&7唱片库是空的。把 .ogg 放进 &f"
-				+ plugin.library().incomingDir() + " &7再执行 &f/music import <ID> <标题> [作者]"));
+			sender.sendMessage(MusicText.component("&7唱片库是空的。玩家可用 &f/music upload &7上传自己的唱片。"));
 			return;
 		}
 		sender.sendMessage(MusicText.component("&6自定义唱片（" + songs.size() + " 首）："));
 		for (Song song : songs) {
 			sender.sendMessage(MusicText.component("&f- " + song.id() + " &7| &f"
-				+ song.displayName() + " &7| " + song.durationText()));
+				+ song.displayName() + " &7| " + song.durationText()
+				+ (song.playerSong() ? " &8(by " + song.ownerName() + ")" : " &8(服务器)")));
 		}
 	}
 
+	private void play(CommandSender sender, String[] args) {
+		if (!(sender instanceof Player player)) {
+			sender.sendMessage("只有玩家可以试听唱片。");
+			return;
+		}
+		if (args.length < 2) {
+			player.sendMessage(MusicText.component("&e用法：/music play <ID>"));
+			return;
+		}
+		Optional<Song> song = plugin.library().find(args[1]);
+		if (song.isEmpty()) {
+			player.sendMessage(MusicText.component("&c没有这首唱片：" + args[1]));
+			return;
+		}
+		plugin.playback().play(player, song.get());
+	}
+
+	private void stop(CommandSender sender) {
+		if (!(sender instanceof Player player)) {
+			return;
+		}
+		if (plugin.playback().isPlaying(player)) {
+			plugin.playback().stop(player);
+			player.sendMessage(MusicText.component("&7播放已停止。"));
+		} else {
+			player.sendMessage(MusicText.component("&7你当前没有在播放唱片。"));
+		}
+	}
+
+	/**
+	 * 玩家上传：给出网页地址与一次性上传码。
+	 */
+	private void upload(CommandSender sender) {
+		if (!(sender instanceof Player player)) {
+			sender.sendMessage("只有玩家可以上传自己的唱片。");
+			return;
+		}
+		if (!player.hasPermission("music.upload")) {
+			player.sendMessage(MusicText.component("&c你没有上传唱片的权限。"));
+			return;
+		}
+		MusicConfig config = plugin.settings();
+		Optional<Song> owned = plugin.library().ownedBy(player.getUniqueId());
+		if (owned.isPresent()) {
+			player.sendMessage(MusicText.component("&e你这个账号已经有唱片了：&f"
+				+ owned.get().displayName() + " &7(" + owned.get().durationText() + ")"));
+			player.sendMessage(MusicText.component("&7一个账号限一首，先 &f/music delete "
+				+ owned.get().id() + " &7再上传新的。"));
+			return;
+		}
+		String token = plugin.uploads().createToken(player, config);
+		if (token == null) {
+			player.sendMessage(MusicText.component("&c上传码生成失败，请稍后再试。"));
+			return;
+		}
+		long minutes = Math.max(1, plugin.uploads().tokenSecondsLeft(token) / 60);
+		player.sendMessage(MusicText.component("&6请在浏览器打开：&f" + plugin.publicBaseUrl()));
+		player.sendMessage(MusicText.component("&6上传码：&e&l" + token
+			+ " &7（" + minutes + " 分钟内有效，只能用一次）"));
+		player.sendMessage(MusicText.component("&7限制：&f" + (config.uploadMaxBytes() / 1024 / 1024)
+			+ " MB &7以内、时长 &f" + MusicText.duration(config.uploadMaxSeconds())
+			+ " &7以内的 &fOGG Vorbis &7文件，每账号限一首。"));
+	}
+
+	/**
+	 * 管理员为其他玩家生成上传码（玩家不方便自己执行时使用）。
+	 */
+	private void uploadToken(CommandSender sender, String[] args) {
+		if (!sender.hasPermission("music.admin")) {
+			sender.sendMessage("你没有生成上传码的权限。");
+			return;
+		}
+		if (args.length < 2) {
+			sender.sendMessage("用法：/music uploadtoken <玩家>");
+			return;
+		}
+		Player target = Bukkit.getPlayerExact(args[1]);
+		UUID playerId;
+		String playerName;
+		if (target != null) {
+			playerId = target.getUniqueId();
+			playerName = target.getName();
+		} else {
+			org.bukkit.OfflinePlayer offline = Bukkit.getOfflinePlayer(args[1]);
+			if (!offline.hasPlayedBefore()) {
+				sender.sendMessage("找不到这个玩家（需要至少进服过一次）：" + args[1]);
+				return;
+			}
+			playerId = offline.getUniqueId();
+			playerName = offline.getName() == null ? args[1] : offline.getName();
+		}
+		Optional<Song> owned = plugin.library().ownedBy(playerId);
+		if (owned.isPresent()) {
+			sender.sendMessage(playerName + " 已经有唱片了：" + owned.get().id());
+			return;
+		}
+		MusicConfig config = plugin.settings();
+		String token = plugin.uploads().createToken(playerId, playerName, config);
+		sender.sendMessage("已为 " + playerName + " 生成上传码：" + token
+			+ "（" + Math.max(1, plugin.uploads().tokenSecondsLeft(token) / 60) + " 分钟内有效）");
+		sender.sendMessage("上传页面：" + plugin.publicBaseUrl());
+	}
+
+	private void mine(CommandSender sender) {		if (!(sender instanceof Player player)) {
+			sender.sendMessage("只有玩家可以查看自己的唱片。");
+			return;
+		}
+		Optional<Song> owned = plugin.library().ownedBy(player.getUniqueId());
+		if (owned.isEmpty()) {
+			player.sendMessage(MusicText.component("&7你还没有唱片，用 &f/music upload &7上传一首。"));
+			return;
+		}
+		Song song = owned.get();
+		player.sendMessage(MusicText.component("&6你的唱片：&f" + song.displayName()
+			+ " &7(" + song.durationText() + "，ID " + song.id() + ")"));
+		player.sendMessage(MusicText.component("&7/music get 领取 · /music play " + song.id()
+			+ " 试听 · /music delete " + song.id() + " 删除"));
+	}
+
+	private void get(CommandSender sender) {
+		if (!(sender instanceof Player player)) {
+			sender.sendMessage("只有玩家可以领取唱片。");
+			return;
+		}
+		Optional<Song> owned = plugin.library().ownedBy(player.getUniqueId());
+		if (owned.isEmpty()) {
+			player.sendMessage(MusicText.component("&7你还没有唱片，用 &f/music upload &7上传一首。"));
+			return;
+		}
+		Song song = owned.get();
+		if (countDisc(player, song.id()) > 0) {
+			player.sendMessage(MusicText.component("&7你背包里已经有一张这张唱片了。"));
+			return;
+		}
+		if (!player.getInventory().addItem(plugin.discs().create(song, plugin.settings())).isEmpty()) {
+			player.sendMessage(MusicText.component("&c背包已满，请先清理背包。"));
+			return;
+		}
+		player.sendMessage(MusicText.component("&a已领取唱片：&f" + song.displayName()));
+	}
+
+	private int countDisc(Player player, String songId) {
+		int count = 0;
+		for (var stack : player.getInventory().getStorageContents()) {
+			if (songId.equals(plugin.discs().songId(stack))) {
+				count += stack.getAmount();
+			}
+		}
+		return count;
+	}
+
 	private void give(CommandSender sender, String[] args) {
-		if (!sender.hasPermission("music.give")) {
-			sender.sendMessage("你没有领取自定义唱片的权限。");
+		if (!sender.hasPermission("music.admin")) {
+			sender.sendMessage("你没有发放自定义唱片的权限。");
 			return;
 		}
 		Player target;
@@ -126,10 +264,6 @@ public final class MusicCommand implements CommandExecutor, TabCompleter {
 		Optional<Song> song = plugin.library().find(id);
 		if (song.isEmpty()) {
 			sender.sendMessage("没有这首唱片：" + id);
-			return;
-		}
-		if (!target.hasPermission("music.use")) {
-			sender.sendMessage("该玩家没有使用自定义唱片的权限。");
 			return;
 		}
 		var leftover = target.getInventory().addItem(plugin.discs().create(song.get(), plugin.settings()));
@@ -166,7 +300,8 @@ public final class MusicCommand implements CommandExecutor, TabCompleter {
 			id,
 			title,
 			author,
-			comparator
+			comparator,
+			plugin.settings()
 		);
 		sender.sendMessage(MusicText.component((result.ok() ? "&a" : "&c") + result.message()));
 		if (result.ok()) {
@@ -175,17 +310,25 @@ public final class MusicCommand implements CommandExecutor, TabCompleter {
 	}
 
 	private void delete(CommandSender sender, String[] args) {
-		if (!sender.hasPermission("music.admin")) {
-			sender.sendMessage("你没有删除唱片的权限。");
-			return;
-		}
 		if (args.length < 2) {
 			sender.sendMessage("用法：/music delete <ID>");
 			return;
 		}
 		String id = args[1].toLowerCase(Locale.ROOT);
-		if (!plugin.library().delete(id)) {
+		Optional<Song> song = plugin.library().find(id);
+		if (song.isEmpty()) {
 			sender.sendMessage("没有这首唱片：" + id);
+			return;
+		}
+		boolean admin = sender.hasPermission("music.admin");
+		boolean owner = sender instanceof Player player
+			&& song.get().owner().equals(player.getUniqueId().toString());
+		if (!admin && !owner) {
+			sender.sendMessage("这不是你的唱片，无法删除。");
+			return;
+		}
+		if (!plugin.library().delete(id)) {
+			sender.sendMessage("删除失败，唱片可能已经不存在。");
 			return;
 		}
 		sender.sendMessage("已删除唱片 " + id);
@@ -206,8 +349,10 @@ public final class MusicCommand implements CommandExecutor, TabCompleter {
 		sender.sendMessage(MusicText.component("&6" + song.id() + " &7| &f" + song.displayName()));
 		sender.sendMessage(MusicText.component("&7时长：" + song.durationText()
 			+ " &7比较器：" + song.comparator()
-			+ " &7模型数据：" + song.customModelData()));
-		sender.sendMessage(MusicText.component("&7声音事件：" + song.soundKey(plugin.settings().namespace())));
+			+ (song.playerSong() ? " &7上传者：" + song.ownerName() : " &7来源：服务器")));
+		sender.sendMessage(MusicText.component("&7声音事件：" + song.soundKey(plugin.settings().namespace())
+			+ " &7物品模型：" + (plugin.settings().useItemModel()
+				? plugin.settings().namespace() + ":" + song.itemModel() : "未启用")));
 		sender.sendMessage(MusicText.component("&7数据包注册表："
 			+ (plugin.discs().hasJukeboxSong(song, plugin.settings())
 				? "&a已加载（可用原版唱机）"
@@ -274,22 +419,19 @@ public final class MusicCommand implements CommandExecutor, TabCompleter {
 		String[] args
 	) {
 		if (args.length == 1) {
-			return filter(
-				List.of("list", "play", "stop", "give", "import", "delete", "info", "reload", "pack", "export"),
-				args[0]
-			);
+			return filter(SUBCOMMANDS, args[0]);
 		}
 		if (args.length == 2) {
 			String sub = args[0].toLowerCase(Locale.ROOT);
 			if (sub.equals("play") || sub.equals("delete") || sub.equals("info")) {
 				return filter(ids(), args[1]);
 			}
-			if (sub.equals("give")) {
+			if (sub.equals("give") || sub.equals("pack")) {
 				List<String> options = new ArrayList<>(ids());
 				Bukkit.getOnlinePlayers().forEach(player -> options.add(player.getName()));
 				return filter(options, args[1]);
 			}
-			if (sub.equals("pack")) {
+			if (sub.equals("uploadtoken")) {
 				return filter(
 					Bukkit.getOnlinePlayers().stream().map(Player::getName).toList(),
 					args[1]

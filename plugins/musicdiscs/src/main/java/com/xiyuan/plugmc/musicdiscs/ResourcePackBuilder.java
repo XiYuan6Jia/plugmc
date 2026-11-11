@@ -2,8 +2,10 @@ package com.xiyuan.plugmc.musicdiscs;
 
 import org.bukkit.plugin.java.JavaPlugin;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -16,10 +18,11 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 /**
- * 把唱片库打包成客户端资源包（zip）：{@code sounds.json} + 每首歌的 ogg。
+ * 把唱片库打包成客户端资源包（zip）：{@code sounds.json} + 每首歌的 ogg，
+ * 以及每张唱片独立的物品模型与 16×16 贴图。
  *
- * <p>物品贴图不在这里生成，唱片使用原版音乐唱片外观（带自定义模型数据，
- * 需要换贴图时由管理员自行追加模型文件），避免与其它资源包冲突。</p>
+ * <p>物品模型走 {@code minecraft:item_model} 组件 + {@code assets/<ns>/items/<model>.json}，
+ * <b>不会覆盖任何原版物品模型</b>，唱片也不再占用原版唱片材质。</p>
  */
 public final class ResourcePackBuilder {
 	private final JavaPlugin plugin;
@@ -48,7 +51,6 @@ public final class ResourcePackBuilder {
 		Files.createDirectories(packDir);
 		Path target = packFile();
 		Path temp = packDir.resolve("plugmc-music.zip.tmp");
-		Map<String, byte[]> sounds = new LinkedHashMap<>();
 		int count = 0;
 		try (OutputStream fileOutput = Files.newOutputStream(temp);
 			ZipOutputStream zip = new ZipOutputStream(fileOutput)) {
@@ -60,7 +62,9 @@ public final class ResourcePackBuilder {
 				}
 				writeEntry(zip, "assets/" + config.namespace() + "/sounds/"
 					+ song.soundPath() + ".ogg", Files.readAllBytes(audio));
-				sounds.put(song.soundPath().replace('/', '.'), null);
+				if (config.useItemModel()) {
+					writeItemModel(zip, song);
+				}
 				count++;
 			}
 			writeEntry(zip, "assets/" + config.namespace() + "/sounds.json", soundsJson());
@@ -71,6 +75,60 @@ public final class ResourcePackBuilder {
 		return new BuildResult(target, sha1, bytes, count);
 	}
 
+	private void writeItemModel(ZipOutputStream zip, Song song) throws IOException {
+		String namespace = config.namespace();
+		String model = song.itemModel();
+		writeEntry(zip, "assets/" + namespace + "/items/" + model + ".json",
+			("{\"model\":{\"type\":\"minecraft:model\",\"model\":\"" + namespace
+				+ ":item/" + model + "\"}}\n").getBytes(StandardCharsets.UTF_8));
+		writeEntry(zip, "assets/" + namespace + "/models/item/" + model + ".json",
+			("{\"parent\":\"minecraft:item/generated\",\"textures\":{\"layer0\":\""
+				+ namespace + ":item/" + model + "\"}}\n").getBytes(StandardCharsets.UTF_8));
+		writeEntry(zip, "assets/" + namespace + "/textures/item/" + model + ".png",
+			discTexture(song.id()));
+	}
+
+	/**
+	 * 生成 16×16 的黑胶唱片贴图，颜色由曲目 ID 决定，每首歌都有独立外观。
+	 */
+	private byte[] discTexture(String id) throws IOException {
+		int hash = id.hashCode();
+		float hue = Math.abs(hash % 360) / 360f;
+		java.awt.Color base = java.awt.Color.getHSBColor(hue, 0.65f, 0.75f);
+		BufferedImage image = new BufferedImage(16, 16, BufferedImage.TYPE_INT_ARGB);
+		double center = 7.5;
+		for (int y = 0; y < 16; y++) {
+			for (int x = 0; x < 16; x++) {
+				double distance = Math.hypot(x - center, y - center);
+				int argb = 0;
+				if (distance <= 7.2) {
+					if (distance <= 1.2) {
+						argb = 0x00000000;
+					} else if (distance >= 6.2) {
+						argb = 0xFF202020 | (base.getRGB() & 0x00FFFFFF);
+					} else if (distance >= 5.2) {
+						argb = brighten(base, 1.25f);
+					} else if (((int) Math.floor(distance)) % 2 == 0) {
+						argb = brighten(base, 0.75f);
+					} else {
+						argb = base.getRGB() | 0xFF000000;
+					}
+				}
+				image.setRGB(x, y, argb);
+			}
+		}
+		ByteArrayOutputStream output = new ByteArrayOutputStream();
+		ImageIO.write(image, "png", output);
+		return output.toByteArray();
+	}
+
+	private int brighten(java.awt.Color color, float factor) {
+		int red = Math.min(255, (int) (color.getRed() * factor));
+		int green = Math.min(255, (int) (color.getGreen() * factor));
+		int blue = Math.min(255, (int) (color.getBlue() * factor));
+		return 0xFF000000 | (red << 16) | (green << 8) | blue;
+	}
+
 	private byte[] packMeta() {
 		String json = "{\"pack\":{\"description\":\"plugmc custom music discs\","
 			+ "\"pack_format\":" + config.packFormat() + "}}";
@@ -78,12 +136,15 @@ public final class ResourcePackBuilder {
 	}
 
 	private byte[] soundsJson() {
+		Map<String, Song> entries = new LinkedHashMap<>();
+		for (Song song : library.songs()) {
+			if (library.audioFile(song.id()).isPresent()) {
+				entries.put(song.soundPath().replace('/', '.'), song);
+			}
+		}
 		StringBuilder builder = new StringBuilder("{\n");
 		int index = 0;
-		for (Song song : library.songs()) {
-			if (library.audioFile(song.id()).isEmpty()) {
-				continue;
-			}
+		for (Song song : entries.values()) {
 			if (index++ > 0) {
 				builder.append(",\n");
 			}
@@ -107,7 +168,7 @@ public final class ResourcePackBuilder {
 	}
 
 	private byte[] sha1(Path file) throws IOException {
-		try (InputStream input = Files.newInputStream(file)) {
+		try (var input = Files.newInputStream(file)) {
 			MessageDigest digest = MessageDigest.getInstance("SHA-1");
 			byte[] buffer = new byte[8192];
 			int read;

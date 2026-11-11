@@ -2,6 +2,7 @@ package com.xiyuan.plugmc.musicdiscs;
 
 import io.papermc.paper.datacomponent.DataComponentTypes;
 import io.papermc.paper.datacomponent.item.JukeboxPlayable;
+import net.kyori.adventure.key.Key;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Registry;
 import org.bukkit.inventory.ItemStack;
@@ -13,7 +14,11 @@ import org.bukkit.plugin.java.JavaPlugin;
 import java.util.List;
 
 /**
- * 自定义唱片物品：材质可由配置指定，靠持久化数据识别是哪一首歌。
+ * 自定义唱片物品。
+ *
+ * <p>默认使用非原版唱片材质（配置 `disc.material`，默认 PAPER），并通过
+ * {@code minecraft:item_model} 组件指向资源包里为每首歌生成的独立模型，
+ * 因此<b>不占用、也不覆盖任何原版物品</b>。</p>
  *
  * <p>如果数据包已经注册了同名 {@code jukebox_song}，会同时写入原版
  * {@code jukebox_playable} 组件，这样放进原版唱机也能正常播放。</p>
@@ -43,15 +48,15 @@ public final class DiscItems {
 				"&e右键播放 · 潜行右键停止",
 				hasJukeboxSong(song, config) ? "&7也可以放进唱机播放" : "&8（数据包未加载时仅插件播放）"
 			)));
-			if (song.customModelData() > 0) {
-				meta.setCustomModelData(song.customModelData());
-			}
-			meta.getPersistentDataContainer().set(
-				songKey,
-				PersistentDataType.STRING,
-				song.id()
-			);
+			meta.getPersistentDataContainer().set(songKey, PersistentDataType.STRING, song.id());
 			stack.setItemMeta(meta);
+		}
+		stack.setData(DataComponentTypes.MAX_STACK_SIZE, 1);
+		if (config.useItemModel()) {
+			stack.setData(
+				DataComponentTypes.ITEM_MODEL,
+				Key.key(config.namespace(), song.itemModel())
+			);
 		}
 		if (hasJukeboxSong(song, config)) {
 			JukeboxPlayable playable = JukeboxPlayable.jukeboxPlayable(

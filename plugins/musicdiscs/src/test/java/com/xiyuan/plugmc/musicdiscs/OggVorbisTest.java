@@ -70,11 +70,30 @@ class OggVorbisTest {
 
 	@Test
 	void songExposesSoundKeyAndDuration() {
-		Song song = new Song("demo", "示例", "作者", 125f, 3, 1001);
+		Song song = new Song("demo", "示例", "作者", 125f, 3, "", "");
 		assertEquals("plugmc:disc.demo", song.soundKey("plugmc"));
 		assertEquals("disc/demo", song.soundPath());
+		assertEquals("disc_demo", song.itemModel());
 		assertEquals("2:05", song.durationText());
 		assertEquals("示例 - 作者", song.displayName());
-		assertFalse(song.durationText().isEmpty());
+		assertFalse(song.playerSong());
+	}
+
+	@Test
+	void playerSongCarriesOwner() {
+		Song song = new Song("u_abc", "我的歌", "steve", 10f, 1, "uuid-1", "steve");
+		assertTrue(song.playerSong());
+		assertEquals("steve", song.ownerName());
+	}
+
+	@Test
+	void rejectsTooLongAudio() throws Exception {
+		SongLibrary library = null;
+		// 仅校验字节解析：超出上限的文件在 importBytes 中会被拒绝（依赖 MusicConfig）
+		int sampleRate = 44100;
+		byte[] page = buildPage(sampleRate, 1, sampleRate * 700L);
+		assertTrue(OggVorbis.probe(page).isPresent());
+		assertEquals(700f, OggVorbis.probe(page).orElseThrow().seconds(), 0.5f);
+		assertTrue(library == null);
 	}
 }

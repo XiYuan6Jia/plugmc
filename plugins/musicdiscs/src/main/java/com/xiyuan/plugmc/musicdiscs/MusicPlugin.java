@@ -1,6 +1,7 @@
 package com.xiyuan.plugmc.musicdiscs;
 
 import org.bukkit.command.PluginCommand;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
@@ -12,7 +13,7 @@ import java.util.function.Consumer;
 import java.util.logging.Level;
 
 /**
- * 自定义唱片插件：管理音乐库、打包资源包并提供下载、插件侧播放，
+ * 自定义唱片插件：管理音乐库、打包资源包并提供下载与玩家上传页面、插件侧播放，
  * 以及按需导出 {@code jukebox_song} 数据包以支持原版唱机。
  */
 public final class MusicPlugin extends JavaPlugin implements Listener {
@@ -23,6 +24,7 @@ public final class MusicPlugin extends JavaPlugin implements Listener {
 	private DiscItems discs;
 	private PlaybackManager playback;
 	private DatapackExporter datapacks;
+	private UploadService uploads;
 
 	@Override
 	public void onEnable() {
@@ -36,6 +38,7 @@ public final class MusicPlugin extends JavaPlugin implements Listener {
 		discs = new DiscItems(this);
 		playback = new PlaybackManager(this, library, settings);
 		datapacks = new DatapackExporter(this, library, settings);
+		uploads = new UploadService(this, library);
 		refreshPack(null);
 		getServer().getPluginManager().registerEvents(new MusicListener(this), this);
 		getServer().getPluginManager().registerEvents(this, this);
@@ -49,7 +52,8 @@ public final class MusicPlugin extends JavaPlugin implements Listener {
 		}
 		getLogger().info("自定义唱片 已启用（" + library.songs().size() + " 首，资源包 "
 			+ (packServer.running() ? "服务端口 " + packServer.boundPort() : "未启动")
-			+ "，导入目录 " + library.incomingDir() + "）");
+			+ "，玩家上传上限 " + (settings.uploadMaxBytes() / 1024 / 1024) + " MB / "
+			+ MusicText.duration(settings.uploadMaxSeconds()) + "）");
 	}
 
 	@Override
@@ -72,7 +76,7 @@ public final class MusicPlugin extends JavaPlugin implements Listener {
 		try {
 			ResourcePackBuilder.BuildResult result = packs.build();
 			packServer.update(result.file(), result.sha1());
-			packServer.start(settings);
+			packServer.ensureStarted(settings);
 			String message = "资源包已更新：" + result.songs() + " 首，" + result.bytes() + " 字节"
 				+ (packServer.running() ? "，下载端口 " + packServer.boundPort() : "");
 			getLogger().info(message);
@@ -95,7 +99,22 @@ public final class MusicPlugin extends JavaPlugin implements Listener {
 		playback = new PlaybackManager(this, library, settings);
 		datapacks = new DatapackExporter(this, library, settings);
 		packs = new ResourcePackBuilder(this, library, settings);
+		uploads = new UploadService(this, library);
+		// 端口/绑定地址可能变化，重载时重启监听
+		packServer.stop();
 		refreshPack(null);
+	}
+
+	/**
+	 * 玩家看到的网页根地址（上传页面）。
+	 */
+	public String publicBaseUrl() {
+		String url = settings.packUrl();
+		if (url == null || url.isBlank()) {
+			return "（未配置 pack.public-url）";
+		}
+		int slash = url.lastIndexOf('/');
+		return slash > 0 ? url.substring(0, slash) + "/" : url;
 	}
 
 	public MusicConfig settings() {
@@ -122,13 +141,17 @@ public final class MusicPlugin extends JavaPlugin implements Listener {
 		return datapacks;
 	}
 
+	public UploadService uploads() {
+		return uploads;
+	}
+
 	@EventHandler
 	public void onInventoryClick(InventoryClickEvent event) {
 		if (!(event.getInventory().getHolder(false) instanceof MusicGui gui)) {
 			return;
 		}
 		event.setCancelled(true);
-		if (event.getWhoClicked() instanceof org.bukkit.entity.Player player) {
+		if (event.getWhoClicked() instanceof Player player) {
 			MusicGui.handle(this, player, gui, event.getRawSlot(), event.isShiftClick());
 		}
 	}
