@@ -1,4 +1,4 @@
-config-version: 14
+config-version: 15
 menu:
   title: "&8服务器菜单"
   rows: 6
@@ -108,16 +108,6 @@ menu:
       action: player_command
       value: "bank"
       permission: economy.bank.use
-    "42":
-      material: MUSIC_DISC_CAT
-      name: "&d自定义唱片"
-      lore:
-        - "&7服务器自定义音乐唱片"
-        - "&7左键试听 · Shift+左键领取"
-        - "&8点击打开"
-      action: player_command
-      value: "music"
-      permission: music.use
     "44":
       material: SADDLE
       name: "&b玩家骑乘"

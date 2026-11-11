@@ -436,8 +436,7 @@ def backup_remote_data(
 
             print(f"==> 备份线上插件数据到 {root}")
             for plugin_id in plugin_ids:
-                skip = {"pack", "datapack"} if plugin_id == "musicdiscs" else set()
-                count = download(f"{plugins_path}/{plugin_id}", root / plugin_id, skip)
+                count = download(f"{plugins_path}/{plugin_id}", root / plugin_id, set())
                 downloaded += count
                 if count:
                     print(f"    {plugin_id}: {count} 个文件")

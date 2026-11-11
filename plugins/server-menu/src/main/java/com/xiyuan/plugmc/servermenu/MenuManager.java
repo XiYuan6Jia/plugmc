@@ -30,7 +30,7 @@ public final class MenuManager {
 		"economy_admin", "hub_panel", "prompt_command", "daily", "none", "close"
 	);
 	private static final int PLUGIN_PAGE_CAPACITY = 45;
-	private static final int CONFIG_VERSION = 14;
+	private static final int CONFIG_VERSION = 15;
 	private static final int PREVIOUS_PAGE_SLOT = 45;
 	private static final int MAIN_PAGE_SLOT = 49;
 	private static final int NEXT_PAGE_SLOT = 53;
