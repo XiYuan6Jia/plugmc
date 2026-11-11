@@ -10,6 +10,11 @@
 - `sethome/`：家园与死亡点传送，`/sethome`、`/home`、`/delhome`、`/homes`、`/deathpoint`，
   带传送读秒/冷却与可点击的死亡点按钮，详见 [sethome/README.md](sethome/README.md)。
 - `sleepvote/`：入睡半径，半径内达到比例的玩家入睡后跳过夜晚，详见 [sleepvote/README.md](sleepvote/README.md)。
+- `ride/`：玩家骑乘，`/ride <玩家>` 骑上去、`/ride off` 下来，原生乘客位跟随，
+  受伤/传送/换世界自动下车；`ride.use` 默认 `op`（**暂时只开放给 OP**），详见 [ride/README.md](ride/README.md)。
+- `musicdiscs/`：自定义唱片，把 OGG 放进 `plugins/musicdiscs/incoming/` 后 `/music import <ID> <标题>`，
+  插件生成资源包（内置 HTTP 服务默认 TCP 20103）并支持 `/music play` 播放；
+  `/music export` 可导出 `jukebox_song` 数据包让原版唱机识别，详见 [musicdiscs/README.md](musicdiscs/README.md)。
 - `anti-xray/`：反矿物透视，隐藏矿挖掘预警 + `/antixray apply` 管理 Paper 内置防透视配置，
   详见 [anti-xray/README.md](anti-xray/README.md)。
 - `hub/`：主城大厅，启动时创建独立虚空维度 `hub` 并用代码生成一座带喷泉/柱子/天窗的大厅，
