@@ -25,6 +25,7 @@ public final class MusicPlugin extends JavaPlugin implements Listener {
 	private PlaybackManager playback;
 	private DatapackExporter datapacks;
 	private UploadService uploads;
+	private JukeboxManager jukeboxes;
 
 	@Override
 	public void onEnable() {
@@ -39,6 +40,7 @@ public final class MusicPlugin extends JavaPlugin implements Listener {
 		playback = new PlaybackManager(this, library, settings);
 		datapacks = new DatapackExporter(this, library, settings);
 		uploads = new UploadService(this, library);
+		jukeboxes = new JukeboxManager(this);
 		refreshPack(null);
 		getServer().getPluginManager().registerEvents(new MusicListener(this), this);
 		getServer().getPluginManager().registerEvents(this, this);
@@ -61,6 +63,10 @@ public final class MusicPlugin extends JavaPlugin implements Listener {
 		if (playback != null) {
 			playback.stopAll();
 			playback = null;
+		}
+		if (jukeboxes != null) {
+			jukeboxes.stopAll();
+			jukeboxes = null;
 		}
 		if (packServer != null) {
 			packServer.stop();
@@ -102,6 +108,7 @@ public final class MusicPlugin extends JavaPlugin implements Listener {
 		datapacks = new DatapackExporter(this, library, settings);
 		packs = new ResourcePackBuilder(this, library, settings);
 		uploads = new UploadService(this, library);
+		jukeboxes = new JukeboxManager(this);
 		// 端口/绑定地址可能变化，重载时重启监听
 		packServer.stop();
 		refreshPack(null);
@@ -145,6 +152,10 @@ public final class MusicPlugin extends JavaPlugin implements Listener {
 
 	public UploadService uploads() {
 		return uploads;
+	}
+
+	public JukeboxManager jukeboxes() {
+		return jukeboxes;
 	}
 
 	@EventHandler

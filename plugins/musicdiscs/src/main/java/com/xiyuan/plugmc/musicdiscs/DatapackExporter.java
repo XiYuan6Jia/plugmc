@@ -67,10 +67,8 @@ public final class DatapackExporter {
 
 	public ExportResult exportTo(Path root) throws IOException {
 		Path songDir = root.resolve("data").resolve(config.namespace()).resolve("jukebox_song");
-		Path functionDir = root.resolve("data").resolve(config.namespace()).resolve("function");
 		deleteRecursively(root.resolve("data"));
 		Files.createDirectories(songDir);
-		Files.createDirectories(functionDir);
 
 		List<String> warnings = new ArrayList<>();
 		List<Song> songs = library.songs();
@@ -80,22 +78,12 @@ public final class DatapackExporter {
 				jukeboxSongJson(song),
 				StandardCharsets.UTF_8
 			);
-			Files.writeString(
-				functionDir.resolve("give_" + song.id() + ".mcfunction"),
-				giveCommand(song) + "\n",
-				StandardCharsets.UTF_8
-			);
 		}
 		Files.writeString(
 			root.resolve("pack.mcmeta"),
 			"{\"pack\":{\"description\":\"plugmc custom music discs\","
 				+ "\"min_format\":" + config.datapackFormat() + ","
 				+ "\"max_format\":" + config.datapackFormat() + "}}\n",
-			StandardCharsets.UTF_8
-		);
-		Files.writeString(
-			functionDir.resolve("give_all.mcfunction"),
-			songs.stream().map(this::giveCommand).reduce("", (a, b) -> a + b + "\n"),
 			StandardCharsets.UTF_8
 		);
 		if (songs.isEmpty()) {
@@ -126,8 +114,8 @@ public final class DatapackExporter {
 		if (!missing && datapackEnabled()) {
 			return false;
 		}
-		// 运行时新增的数据包需要先刷新发现、再启用；注意 jukebox_song 属于注册表，
-		// 只能在服务端启动时载入，所以要让原版唱机可用仍需重启一次。
+		// 数据包只是为“下次启动后”准备原版唱机注册表；运行中无法热加载注册表，
+		// 因此这里只保证文件就位并启用，不去 reloadData（那会连带解析旧注册表的函数）。
 		plugin.getServer().getScheduler().runTask(plugin, () -> {
 			try {
 				io.papermc.paper.datapack.DatapackManager manager =
@@ -146,12 +134,8 @@ public final class DatapackExporter {
 				if (!pack.isEnabled()) {
 					pack.setEnabled(true);
 				}
-				plugin.getServer().reloadData();
-				if (missing) {
-					plugin.getLogger().warning("数据包 plugmc-music 已安装并启用，"
-						+ "但 jukebox_song 注册表只在启动时载入："
-						+ "重启一次后唱片即可放进原版唱机（插件右键播放不受影响）");
-				}
+				plugin.getLogger().info("数据包 plugmc-music 已就位（下次启动生效）；"
+					+ "当前新增曲目由插件版唱机播放，无需重启即可使用");
 			} catch (RuntimeException exception) {
 				plugin.getLogger().warning("启用数据包失败：" + exception.getMessage());
 			}
@@ -183,11 +167,6 @@ public final class DatapackExporter {
 			+ "  \"length_in_seconds\": " + String.format("%.3f", Math.max(1.0, song.seconds())) + ",\n"
 			+ "  \"comparator_output\": " + song.comparator() + "\n"
 			+ "}\n";
-	}
-
-	private String giveCommand(Song song) {
-		return "give @s minecraft:" + config.discMaterial().getKey().getKey()
-			+ "[minecraft:jukebox_playable=\"" + config.namespace() + ":" + song.id() + "\"] 1";
 	}
 
 	private String escape(String text) {

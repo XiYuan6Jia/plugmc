@@ -27,7 +27,8 @@ public record MusicConfig(
 	boolean autoInstallDatapack,
 	long uploadMaxBytes,
 	int uploadMaxSeconds,
-	int uploadTokenSeconds
+	int uploadTokenSeconds,
+	double jukeboxVolume
 ) {
 	public MusicConfig {
 		packFormat = packFormat <= 0 ? 121 : packFormat;
@@ -42,6 +43,7 @@ public record MusicConfig(
 		uploadMaxBytes = Math.max(64L * 1024, Math.min(64L * 1024 * 1024, uploadMaxBytes));
 		uploadMaxSeconds = Math.max(5, Math.min(1800, uploadMaxSeconds));
 		uploadTokenSeconds = Math.max(60, Math.min(3600, uploadTokenSeconds));
+		jukeboxVolume = Math.max(0.5, Math.min(8.0, jukeboxVolume));
 	}
 
 	public static MusicConfig load(FileConfiguration config) {
@@ -66,7 +68,8 @@ public record MusicConfig(
 			config.getBoolean("datapack.auto-install", true),
 			config.getLong("upload.max-bytes", 5L * 1024 * 1024),
 			config.getInt("upload.max-seconds", 360),
-			config.getInt("upload.token-seconds", 900)
+			config.getInt("upload.token-seconds", 900),
+			config.getDouble("playback.jukebox-volume", 4.0)
 		);
 	}
 

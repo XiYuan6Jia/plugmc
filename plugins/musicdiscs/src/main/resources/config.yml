@@ -30,6 +30,8 @@ playback:
   volume: 1.0
   # 停止时清理附近玩家的声音范围（格）
   range: 32
+  # 唱机播放音量：4.0 ≈ 64 格，与原版唱机接近
+  jukebox-volume: 4.0
   # 玩家下线时停止播放
   stop-on-quit: true
 

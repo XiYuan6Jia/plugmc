@@ -51,23 +51,21 @@
 
 ## 两种播放方式
 
-**插件播放（默认可用）**
+**插件播放（立即可用）**
 
-- 右键手持唱片播放、潜行右键或 `/music stop` 停止；
-- 声音按唱片机音效分类在附近播放，`playback.range` 内玩家都能听到；
-- 时长来自 OGG 元数据，到点自动停止。
+- `/music play <ID>`、界面左键 = **试听，只有自己听得到**；
+- 手持唱片右键 = 播放给**附近玩家**（`playback.range` / `playback.volume`）；
+- 潜行右键或 `/music stop` 停止；时长来自 OGG 元数据，到点自动停止。
 
-**数据包 + 原版唱机（推荐）**
+**唱机交互（上传后立即可用）**
 
-- 插件会把 `jukebox_song` 数据包**自动写入主世界存档**（`<存档>/datapacks/plugmc-music/`）
-  并尝试启用；`datapack.auto-install: false` 可关闭；
-- 数据包加载后，唱片自动带 `minecraft:jukebox_playable`，**右键唱机即可插碟播放、再右键取出**；
-- 注意：`jukebox_song` 属于**注册表**，只在服务端启动时载入，因此**新增曲目后需要重启一次**
-  才会出现在原版唱机里（在此之前右键唱机会退化为“在唱机位置直接播放”）；
-- 旧版唱片（没有 `jukebox_playable` 组件）在玩家右键时会自动升级，也可以用 `/music fix` 批量升级；
-- `/music info <ID>` 会显示「数据包注册表：已加载 / 未加载」。
+- 手持唱片右键**空唱机**：插件把唱片放进唱机并开始播放，附近玩家都能听到（`playback.jukebox-volume`，默认 4.0 ≈ 64 格）；
+- 右键唱机取出唱片（放回背包，背包满则掉在唱机上方）；唱机被破坏时自动停止播放；
+- 新上传的曲目**不需要重启**就能放进唱机——插件自带的唱机逻辑补上了原版注册表的缺口；
+- 服务端重启后，数据包里的 `jukebox_song` 生效，唱片会自动带上 `minecraft:jukebox_playable`，
+  此时插碟/取碟完全交回**原版逻辑**（含比较器输出等），两套路径不会冲突。
 
-> 音频始终来自资源包，两种方式都需要玩家接受资源包。
+> 音频始终来自资源包，需要玩家接受资源包才能听到。
 
 ## 资源包与上传服务
 
@@ -91,13 +89,13 @@
 | `pack.format` / `pack.bind-address` / `pack.port` | 资源包版本、监听地址与端口 |
 | `pack.join-delay-ticks` / `pack.required` / `pack.prompt` | 进服下发与提示 |
 | `disc.material` / `disc.use-item-model` | 唱片基础材质与独立模型开关 |
-| `playback.volume` / `playback.range` / `playback.stop-on-quit` | 播放音量、清理半径、下线停止 |
+| `playback.volume` / `playback.range` / `playback.stop-on-quit` | 手持播放音量、清理半径、下线停止 |
+| `playback.jukebox-volume` | 唱机播放音量，默认 `4.0`（≈64 格） |
 | `upload.max-bytes` | 单文件上限，默认 `5242880`（5 MB） |
 | `upload.max-seconds` | 时长上限，默认 `360`（6 分钟） |
 | `upload.token-seconds` | 上传码有效期，默认 `900` |
 | `datapack.format` / `datapack.namespace` | 导出数据包格式与命名空间 |
 | `datapack.auto-install` | 自动把数据包写入主世界存档并启用，默认 `true` |
-
 ## 文件结构
 
 ```
@@ -113,7 +111,11 @@ plugins/musicdiscs/
 ## 实现要点
 
 - 声音事件 ID：`<namespace>:disc.<ID>`，音频路径 `assets/<ns>/sounds/disc/<ID>.ogg`，
-  `sounds.json` 使用 `"stream": true`；- 导入时校验 `OggS` + `\x01vorbis` 头，mp3/wav 直接被拒；
+  `sounds.json` 使用 `"stream": true`；
+- 导入时校验 `OggS` + `\x01vorbis` 头，mp3/wav 直接被拒；
+- 试听用 `Player#playSound`（只发给本人），手持/唱机用 `World#playSound`（按距离衰减）；
+- `jukebox_song` 注册表**无法在运行时热加载**（`/reload` 只重载函数等数据，不会重建注册表），
+  所以插件自带 `JukeboxManager` 处理新曲目的插碟/取碟，重启后再交回原版逻辑；
 - 时长来自最后一个 Ogg 页的 granule position ÷ 采样率，不需要解码；
 - 上传走原始字节 POST（不用 multipart），服务端边读边限长，超过 `upload.max-bytes` 立即拒绝；
 - 上传码绑定玩家 UUID、一次性、15 分钟过期；该账号已有曲目时直接拒绝；

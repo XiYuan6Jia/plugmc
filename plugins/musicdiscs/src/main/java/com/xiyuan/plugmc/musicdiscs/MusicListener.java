@@ -2,6 +2,7 @@ package com.xiyuan.plugmc.musicdiscs;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
+import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -53,19 +54,32 @@ public final class MusicListener implements Listener {
 			player.sendMessage(MusicText.component("&a这张唱片已升级为新版，可以放进唱机了。"));
 			return;
 		}
-		// 右键唱机：数据包已注册时交给原版插碟/取碟；
-		// 未注册时退化成在唱机位置直接播放，避免右键毫无反应。
+		// 右键唱机：新版唱片（带 jukebox_playable）交给原版插碟/取碟；
+		// 其余情况用插件版唱机交互，保证新上传的曲目立刻可用。
 		if (event.getClickedBlock() != null
 			&& event.getClickedBlock().getType() == Material.JUKEBOX) {
-			if (plugin.discs().hasJukeboxSong(song.get(), plugin.settings())) {
+			Block block = event.getClickedBlock();
+			ItemStack inside = block.getState() instanceof org.bukkit.block.Jukebox jukebox
+				? jukebox.getRecord()
+				: null;
+			boolean managed = plugin.jukeboxes().playing(block)
+				|| (inside != null && plugin.jukeboxes().isOurDisc(inside));
+			event.setCancelled(true);
+			if (managed) {
+				plugin.jukeboxes().eject(player, block);
 				return;
 			}
-			event.setCancelled(true);
-			plugin.playback().playAt(
-				player,
-				song.get(),
-				event.getClickedBlock().getLocation().add(0.5, 0.5, 0.5)
-			);
+			if (inside != null && !inside.getType().isAir()) {
+				// 里面是原版唱片，交回原版逻辑（原版会弹出唱片）
+				event.setCancelled(false);
+				return;
+			}
+			if (plugin.discs().hasJukeboxSong(song.get(), plugin.settings())) {
+				// 数据包已加载：走原版插碟
+				event.setCancelled(false);
+				return;
+			}
+			plugin.jukeboxes().insert(player, block, song.get());
 			return;
 		}
 		event.setCancelled(true);
@@ -73,7 +87,8 @@ public final class MusicListener implements Listener {
 			plugin.playback().stop(player);
 			return;
 		}
-		plugin.playback().play(player, song.get());
+		// 手持唱片直接播放给附近玩家
+		plugin.playback().playNearby(player, song.get(), player.getLocation());
 	}
 
 	@EventHandler
@@ -96,5 +111,15 @@ public final class MusicListener implements Listener {
 			return;
 		}
 		plugin.playback().stop(event.getPlayer());
+	}
+
+	/**
+	 * 唱机被破坏时停止插件版播放（唱片本身由原版掉落）。
+	 */
+	@EventHandler(priority = EventPriority.MONITOR)
+	public void onBreak(org.bukkit.event.block.BlockBreakEvent event) {
+		if (event.getBlock().getType() == Material.JUKEBOX) {
+			plugin.jukeboxes().stop(event.getBlock());
+		}
 	}
 }
