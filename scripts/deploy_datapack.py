@@ -81,6 +81,140 @@ def run_build(targets: list[Pack], all_packs: list[Pack]) -> None:
         sys.exit("构建失败，请检查上面的 Gradle 输出")
 
 
+def download_tree(sftp, remote_dir: str, local_dir: pathlib.Path, api=None) -> int:
+    """递归下载远端目录，返回文件数。
+
+    线上容器里的文件属主是 root，SFTP 直接 get 会报 EACCES；但面板 API 的
+    /files/contents 能读二进制原文。所以默认拿 API 读内容，SFTP 只负责列目录。
+    """
+    import stat as statmod
+
+    local_dir.mkdir(parents=True, exist_ok=True)
+    count = 0
+    for entry in sftp.listdir_attr(remote_dir):
+        remote = f"{remote_dir}/{entry.filename}"
+        local = local_dir / entry.filename
+        if statmod.S_ISDIR(entry.st_mode):
+            count += download_tree(sftp, remote, local, api)
+        else:
+            local.parent.mkdir(parents=True, exist_ok=True)
+            if api is not None:
+                resp = api.request("GET", "/files/contents", params={"file": f"/{remote}"})
+                local.write_bytes(resp.content)
+            else:
+                sftp.get(remote, str(local))
+            count += 1
+    return count
+
+
+def fetch_file(sftp, remote: str, local: pathlib.Path, api) -> bool:
+    """下载单个文件；SFTP 不行就退回 API。"""
+    local.parent.mkdir(parents=True, exist_ok=True)
+    if api is not None:
+        resp = api.request("GET", "/files/contents", params={"file": f"/{remote}"})
+        local.write_bytes(resp.content)
+        return True
+    try:
+        sftp.get(remote, str(local))
+        return True
+    except (IOError, PermissionError):
+        return False
+
+
+def collect_stale(env: dict[str, str], packs: list[Pack]) -> list[str]:
+    """列出远端 world/datapacks/ 里与本次要部署的包同名的 zip 或目录。"""
+    import paramiko
+
+    host = dt.need(env, "MINEKUAI_SFTP_HOST")
+    port = int(dt.need(env, "MINEKUAI_SFTP_PORT"))
+    user = dt.need(env, "MINEKUAI_SFTP_USER")
+    secret = dt.need(env, "MINEKUAI_SFTP_PASSWORD")
+    remote_root = (
+        env.get("MINEKUAI_DATAPACKS_PATH", DEFAULT_DATAPACKS_PATH).strip("/")
+        or DEFAULT_DATAPACKS_PATH
+    )
+
+    transport = paramiko.Transport((host, port))
+    transport.banner_timeout = 30
+    transport.connect(username=user, password=secret)
+    try:
+        sftp = paramiko.SFTPClient.from_transport(transport)
+        try:
+            try:
+                existing = set(sftp.listdir(remote_root))
+            except FileNotFoundError:
+                return []
+        finally:
+            sftp.close()
+    finally:
+        transport.close()
+
+    stale: list[str] = []
+    for pack in packs:
+        for name in (f"{pack.id}.zip", pack.id):
+            if name in existing:
+                stale.append(name)
+    return stale
+
+
+def backup_remote_packs(
+    env: dict[str, str], stale_names: list[str], api=None
+) -> pathlib.Path | None:
+    """把即将被覆盖/删除的远端数据包先下载到 .local/backup/datapacks-<时间>/。
+
+    线上数据是另一位开发者和真实玩家玩出来的，删之前必须留可回滚的副本。
+    返回备份目录；没东西可备时返回 None。
+    """
+    if not stale_names:
+        return None
+    import stat as statmod
+
+    import paramiko
+
+    host = dt.need(env, "MINEKUAI_SFTP_HOST")
+    port = int(dt.need(env, "MINEKUAI_SFTP_PORT"))
+    user = dt.need(env, "MINEKUAI_SFTP_USER")
+    secret = dt.need(env, "MINEKUAI_SFTP_PASSWORD")
+    remote_root = (
+        env.get("MINEKUAI_DATAPACKS_PATH", DEFAULT_DATAPACKS_PATH).strip("/")
+        or DEFAULT_DATAPACKS_PATH
+    )
+
+    stamp = time.strftime("%Y%m%d-%H%M%S")
+    local_root = REPO_ROOT / ".local" / "backup" / f"datapacks-{stamp}"
+
+    transport = paramiko.Transport((host, port))
+    transport.banner_timeout = 30
+    transport.connect(username=user, password=secret)
+    total = 0
+    try:
+        sftp = paramiko.SFTPClient.from_transport(transport)
+        try:
+            print(f"==> 备份将被替换的线上数据包 -> {local_root}")
+            for name in stale_names:
+                remote = f"{remote_root}/{name}"
+                local = local_root / name
+                try:
+                    attr = sftp.stat(remote)
+                except FileNotFoundError:
+                    continue
+
+                if statmod.S_ISDIR(attr.st_mode):
+                    n = download_tree(sftp, remote, local, api)
+                else:
+                    ok = fetch_file(sftp, remote, local, api)
+                    n = 1 if ok else 0
+                total += n
+                print(f"    {name}（{n} 个文件）")
+            print(f"    备份完成，共 {total} 个文件")
+        finally:
+            sftp.close()
+    finally:
+        transport.close()
+
+    return local_root if total else None
+
+
 def upload(env: dict[str, str], files: list[tuple[Pack, pathlib.Path]]) -> list[str]:
     import paramiko
 
@@ -237,6 +371,11 @@ def main() -> None:
     parser.add_argument("--upload-only", action="store_true", help="只上传，不重启")
     parser.add_argument("--check-only", action="store_true", help="只读日志校验，不上传")
     parser.add_argument("--timeout", type=int, default=300, help="等待就绪的秒数（默认 300）")
+    parser.add_argument(
+        "--no-backup",
+        action="store_true",
+        help="跳过覆盖前的线上数据包备份（默认备份到 .local/backup/datapacks-<时间>/）",
+    )
     args = parser.parse_args()
 
     all_packs = discover_packs()
@@ -268,6 +407,17 @@ def main() -> None:
 
     files = [(pack, pack.zip_path()) for pack in targets]
     print("==> 待部署：" + "、".join(f"{pack.id} ({path.name})" for pack, path in files))
+
+    if not args.no_backup:
+        stale = collect_stale(env, targets)
+        if stale:
+            saved = backup_remote_packs(env, stale, api)
+            if saved:
+                print(f"    回滚副本：{saved}")
+            else:
+                sys.exit("备份失败，已中止部署（确需跳过请加 --no-backup）")
+        else:
+            print("==> 线上没有同名数据包，无需备份")
 
     uploaded = upload(env, files)
     if args.upload_only:

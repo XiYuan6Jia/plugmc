@@ -328,8 +328,14 @@ def report(log: str, plugins: list[Plugin]) -> None:
     print("    插件加载校验 OK")
 
 
-def backup_remote_data(env: dict[str, str], plugin_ids: list[str]) -> pathlib.Path | None:
-    """部署前把线上插件数据目录下载到 .local/backup/remote-<时间>/，避免误覆盖线上数据。"""
+def backup_remote_data(
+    env: dict[str, str], plugin_ids: list[str], api: "dt.Api | None" = None
+) -> pathlib.Path | None:
+    """部署前把线上插件数据目录下载到 .local/backup/remote-<时间>/，避免误覆盖线上数据。
+
+    线上容器文件属主是 root，SFTP 直接 get 会报 EACCES；面板 API 的
+    /files/contents 能读原文，所以默认走 API 下载，SFTP 只用于列目录。
+    """
     import paramiko
     import stat
 
@@ -351,6 +357,20 @@ def backup_remote_data(env: dict[str, str], plugin_ids: list[str]) -> pathlib.Pa
     try:
         sftp = paramiko.SFTPClient.from_transport(transport)
         try:
+            def fetch(remote: str, local: pathlib.Path) -> bool:
+                local.parent.mkdir(parents=True, exist_ok=True)
+                if api is not None:
+                    resp = api.request(
+                        "GET", "/files/contents", params={"file": f"/{remote}"}
+                    )
+                    local.write_bytes(resp.content)
+                    return True
+                try:
+                    sftp.get(remote, str(local))
+                    return True
+                except (IOError, PermissionError):
+                    return False
+
             def download(remote_dir: str, local_dir: pathlib.Path) -> int:
                 count = 0
                 try:
@@ -363,8 +383,7 @@ def backup_remote_data(env: dict[str, str], plugin_ids: list[str]) -> pathlib.Pa
                     local = local_dir / entry.filename
                     if stat.S_ISDIR(entry.st_mode):
                         count += download(remote, local)
-                    else:
-                        sftp.get(remote, str(local))
+                    elif fetch(remote, local):
                         count += 1
                 return count
 
@@ -451,7 +470,11 @@ def main() -> None:
     print("==> 待部署：" + "、".join(f"{p.name} ({p.id})" for p in targets))
 
     if not args.no_remote_backup:
-        backup_remote_data(env, [plugin.id for plugin in targets])
+        saved = backup_remote_data(env, [plugin.id for plugin in targets], api)
+        if saved is None:
+            print("    线上没有可备份的插件数据目录（首次部署）")
+        else:
+            print(f"    回滚副本：{saved}")
 
     uploaded = upload(
         env,
