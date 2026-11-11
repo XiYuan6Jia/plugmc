@@ -1,0 +1,38 @@
+enabled: true
+
+pack:
+  # builtin = 插件内置 HTTP 服务（占用 port）；external = 用你自己托管的外部地址
+  mode: builtin
+  # external 模式下填完整 URL，例如 https://cdn.example.com/plugmc-music.zip
+  external-url: ""
+  # 玩家实际请求的地址（builtin 模式下也要填对外可访问的域名/端口）
+  public-url: "http://q1.minekuai.com:20103/plugmc-music.zip"
+  # 资源包版本号；客户端兼容性提示时调整这个值
+  format: 121
+  # 监听地址，留空 = 0.0.0.0
+  bind-address: ""
+  # 内置下载服务端口（测试服已分配 20101-20105，20103 空闲）
+  port: 20103
+  # 玩家进服后延迟多少 tick 下发资源包
+  join-delay-ticks: 60
+  # true = 玩家必须接受资源包才能进服
+  required: false
+  prompt: "&6服务器自定义唱片资源包"
+
+disc:
+  # 唱片物品使用的材质（外观仍由客户端资源包决定）
+  material: MUSIC_DISC_13
+
+playback:
+  # 插件播放音量（1.0 ≈ 16 格）
+  volume: 1.0
+  # 停止时清理附近玩家的声音范围（格）
+  range: 32
+  # 玩家下线时停止播放
+  stop-on-quit: true
+
+datapack:
+  # 数据包格式（26.3 = 121），用于 /music export 生成的 pack.mcmeta
+  format: 121
+  # 数据包命名空间，同时是 jukebox_song 与声音事件的命名空间
+  namespace: plugmc
