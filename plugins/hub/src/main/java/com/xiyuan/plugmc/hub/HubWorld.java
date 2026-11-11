@@ -62,7 +62,9 @@ public final class HubWorld {
 
 	public void applyRules(HubConfig config) {
 		world.setAutoSave(true);
-		world.setDifficulty(Difficulty.PEACEFUL);
+		// 和平难度会自动补满饱食度并持续回血，主城默认使用普通难度；
+		// 禁刷怪由 protect.deny-mob-spawn 与 SPAWN_MOBS 游戏规则负责。
+		world.setDifficulty(parseDifficulty(config.difficulty()));
 		world.setStorm(false);
 		world.setThundering(false);
 		world.setTime(6000L);
@@ -73,6 +75,21 @@ public final class HubWorld {
 		world.setGameRule(GameRules.MOB_GRIEFING, false);
 		world.setGameRule(GameRules.KEEP_INVENTORY, true);
 		world.setSpawnLocation(spawn(config));
+		plugin.getLogger().info("主城世界规则：难度 " + world.getDifficulty()
+			+ "，禁刷怪 " + config.denyMobSpawn()
+			+ "，锁血 " + config.lockHealth()
+			+ "，锁饱食度 " + config.lockFood());
+	}
+
+	private Difficulty parseDifficulty(String raw) {
+		if (raw != null) {
+			for (Difficulty value : Difficulty.values()) {
+				if (value.name().equalsIgnoreCase(raw.trim())) {
+					return value;
+				}
+			}
+		}
+		return Difficulty.NORMAL;
 	}
 
 	/** 返回 true 表示这次真的重新生成了大厅。 */

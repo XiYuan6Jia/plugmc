@@ -73,6 +73,9 @@ public final class HubCommand implements CommandExecutor, TabCompleter {
 			+ " &7跑酷：&f" + (plugin.parkour() != null && plugin.parkour().course() != null
 				? config.parkourEnabled() ? "已启用" : "已关闭"
 				: "未生成")));
+		sender.sendMessage(HubText.component("&7难度：&f" + plugin.hubWorld().world().getDifficulty()
+			+ " &7锁血：&f" + config.lockHealth()
+			+ " &7锁饱食度：&f" + config.lockFood()));
 	}
 
 	private void check(CommandSender sender) {

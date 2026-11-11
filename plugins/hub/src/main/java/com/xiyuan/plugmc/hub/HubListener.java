@@ -86,6 +86,13 @@ public final class HubListener implements Listener {
 			return;
 		}
 		event.setRespawnLocation(plugin.hubWorld().spawn(config));
+		Player player = event.getPlayer();
+		// 重生后血量/饱食度已被重置，用新值重新锁定
+		plugin.getServer().getScheduler().runTask(plugin, () -> {
+			if (player.isOnline()) {
+				plugin.vitals().capture(player);
+			}
+		});
 	}
 
 	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -129,8 +136,13 @@ public final class HubListener implements Listener {
 		if (!plugin.hubWorld().isHub(player.getLocation())) {
 			return;
 		}
-		// 吃东西仍然允许，其余（饥饿消耗等）全部冻结
+		// 吃东西仍然允许，吃到的结果成为新的锁定值；其余（饥饿消耗等）全部冻结
 		if (event.getItem() != null) {
+			plugin.getServer().getScheduler().runTask(plugin, () -> {
+				if (player.isOnline()) {
+					plugin.vitals().updateFood(player);
+				}
+			});
 			return;
 		}
 		event.setCancelled(true);
@@ -146,8 +158,8 @@ public final class HubListener implements Listener {
 			return;
 		}
 		EntityRegainHealthEvent.RegainReason reason = event.getRegainReason();
-		if (reason == EntityRegainHealthEvent.RegainReason.REGEN
-			|| reason == EntityRegainHealthEvent.RegainReason.SATIATED) {
+		if (reason != EntityRegainHealthEvent.RegainReason.CUSTOM) {
+			// 饥饿/饱和/和平难度/药水等一切回血都关闭，避免主城内被补满血量
 			event.setCancelled(true);
 		}
 	}
@@ -176,13 +188,19 @@ public final class HubListener implements Listener {
 		if (leftHub && plugin.parkour() != null) {
 			plugin.parkour().onLeaveHub(event.getPlayer());
 		}
+		if (leftHub) {
+			plugin.vitals().release(event.getPlayer().getUniqueId());
+		}
 		if (plugin.hubWorld().isHub(event.getTo()) && !plugin.hubWorld().isHub(event.getFrom())) {
 			plugin.hubManager().rememberOnEnter(event.getPlayer(), event.getFrom());
+			// 传送事件在位置变更前触发，此时记录的是真正的进入前状态
+			plugin.vitals().capture(event.getPlayer());
 		}
 	}
 
 	@EventHandler
 	public void onQuit(PlayerQuitEvent event) {
+		plugin.vitals().release(event.getPlayer().getUniqueId());
 		if (plugin.parkour() != null) {
 			plugin.parkour().onQuit(event.getPlayer());
 		}
@@ -190,10 +208,15 @@ public final class HubListener implements Listener {
 
 	@EventHandler
 	public void onJoin(PlayerJoinEvent event) {
+		Player player = event.getPlayer();
+		plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+			if (player.isOnline() && plugin.hubWorld().isHub(player.getLocation())) {
+				plugin.vitals().capture(player);
+			}
+		}, 2L);
 		if (!plugin.settings().joinAuto()) {
 			return;
 		}
-		Player player = event.getPlayer();
 		plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
 			if (player.isOnline()) {
 				plugin.hubManager().performEnter(player);

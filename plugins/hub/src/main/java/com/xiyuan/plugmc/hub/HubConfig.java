@@ -17,6 +17,7 @@ public record HubConfig(
 	float spawnPitch,
 	String title,
 	String subtitle,
+	String difficulty,
 	boolean joinAuto,
 	int teleportWarmupSeconds,
 	boolean respawnInHub,
@@ -26,6 +27,7 @@ public record HubConfig(
 	boolean denyMobSpawn,
 	boolean noFallDamage,
 	boolean lockFood,
+	boolean lockHealth,
 	boolean noNaturalRegen,
 	boolean parkourEnabled,
 	boolean parkourAnnounce
@@ -50,6 +52,7 @@ public record HubConfig(
 			(float) config.getDouble("spawn.pitch", 0.0),
 			config.getString("text.title", "&6&l主城大厅"),
 			config.getString("text.subtitle", "&7/menu 打开菜单 · &f/hub back &7返回原位置"),
+			config.getString("protect.difficulty", "NORMAL"),
 			config.getBoolean("teleport.join-auto", false),
 			config.getInt("teleport.warmup-seconds", 3),
 			config.getBoolean("teleport.respawn-in-hub", true),
@@ -59,6 +62,7 @@ public record HubConfig(
 			config.getBoolean("protect.deny-mob-spawn", true),
 			config.getBoolean("protect.no-fall-damage", true),
 			config.getBoolean("protect.lock-food", true),
+			config.getBoolean("protect.lock-health", true),
 			config.getBoolean("protect.no-natural-regen", true),
 			config.getBoolean("parkour.enabled", true),
 			config.getBoolean("parkour.announce-records", true)

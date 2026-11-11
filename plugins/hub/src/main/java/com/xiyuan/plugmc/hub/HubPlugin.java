@@ -14,6 +14,7 @@ public final class HubPlugin extends JavaPlugin {
 	private HubWorld hubWorld;
 	private HubManager hubManager;
 	private HubTeleportManager teleports;
+	private HubVitals vitals;
 	private HubReturns hubReturns;
 	private ParkourManager parkour;
 	private ParkourCourse parkourCourse;
@@ -36,6 +37,8 @@ public final class HubPlugin extends JavaPlugin {
 		hubManager = new HubManager(this, hubReturns);
 		teleports = new HubTeleportManager(this);
 		getServer().getPluginManager().registerEvents(teleports, this);
+		vitals = new HubVitals(this);
+		vitals.start();
 
 		parkour = new ParkourManager(this);
 		parkour.load();
@@ -56,6 +59,10 @@ public final class HubPlugin extends JavaPlugin {
 
 	@Override
 	public void onDisable() {
+		if (vitals != null) {
+			vitals.stop();
+			vitals = null;
+		}
 		getLogger().info("主城大厅 已停用");
 	}
 
@@ -77,6 +84,10 @@ public final class HubPlugin extends JavaPlugin {
 
 	public HubTeleportManager teleports() {
 		return teleports;
+	}
+
+	public HubVitals vitals() {
+		return vitals;
 	}
 
 	public HubReturns hubReturns() {
