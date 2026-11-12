@@ -29,16 +29,15 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import deploy_test as dt  # noqa: E402
 
 PLUGIN_COUNT_RE = re.compile(r"Server Plugins \((\d+)\)", re.IGNORECASE)
-BUKKIT_LIST_RE = re.compile(r"Bukkit Plugins:\s*(.*)", re.IGNORECASE | re.DOTALL)
 VERSION_BEHIND_RE = re.compile(r"You are (\d+) version\(s\) behind", re.IGNORECASE)
 PAPER_VERSION_RE = re.compile(r"Paper version ([^\s(]+)", re.IGNORECASE)
+VERSION_READY_RE = re.compile(r"version\(s\) behind|This server is running", re.IGNORECASE)
 PLAYERS_RE = re.compile(r"There are (\d+) of a max of (\d+) players online:?\s*(.*)", re.IGNORECASE)
 DATAPACK_RE = re.compile(r"There are (\d+) data pack\(s\) enabled:\s*(.*)", re.IGNORECASE | re.DOTALL)
 TPS_RE = re.compile(r"TPS from last 1m, 5m, 15m:\s*([\d.,\s]+)", re.IGNORECASE)
 
 # /plugins 回显里常混进别的日志行（玩家动态、跑酷纪录等），需要剥掉时间戳前缀
 LOG_PREFIX_RE = re.compile(r"\[[\d:]{8}\]\s*\[[^\]]*\]\s*:?\s*")
-PLUGIN_TOKEN_RE = re.compile(r"[A-Za-z0-9_.\-]{2,32}")
 
 PROPS_OF_INTEREST = (
     "server-port", "online-mode", "white-list", "enforce-whitelist",
@@ -60,8 +59,14 @@ def build_api() -> dt.Api:
     return dt.Api(base, dt.need(env, "MINEKUAI_API_KEY"), dt.need(env, "MINEKUAI_SERVER_ID"))
 
 
-def send_command(api: dt.Api, command: str, timeout: float = 15.0) -> str:
-    """发一条控制台命令，返回执行后新增的日志片段（与 deploy_datapack.send_command 同实现）。"""
+def send_command(
+    api: dt.Api, command: str, timeout: float = 15.0, expect: re.Pattern | None = None
+) -> str:
+    """发一条控制台命令，返回执行后新增的日志片段。
+
+    给了 expect 就一直轮询到该正则命中（或超时）——线上玩家在说话时日志会不断增长，
+    只看「有无新内容」会被无关日志提前劝退，导致解析失败。
+    """
     import time
 
     before = api.log()
@@ -72,6 +77,10 @@ def send_command(api: dt.Api, command: str, timeout: float = 15.0) -> str:
         time.sleep(1.0)
         log = api.log()
         fresh = log[len(before):] if log.startswith(before) else log
+        if expect is not None:
+            if expect.search(fresh):
+                return fresh
+            continue
         if fresh.strip():
             return fresh
     return fresh
@@ -142,20 +151,20 @@ def main() -> int:
     snap["state"] = api.state()
     print(f"\n[实例] state={snap['state']}")
 
-    out = send_command(api, "version")
+    out = send_command(api, "version", expect=VERSION_READY_RE)
     m = PAPER_VERSION_RE.search(out)
     b = VERSION_BEHIND_RE.search(out)
     snap["paper_version"] = m.group(1) if m else None
     snap["version_behind"] = int(b.group(1)) if b else None
     print(f"[版本] {snap['paper_version'] or '解析失败'}   落后 {snap['version_behind']} 版")
 
-    out = send_command(api, "tps")
+    out = send_command(api, "tps", expect=TPS_RE)
     m = TPS_RE.search(out)
     snap["tps"] = m.group(1).strip() if m else None
     print(f"[TPS] {snap['tps'] or '解析失败'}")
 
     # ---- 插件 ----
-    out = send_command(api, "plugins", timeout=20.0)
+    out = send_command(api, "plugins", timeout=25.0, expect=PLUGIN_COUNT_RE)
     count_m = PLUGIN_COUNT_RE.search(out)
     snap["plugins_runtime_count"] = int(count_m.group(1)) if count_m else None
     if count_m:
@@ -184,7 +193,7 @@ def main() -> int:
     snap["plugins_jars"] = sorted(jars)
 
     # ---- 在线玩家 ----
-    out = send_command(api, "list")
+    out = send_command(api, "list", expect=PLAYERS_RE)
     m = PLAYERS_RE.search(out)
     if m:
         names = [x.strip() for x in m.group(3).split(",") if x.strip()]
@@ -192,7 +201,7 @@ def main() -> int:
         print(f"\n[在线] {m.group(1)}/{m.group(2)}  {', '.join(names) if names else '(无)'}")
 
     # ---- 数据包 ----
-    out = send_command(api, "datapack list", timeout=20.0)
+    out = send_command(api, "datapack list", timeout=25.0, expect=DATAPACK_RE)
     m = DATAPACK_RE.search(out)
     if m:
         # 明细行后面可能粘着下一条日志（如 "There are no more data packs available"），剥掉
