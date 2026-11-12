@@ -152,7 +152,7 @@ final class CosmeticDisplays {
 			}
 			return display;
 		} catch (RuntimeException exception) {
-			plugin.getLogger().warning("生成装饰实体失败（槽位 " + slot.id() + "）：" + exception.getMessage());
+			plugin.getLogger().warning("生成装饰实体失败（部位 " + slot.id() + "）：" + exception.getMessage());
 			return null;
 		}
 	}

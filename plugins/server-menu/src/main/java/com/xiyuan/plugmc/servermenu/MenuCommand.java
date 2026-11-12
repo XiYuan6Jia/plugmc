@@ -77,7 +77,7 @@ public final class MenuCommand implements CommandExecutor {
 			try {
 				slot = Integer.parseInt(args[2]);
 			} catch (NumberFormatException exception) {
-				sender.sendMessage("槽位必须是非负整数：" + args[2]);
+				sender.sendMessage("位置必须是非负整数：" + args[2]);
 				return true;
 			}
 			org.bukkit.inventory.InventoryView view = target.getOpenInventory();
@@ -90,7 +90,7 @@ public final class MenuCommand implements CommandExecutor {
 			return true;
 		}
 		if (args.length != 0) {
-			sender.sendMessage("用法：/menu [reload]、/menu click <玩家> <槽位> 或（控制台）/menu <玩家>");
+			sender.sendMessage("用法：/menu [reload]、/menu click <玩家> <格号> 或（控制台）/menu <玩家>");
 			return true;
 		}
 		if (!(sender instanceof Player player)) {

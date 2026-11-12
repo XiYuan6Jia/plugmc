@@ -87,7 +87,7 @@ final class CosmeticListener implements Listener {
 
 	private void handleSlot(Player player, CosmeticConfig.Slot slot) {
 		if (slot.permission() != null && !slot.permission().isBlank() && !player.hasPermission(slot.permission())) {
-			player.sendMessage(CosmeticText.component("&c你没有使用这个槽位的权限"));
+			player.sendMessage(CosmeticText.component("&c这个部位还没有解锁"));
 			return;
 		}
 
@@ -111,7 +111,7 @@ final class CosmeticListener implements Listener {
 		// 放入：取主手物品
 		ItemStack inHand = player.getInventory().getItemInMainHand();
 		if (inHand.getType().isAir()) {
-			player.sendMessage(CosmeticText.component("&7把要当作外观的物品拿在主手，再点这个槽位"));
+			player.sendMessage(CosmeticText.component("&7先把要挂的物品拿在手里，再点这个部位"));
 			return;
 		}
 		ItemStack single = inHand.clone();

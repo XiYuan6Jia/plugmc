@@ -74,7 +74,7 @@ public final class CosmeticPlugin extends JavaPlugin {
 		}
 
 		syncTask = Bukkit.getScheduler().runTaskTimer(this, this::tickAll, 1L, config.syncIntervalTicks);
-		getLogger().info("装备外观已启用：" + config.slots.size() + " 个槽位，"
+		getLogger().info("装备外观已启用：" + config.slots.size() + " 个部位，"
 			+ (config.attributesEnabled ? "属性透传开" : "属性透传关")
 			+ "，同步间隔 " + config.syncIntervalTicks + " tick");
 	}

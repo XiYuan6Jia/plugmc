@@ -135,7 +135,7 @@ final class CosmeticConfig {
 			}
 		}
 		if (slots.isEmpty()) {
-			plugin.getLogger().warning("配置里没有任何槽位定义，装备外观将不可用");
+			plugin.getLogger().warning("配置里没有任何部位定义，装备外观将不可用");
 		}
 
 		Map<String, Integer> slotIndex = new LinkedHashMap<>();

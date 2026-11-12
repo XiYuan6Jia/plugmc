@@ -3,7 +3,7 @@ version: '${version}'
 main: com.xiyuan.plugmc.cosmetic.CosmeticPlugin
 api-version: '${api_version}'
 authors: [XiYuan6Jia]
-description: "装备外观：把任意物品挂到玩家身上显示，不改客户端、不用资源包"
+description: "装备外观：把任意物品挂到头顶、肩侧、背后、腰间或环绕显示"
 commands:
   cosmetic:
     description: "打开装备外观界面"

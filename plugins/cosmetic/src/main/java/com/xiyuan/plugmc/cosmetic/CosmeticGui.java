@@ -100,10 +100,9 @@ final class CosmeticGui {
 
 	private List<Component> loreFor(CosmeticConfig.Slot slot, boolean filled) {
 		List<Component> lore = new ArrayList<>();
-		lore.add(CosmeticText.component("&7槽位：&f" + slot.id()));
 		lore.add(CosmeticText.component(filled ? "&7点击取下，物品还回背包" : "&7把物品拿在手里点击放入"));
 		if (slot.permission() != null && !slot.permission().isBlank()) {
-			lore.add(CosmeticText.component("&8需要权限：" + slot.permission()));
+			lore.add(CosmeticText.component("&8这个部位还没有解锁"));
 		}
 		return lore;
 	}
@@ -112,10 +111,9 @@ final class CosmeticGui {
 		int used = wardrobe.count(player.getUniqueId());
 		int total = config.slots.size();
 		return buttonRaw(Material.BOOK, "&b装备外观",
-			"&7已用槽位：&f" + used + "&7/&f" + total,
+			"&7已用部位：&f" + used + "&7/&f" + total,
 			"&7放进去的物品取下后原样归还",
-			"&7属性透传：&f" + (config.attributesEnabled ? "开" : "关"),
-			"&8不改客户端，不用资源包");
+			"&7手里拿着物品点击部位即可挂上");
 	}
 
 	private ItemStack button(Material material, String name, List<Component> loreLines) {

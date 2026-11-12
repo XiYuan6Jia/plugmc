@@ -97,7 +97,7 @@ final class CosmeticWardrobe {
 		try {
 			return CosmeticItems.decode(encoded);
 		} catch (IllegalArgumentException exception) {
-			plugin.getLogger().warning("玩家 " + playerId + " 的槽位 " + slotId + " 数据损坏，已跳过：" + exception.getMessage());
+			plugin.getLogger().warning("玩家 " + playerId + " 的部位 " + slotId + " 数据损坏，已跳过：" + exception.getMessage());
 			return null;
 		}
 	}
@@ -139,7 +139,7 @@ final class CosmeticWardrobe {
 		try {
 			return CosmeticItems.decode(encoded);
 		} catch (IllegalArgumentException exception) {
-			plugin.getLogger().warning("玩家 " + playerId + " 的槽位 " + slotId + " 数据损坏：" + exception.getMessage());
+			plugin.getLogger().warning("玩家 " + playerId + " 的部位 " + slotId + " 数据损坏：" + exception.getMessage());
 			return null;
 		}
 	}
@@ -156,7 +156,7 @@ final class CosmeticWardrobe {
 			try {
 				out.add(CosmeticItems.decode(entry.getValue()));
 			} catch (IllegalArgumentException exception) {
-				plugin.getLogger().warning("清空时跳过损坏的槽位 " + entry.getKey() + "：" + exception.getMessage());
+				plugin.getLogger().warning("清空时跳过损坏的部位 " + entry.getKey() + "：" + exception.getMessage());
 			}
 		}
 		return out;

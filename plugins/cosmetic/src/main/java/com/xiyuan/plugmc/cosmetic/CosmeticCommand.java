@@ -48,7 +48,7 @@ final class CosmeticCommand implements CommandExecutor, TabCompleter {
 					return true;
 				}
 				plugin.reload();
-				sender.sendMessage(CosmeticText.component("&a配置已重新载入：" + plugin.config().slots.size() + " 个槽位"));
+				sender.sendMessage(CosmeticText.component("&a配置已重新载入：" + plugin.config().slots.size() + " 个部位"));
 			}
 			case "clear" -> {
 				Player target = resolve(sender, args.length > 1 ? args[1] : null);
@@ -98,30 +98,30 @@ final class CosmeticCommand implements CommandExecutor, TabCompleter {
 					return true;
 				}
 				sender.sendMessage(CosmeticText.component("&b装备外观诊断"));
-				sender.sendMessage(CosmeticText.component("&7槽位定义：&f" + plugin.config().slots.size()
-					+ " &7属性透传：&f" + plugin.config().attributesEnabled));
-				sender.sendMessage(CosmeticText.component("&7活动装饰实体：&f" + plugin.displayDisplays().activeCount()
-					+ " &7透传修饰符：&f" + plugin.attributes().activeModifierCount()));
+				sender.sendMessage(CosmeticText.component("&7可用部位：&f" + plugin.config().slots.size()
+					+ " &7属性加成：&f" + (plugin.config().attributesEnabled ? "开" : "关")));
+				sender.sendMessage(CosmeticText.component("&7正在显示的外观：&f" + plugin.displayDisplays().activeCount()
+					+ " &7生效的属性条目：&f" + plugin.attributes().activeModifierCount()));
 				Player self = asPlayer(sender);
 				if (self != null) {
-					self.sendMessage(CosmeticText.component("&7你的槽位：&f"
+					self.sendMessage(CosmeticText.component("&7你的部位：&f"
 						+ plugin.wardrobe().slotIds(self.getUniqueId())));
 				}
 			}
 			case "wear" -> {
 				Player target = resolve(sender, args.length > 2 ? args[2] : null);
 				if (target == null) {
-					sender.sendMessage(CosmeticText.component("&7用法：/cosmetic wear <槽位> [玩家]"));
-					sender.sendMessage(CosmeticText.component("&7控制台可用：/cosmetic wear head CosProbe"));
+					sender.sendMessage(CosmeticText.component("&7用法：/cosmetic wear <部位> [玩家]"));
+					sender.sendMessage(CosmeticText.component("&7控制台可用：/cosmetic wear <部位> <玩家>"));
 					return true;
 				}
 				if (args.length < 2) {
-					sender.sendMessage(CosmeticText.component("&7用法：/cosmetic wear <槽位> [玩家]"));
+					sender.sendMessage(CosmeticText.component("&7用法：/cosmetic wear <部位> [玩家]"));
 					return true;
 				}
 				CosmeticConfig.Slot slot = plugin.config().slot(args[1]);
 				if (slot == null) {
-					sender.sendMessage(CosmeticText.component("&c没有这个槽位：" + args[1]));
+					sender.sendMessage(CosmeticText.component("&c没有这个部位：" + args[1]));
 					return true;
 				}
 				ItemStack inHand = target.getInventory().getItemInMainHand();
@@ -137,31 +137,31 @@ final class CosmeticCommand implements CommandExecutor, TabCompleter {
 			case "unwear" -> {
 				Player target = resolve(sender, args.length > 2 ? args[2] : null);
 				if (target == null) {
-					sender.sendMessage(CosmeticText.component("&7用法：/cosmetic unwear <槽位> [玩家]"));
-					sender.sendMessage(CosmeticText.component("&7控制台可用：/cosmetic unwear head CosProbe"));
+					sender.sendMessage(CosmeticText.component("&7用法：/cosmetic unwear <部位> [玩家]"));
+					sender.sendMessage(CosmeticText.component("&7控制台可用：/cosmetic unwear <部位> <玩家>"));
 					return true;
 				}
 				if (args.length < 2) {
-					sender.sendMessage(CosmeticText.component("&7用法：/cosmetic unwear <槽位> [玩家]"));
+					sender.sendMessage(CosmeticText.component("&7用法：/cosmetic unwear <部位> [玩家]"));
 					return true;
 				}
 				CosmeticConfig.Slot slot = plugin.config().slot(args[1]);
 				if (slot == null) {
-					sender.sendMessage(CosmeticText.component("&c没有这个槽位：" + args[1]));
+					sender.sendMessage(CosmeticText.component("&c没有这个部位：" + args[1]));
 					return true;
 				}
 				ItemStack removed = plugin.gui().unwear(target, slot);
 				plugin.attributes().refresh(target);
 				plugin.refresh(target);
 				sender.sendMessage(CosmeticText.component(removed == null
-					? "&7这个槽位是空的"
+					? "&7这个部位是空的"
 					: "&e已取下 " + slot.name() + " &7的物品"));
 			}
 			case "gui" -> {
 				Player target = resolve(sender, args.length > 1 ? args[1] : null);
 				if (target == null) {
 					sender.sendMessage(CosmeticText.component("&7用法：/cosmetic gui [玩家]"));
-					sender.sendMessage(CosmeticText.component("&7控制台可用：/cosmetic gui <玩家名>"));
+					sender.sendMessage(CosmeticText.component("&7控制台可用：/cosmetic gui <玩家>"));
 					return true;
 				}
 				if (!target.equals(asPlayer(sender)) && !sender.hasPermission("cosmetic.admin")) {
@@ -179,10 +179,10 @@ final class CosmeticCommand implements CommandExecutor, TabCompleter {
 					}
 					sb.append(slot.id());
 				}
-				sender.sendMessage(CosmeticText.component("&7可用槽位：&f" + sb));
+				sender.sendMessage(CosmeticText.component("&7可用部位：&f" + sb));
 			}
 			default -> sender.sendMessage(CosmeticText.component(
-				"&7用法：/cosmetic [gui [玩家]|reload|clear [玩家]|toggle [玩家]|debug|wear <槽位> [玩家]|unwear <槽位> [玩家]|slots]"));
+				"&7用法：/cosmetic [gui [玩家]|reload|clear [玩家]|toggle [玩家]|debug|wear <部位> [玩家]|unwear <部位> [玩家]|slots]"));
 		}
 		return true;
 	}

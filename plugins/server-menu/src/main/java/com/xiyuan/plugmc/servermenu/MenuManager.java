@@ -146,6 +146,40 @@ public final class MenuManager {
 	 * 被占用就找第一个空格；只有菜单真的排满才报错。
 	 * 绝不整体重置 menu.items —— 线上配置的按钮顺序与自定义文案必须保留。
 	 */
+	/**
+	 * 把旧版本写进配置、但已经不适合给玩家看的按钮文案换掉。
+	 * 只动下面这张表里精确匹配的原文，其余（服主自己改过的）一律不碰。
+	 */
+	private void migrateBuiltinLore() {
+		Map<String, String> replacements = Map.of(
+			"&7不影响原版装备栏与属性，取下物品仍在", "&7随时能取下，物品原样回到背包",
+			"不影响原版装备栏与属性，取下物品仍在", "随时能取下，物品原样回到背包"
+		);
+		ConfigurationSection configuredButtons = plugin.getConfig().getConfigurationSection("menu.items");
+		if (configuredButtons == null) {
+			return;
+		}
+		boolean changed = false;
+		for (String key : configuredButtons.getKeys(false)) {
+			String path = "menu.items." + key + ".lore";
+			List<String> lore = plugin.getConfig().getStringList(path);
+			if (lore.isEmpty()) {
+				continue;
+			}
+			List<String> updated = new ArrayList<>(lore.size());
+			for (String line : lore) {
+				updated.add(replacements.getOrDefault(line, line));
+			}
+			if (!updated.equals(lore)) {
+				plugin.getConfig().set(path, updated);
+				changed = true;
+			}
+		}
+		if (changed) {
+			plugin.getLogger().info("已刷新内置按钮文案");
+		}
+	}
+
 	private void ensureCosmeticButton(YamlConfiguration defaults) {
 		ConfigurationSection configuredButtons = plugin.getConfig().getConfigurationSection("menu.items");
 		if (configuredButtons == null) {
@@ -156,6 +190,7 @@ public final class MenuManager {
 				plugin.getConfig().getString("menu.items." + key + ".action", "")
 			));
 		if (hasCosmetic) {
+			migrateBuiltinLore();
 			return;
 		}
 		ConfigurationSection defaultButtons = defaults.getConfigurationSection("menu.items");
@@ -610,7 +645,7 @@ public final class MenuManager {
 		}
 		boolean installed = plugin.getServer().getPluginManager().isPluginEnabled("hub");
 		if (!installed) {
-			holder.setButtonItem(22, navigationItem(Material.BARRIER, "&c主城插件未加载"));
+			holder.setButtonItem(22, navigationItem(Material.BARRIER, "&c主城暂时不可用"));
 			holder.setButtonItem(45, navigationItem(Material.ARROW, "&e返回菜单"));
 			holder.setButtonItem(49, navigationItem(Material.BARRIER, "&c关闭"));
 			player.openInventory(holder.getInventory());
@@ -673,7 +708,7 @@ public final class MenuManager {
 					holder.setButtonItem(slot, filler.clone());
 				}
 			}
-			holder.setButtonItem(22, navigationItem(Material.BARRIER, "&c装备外观插件未加载"));
+			holder.setButtonItem(22, navigationItem(Material.BARRIER, "&c这个功能暂时不可用"));
 			holder.setButtonItem(45, navigationItem(Material.ARROW, "&e返回菜单"));
 			holder.setButtonItem(49, navigationItem(Material.BARRIER, "&c关闭"));
 			player.openInventory(holder.getInventory());
