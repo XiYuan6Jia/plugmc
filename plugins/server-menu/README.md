@@ -8,6 +8,9 @@
 | --- | --- |
 | `/menu`、`/servermenu` | 打开服务器菜单 |
 | `/moneyhud` | 开关右侧金币 HUD |
+| `/menu reload` | 重载菜单配置（`server-menu.admin`） |
+| `/menu <玩家>` | 控制台/RCON 代玩家打开菜单（`server-menu.admin`） |
+| `/menu click <玩家> <槽位>` | 控制台/RCON 等价触发某一格（`server-menu.admin`），用于在没有玩家的自动化环境里验证按钮跳转 |
 
 潜行时按副手交换键（默认 `Shift+F`）也可打开菜单。玩家入服提示仅发送给该玩家。
 
@@ -32,6 +35,7 @@
 | 余额排行 | `/baltop` |
 | 经济管理 | 统计、自检、演练、财政注入/发放、冻结/解冻、流水查询（`server-menu.admin`，默认 OP） |
 | 主城大厅 | 打开大厅子页：进入大厅、返回原位置、主城信息，管理员另有设置出生点/重建大厅/结构自检（`hub.use`，管理员按钮需 `hub.admin`） |
+| 装备外观 | 直接打开 `cosmetic` 插件的外观界面（任意物品挂到头顶/肩侧/背后/腰间/环绕），权限由 `cosmetic.use` 判定 |
 
 ### 主城大厅子页
 
@@ -49,6 +53,19 @@
 | 45 / 49 | 返回主菜单 / 关闭 | — |
 
 `hub` 插件未加载时子页会显示「主城插件未加载」。
+
+### 装备外观入口
+
+槽位 24 的「装备外观」按钮 `action: cosmetic_panel`，点击后由菜单把 `cosmetic` 的外观界面推给玩家：
+
+- 槽位渲染与物品读写全部留在 `cosmetic` 内部，菜单只做导航，**两个插件之间没有硬依赖**
+  （`server-menu` 仍然只 `depend: [economy]`）。
+- `cosmetic` 未加载时，这一格会打开一个占位界面并显示「装备外观插件未加载」，不会报错。
+- 权限判定交给 `cosmetic` 自己的 `cosmetic.use`，所以按钮上不写 `permission:` ——
+  这样菜单配置里不需要知道 cosmetic 的权限名。
+- 默认槽位是 24。升级时由 `ensureCosmeticButton` 保守合并：已有 `cosmetic_panel` 就不动；
+  24 被占就找第一个空位；菜单满只打一条 warning，**不会**像 `config-version` 升级那样
+  重置 `menu.items`。线上自定义布局因此不会被清掉。
 
 经济按钮通过 `menu.items.<slot>.action: player_command` 调用对应命令；权限分别使用
 `economy.shop.use`、`economy.market.use`、`economy.auction.use`、`economy.order.use`、
@@ -103,6 +120,7 @@ menu:
 | 头部 | 4 | 服务器菜单，显示玩家、余额、签到、账户状态 |
 | 我的 | 11 / 13 / 15 / 20 / 22 | 余额、签到、邮箱、金币 HUD、余额排行 |
 | 交易 | 28 / 30 / 32 / 34 / 40 / 44 | 系统商店、玩家市场、拍卖行、收购订单、建材银行、玩家骑乘 |
+| 装备 | 24 | 装备外观（打开 cosmetic 界面） |
 | 社交与信息 | 37 / 39 / 41 / 43 | 申请传送、直接交易、插件列表、服务器帮助 |
 | 底部 | 48 / 50 | 经济管理（仅管理员）、关闭菜单 |
 
@@ -118,6 +136,7 @@ menu:
 | `prompt_command` | 关闭菜单后让玩家在聊天栏输入，再把 `{input}` 代入 `value` 执行命令 |
 | `economy_admin` | 打开经济管理面板 |
 | `hub_panel` | 打开主城大厅子页 |
+| `cosmetic_panel` | 打开 `cosmetic` 的装备外观界面（未加载时显示占位页） |
 | `none` | 无操作（用于标题、装饰） |
 | `close` | 关闭菜单 |
 

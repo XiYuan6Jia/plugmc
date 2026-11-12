@@ -60,6 +60,14 @@ menu:
       action: player_command
       value: "baltop"
       permission: economy.balance.top
+    "24":
+      material: LEATHER_CHESTPLATE
+      name: "&d装备外观"
+      lore:
+        - "&7把任意物品挂到头顶、肩侧、背后、腰间或环绕"
+        - "&7不影响原版装备栏与属性，取下物品仍在"
+        - "&8点击打开外观界面"
+      action: cosmetic_panel
 
     # 第二区：交易
     "28":

@@ -27,7 +27,7 @@ import java.util.Set;
 public final class MenuManager {
 	private static final Set<String> ACTIONS = Set.of(
 		"balance", "toggle_hud", "message", "player_command", "console_command", "plugin_list",
-		"economy_admin", "hub_panel", "prompt_command", "daily", "none", "close"
+		"economy_admin", "hub_panel", "cosmetic_panel", "prompt_command", "daily", "none", "close"
 	);
 	private static final int PLUGIN_PAGE_CAPACITY = 45;
 	private static final int CONFIG_VERSION = 15;
@@ -135,8 +135,69 @@ public final class MenuManager {
 		}
 
 		ensurePluginListButton(defaults);
+		ensureCosmeticButton(defaults);
 		migrateConfigVersion(defaults);
 		plugin.saveConfig();
+	}
+
+	/**
+	 * 把「装备外观」按钮增量合并进已有配置。
+	 * 与 ensurePluginListButton 同样的保守策略：优先占用默认槽位（24），
+	 * 被占用就找第一个空格；只有菜单真的排满才报错。
+	 * 绝不整体重置 menu.items —— 线上配置的按钮顺序与自定义文案必须保留。
+	 */
+	private void ensureCosmeticButton(YamlConfiguration defaults) {
+		ConfigurationSection configuredButtons = plugin.getConfig().getConfigurationSection("menu.items");
+		if (configuredButtons == null) {
+			return;
+		}
+		boolean hasCosmetic = configuredButtons.getKeys(false).stream()
+			.anyMatch(key -> "cosmetic_panel".equalsIgnoreCase(
+				plugin.getConfig().getString("menu.items." + key + ".action", "")
+			));
+		if (hasCosmetic) {
+			return;
+		}
+		ConfigurationSection defaultButtons = defaults.getConfigurationSection("menu.items");
+		if (defaultButtons == null) {
+			return;
+		}
+		Map.Entry<String, ConfigurationSection> defaultEntry = defaultButtons.getKeys(false).stream()
+			.map(key -> Map.entry(key, defaultButtons.getConfigurationSection(key)))
+			.filter(entry -> entry.getValue() != null
+				&& "cosmetic_panel".equalsIgnoreCase(entry.getValue().getString("action", "")))
+			.findFirst()
+			.orElse(null);
+		if (defaultEntry == null) {
+			return;
+		}
+
+		int rows = plugin.getConfig().getInt("menu.rows", 3);
+		int slot = -1;
+		int defaultSlot = Integer.parseInt(defaultEntry.getKey());
+		if (!configuredButtons.getKeys(false).contains(Integer.toString(defaultSlot)) && defaultSlot < rows * 9) {
+			slot = defaultSlot;
+		}
+		for (int candidate = 0; candidate < rows * 9; candidate++) {
+			if (slot >= 0) {
+				break;
+			}
+			if (configuredButtons.getConfigurationSection(Integer.toString(candidate)) == null) {
+				slot = candidate;
+				break;
+			}
+		}
+		if (slot < 0 && rows < 6) {
+			slot = rows * 9;
+			plugin.getConfig().set("menu.rows", rows + 1);
+		}
+		if (slot < 0) {
+			plugin.getLogger().warning("菜单已满，未能自动加入「装备外观」按钮；请手动在 menu.items 留出空位");
+			return;
+		}
+
+		plugin.getConfig().set("menu.items." + slot, defaultEntry.getValue().getValues(false));
+		plugin.getLogger().info("已将「装备外观」按钮合并到菜单位置 " + slot);
 	}
 
 	private void ensurePluginListButton(YamlConfiguration defaults) {
@@ -430,6 +491,15 @@ public final class MenuManager {
 			}
 			return;
 		}
+		if (holder.getPage() == MenuHolder.Page.COSMETIC) {
+			switch (slot) {
+				case 45 -> open(player);
+				case 49 -> player.closeInventory();
+				default -> {
+				}
+			}
+			return;
+		}
 		if (holder.getPage() == MenuHolder.Page.ADMIN) {
 			switch (slot) {
 				case 13 -> promptTreasuryFund(player);
@@ -445,7 +515,8 @@ public final class MenuManager {
 			}
 			return;
 		}
-		if (holder.getPage() == MenuHolder.Page.PLUGINS) {			switch (slot) {
+		if (holder.getPage() == MenuHolder.Page.PLUGINS) {
+			switch (slot) {
 				case PREVIOUS_PAGE_SLOT -> openPluginList(player, holder.getPageNumber() - 1);
 				case MAIN_PAGE_SLOT -> open(player);
 				case NEXT_PAGE_SLOT -> openPluginList(player, holder.getPageNumber() + 1);
@@ -486,6 +557,7 @@ public final class MenuManager {
 			case "plugin_list" -> openPluginList(player, 0);
 			case "economy_admin" -> openAdminPanel(player);
 			case "hub_panel" -> openHubPanel(player);
+			case "cosmetic_panel" -> openCosmeticPanel(player);
 			case "daily" -> {
 				player.performCommand("daily");
 				open(player);
@@ -586,6 +658,36 @@ public final class MenuManager {
 		holder.setButtonItem(45, navigationItem(Material.ARROW, "&e返回菜单"));
 		holder.setButtonItem(49, navigationItem(Material.BARRIER, "&c关闭"));
 		player.openInventory(holder.getInventory());
+	}
+
+	/**
+	 * 装备外观入口：直接把 cosmetic 插件的外观界面推给玩家。
+	 * 菜单只负责导航，槽位渲染与物品读写全部留在 cosmetic 内部，
+	 * 这样两个插件之间不需要相互依赖（server-menu 只 depend economy）。
+	 */
+	public void openCosmeticPanel(Player player) {
+		if (!plugin.getServer().getPluginManager().isPluginEnabled("cosmetic")) {
+			MenuHolder holder = new MenuHolder(54, "&8装备外观", Map.of(), MenuHolder.Page.COSMETIC, 0);
+			if (filler != null) {
+				for (int slot = 0; slot < 54; slot++) {
+					holder.setButtonItem(slot, filler.clone());
+				}
+			}
+			holder.setButtonItem(22, navigationItem(Material.BARRIER, "&c装备外观插件未加载"));
+			holder.setButtonItem(45, navigationItem(Material.ARROW, "&e返回菜单"));
+			holder.setButtonItem(49, navigationItem(Material.BARRIER, "&c关闭"));
+			player.openInventory(holder.getInventory());
+			return;
+		}
+
+		// 不调 closeInventory()：新界面会自然顶掉当前菜单，
+		// 而「先关再开」会把两个数据包挤在同一 tick，客户端偶发只显示旧界面。
+		// 延后 1 tick 执行，避开 InventoryClickEvent 内部的重入。
+		plugin.getServer().getScheduler().runTask(plugin, () -> {
+			if (player.isOnline()) {
+				player.performCommand("cosmetic");
+			}
+		});
 	}
 
 	private ItemStack createItem(Player player, MenuButton button) {
