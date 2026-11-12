@@ -1,0 +1,18 @@
+name: cosmetic
+version: '${version}'
+main: com.xiyuan.plugmc.cosmetic.CosmeticPlugin
+api-version: '${api_version}'
+authors: [XiYuan6Jia]
+description: "装备外观：把任意物品挂到玩家身上显示，不改客户端、不用资源包"
+commands:
+  cosmetic:
+    description: "打开装备外观界面"
+    usage: /cosmetic [gui [player]|clear [player]|toggle [player]|wear <slot> [player]|unwear <slot> [player]|slots|debug|reload]
+    aliases: [cos, zhuangbei]
+permissions:
+  cosmetic.use:
+    description: "使用装备外观功能"
+    default: true
+  cosmetic.admin:
+    description: "管理装备外观：重载配置、查看他人、调试"
+    default: op

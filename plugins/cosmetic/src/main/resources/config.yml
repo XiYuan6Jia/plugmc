@@ -1,0 +1,118 @@
+config-version: 1
+
+# 装备外观：把任意物品挂到玩家身上的若干"装饰槽"里显示出来。
+#
+# 设计要点（改配置前请先读）：
+#  1. 一名玩家只能有 1 个原版直接乘客（Entity#canAddPassenger 是 passengers.isEmpty()），
+#     而 ride 插件已经在用这个位置。所以本插件的所有槽位都**不**当乘客，
+#     而是靠服务端每 tick 算坐标 + teleport + setTeleportDuration 让客户端插值。
+#  2. 槽位坐标是相对玩家的（forward / up / right，单位：格）。yaw 会自动跟随玩家朝向，
+#     pitch 只影响头顶槽（跟随抬头低头）。
+#  3. 槽内物品必须原样保存（ItemStack 字节序列化），装饰实体只拿 clone 渲染。
+
+# 全局开关
+enabled: true
+
+# 同步器节奏
+sync:
+  # 每 tick 同步一次的槽位数上限保护：超过这个数量的槽位会降频
+  # 1 = 每 tick 都同步（最平滑，开销最大）
+  interval-ticks: 1
+  # 玩家移动超过这个距离（格）就立刻同步一次，不等下一个周期
+  move-threshold: 0.05
+  # teleportDuration：客户端插值窗口（tick）。1 最跟手，3 更平滑但有延迟
+  teleport-duration: 2
+  # 只有当玩家周围这个半径（格）内有其他玩家时，才做完整的姿态更新
+  # 单人游戏时降到最低开销；0 = 不做这个优化
+  near-players-radius: 0
+
+# 可见性
+view:
+  # 装饰实体的可见半径（格），超过就不下发实体数据包
+  range: 48.0
+  # true = 只有自己看得到自己的装饰；false = 其他玩家也能看到
+  self-only: false
+
+# 槽位定义
+# id      : 槽位标识（命令与权限用，勿随意改）
+# name    : 界面里显示的名字
+# offset  : [forward, up, right] 相对玩家的偏移（格）
+# scale   : 物品缩放
+# transform: ItemDisplayTransform，可选 NONE / GUI / GROUND / FIXED / HEAD /
+#            FIRSTPERSON_LEFTHAND / FIRSTPERSON_RIGHTHAND / THIRDPERSON_LEFTHAND / THIRDPERSON_RIGHTHAND
+# pitch-follow: true 时，玩家抬头低头也会带动这个槽（头顶槽用）
+# spin    : 每秒自转度数（0 = 不转），让挂饰有点生气
+# permission: 需要这个权限才能往这个槽放东西（留空 = 所有人可放）
+slots:
+  head:
+    name: "&b头顶"
+    offset: [0.0, 2.15, 0.0]
+    scale: 0.55
+    transform: GROUND
+    pitch-follow: true
+    spin: 45
+  shoulder:
+    name: "&a肩侧"
+    offset: [-0.05, 1.35, 0.36]
+    scale: 0.42
+    transform: GROUND
+    pitch-follow: false
+    spin: 0
+  back:
+    name: "&6背后"
+    offset: [-0.32, 1.05, 0.0]
+    scale: 0.62
+    transform: FIXED
+    pitch-follow: false
+    spin: 0
+  waist:
+    name: "&e腰间"
+    offset: [0.0, 0.95, 0.32]
+    scale: 0.38
+    transform: GROUND
+    pitch-follow: false
+    spin: 0
+  orbit:
+    name: "&d环绕"
+    offset: [0.0, 1.20, 0.0]
+    scale: 0.32
+    transform: GROUND
+    pitch-follow: false
+    # 环绕槽：物品绕着玩家转（会被 spin 与 orbit-radius 共同驱动）
+    orbit: true
+    orbit-radius: 0.85
+    spin: 90
+
+# 属性透传：装饰槽里的物品，其 attribute_modifiers 是否生效
+attributes:
+  # true = 把槽内物品的属性修饰符施加到玩家身上（取下即失效）
+  enabled: true
+  # true = 只接受这些 Attribute（空列表 = 全部接受）
+  # 例：只让护甲值与最大生命生效 -> [ARMOR, MAX_HEALTH]
+  whitelist: []
+  # 这些 Attribute 永不透传（防止装饰品变成外挂）
+  blacklist:
+    - MAX_HEALTH
+  # 同一种属性被多个槽同时提供时：true = 叠加，false = 只取绝对值最大的那个
+  stack: true
+
+# 装饰槽里的物品不能被"使用"：吃掉、倒出来、放成方块
+block-use:
+  consume: true
+  block-place: true
+  interact: true
+
+# 界面
+gui:
+  title: "&8装备外观"
+  # 槽位在界面里的位置（0-53，54 格箱子）
+  rows: 6
+  slot-index:
+    head: 10
+    shoulder: 12
+    back: 14
+    waist: 16
+    orbit: 22
+  info-index: 4
+  clear-index: 49
+  close-index: 53
