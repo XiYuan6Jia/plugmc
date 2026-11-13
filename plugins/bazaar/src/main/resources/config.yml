@@ -1,0 +1,78 @@
+# 商业街配置
+#
+# 摊位分两类：
+#   fixed  —— 官方摊位、银行摊位等，坐标手工指定，永远存在、不参与分配
+#   player —— 玩家摊位区，按 x0/z0/x1/z1 的矩形 + spacing 格距自动铺成网格，
+#             玩家发布交易时占用，交易全部结束后解放并还原装饰
+#
+# 摊位占地 5×3（沿 x 宽 5、沿 z 深 3），装饰会压在 floor-y 这一层上，
+# 所以玩家摊位区要挑在已经铺过地面的空地上，且彼此间隔 >= 5 才不会重叠。
+
+world:
+  name: hub
+  floor-y: 64          # 地面所在层（摊位装饰摆在这一层之上）
+
+refresh:
+  ticks: 40            # 多久向经济系统同步一次（40 tick = 2 秒）；10..1200
+
+stalls:
+  # 固定摊位：官方商店、银行、活动摊等。kind 只用于招牌与点击提示。
+  fixed:
+    official:
+      kind: official
+      x: -54
+      z: 28
+    bank:
+      kind: bank
+      x: -40
+      z: 28
+    event:
+      kind: event
+      x: -30
+      z: 28
+
+  # 玩家摊位区：24 个位置（x 方向 6 列 × z 方向 4 行）
+  player:
+    x0: -58
+    z0: 34
+    x1: -26
+    z1: 58
+    spacing: 6
+    facing: 180
+
+  # 随机装饰方案：每次有玩家新上摊时随机挑一套，摊位解放后随摊主一起消失。
+  # 想加风格就往下面追加一条，id 不能重复。
+  decor:
+    - id: quartz
+      base: minecraft:stone_bricks
+      pillar: minecraft:quartz_pillar[axis=y]
+      canopy: minecraft:smooth_quartz
+      carpet: minecraft:white_wool
+    - id: oak
+      base: minecraft:stone_bricks
+      pillar: minecraft:oak_log[axis=y]
+      canopy: minecraft:oak_planks
+      carpet: minecraft:oak_carpet
+    - id: spruce
+      base: minecraft:stone_bricks
+      pillar: minecraft:spruce_log[axis=y]
+      canopy: minecraft:spruce_planks
+      carpet: minecraft:spruce_carpet
+    - id: garden
+      base: minecraft:moss_block
+      pillar: minecraft:oak_log[axis=y]
+      canopy: minecraft:oak_leaves[persistent=true]
+      carpet: minecraft:green_carpet
+    - id: nether
+      base: minecraft:polished_blackstone_bricks
+      pillar: minecraft:blackstone
+      canopy: minecraft:polished_blackstone
+      carpet: minecraft:red_carpet
+    - id: copper
+      base: minecraft:smooth_stone
+      pillar: minecraft:oxidized_copper
+      canopy: minecraft:waxed_oxidized_cut_copper
+      carpet: minecraft:cyan_carpet
+
+  # 招牌最多列几条交易；超出的合并成「…还有 N 项」。调大招牌会往上长，别压到人偶。
+  sign-max-deals: 6

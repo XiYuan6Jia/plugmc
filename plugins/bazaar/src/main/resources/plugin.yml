@@ -1,0 +1,15 @@
+name: bazaar
+version: '${version}'
+main: com.xiyuan.plugmc.bazaar.BazaarPlugin
+api-version: '${api_version}'
+authors: [XiYuan6Jia]
+description: "商业街：把经济系统的挂单/拍卖/求购实时投射成主城的实体摊位"
+depend: [economy]
+commands:
+  bazaar:
+    description: "查看与管理商业街摊位"
+    usage: /bazaar [status|list|rebuild|reload]
+permissions:
+  bazaar.admin:
+    description: "重建摊位、重载商业街配置"
+    default: op

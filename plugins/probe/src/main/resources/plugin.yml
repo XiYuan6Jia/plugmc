@@ -1,0 +1,18 @@
+name: probe
+version: '${version}'
+main: com.xiyuan.plugmc.probe.ProbePlugin
+api-version: '${api_version}'
+description: 测试服专用：以真实玩家身份派发命令，用于没有键鼠注入通道时做端到端验证
+commands:
+  asplayer:
+    description: 以指定玩家身份执行一条命令
+    usage: /asplayer <玩家> <命令...>
+    permission: probe.admin
+  probeblock:
+    description: 读一格方块的真实 id
+    usage: /probeblock <世界> <x> <y> <z>
+    permission: probe.admin
+permissions:
+  probe.admin:
+    description: 允许使用 /asplayer
+    default: op

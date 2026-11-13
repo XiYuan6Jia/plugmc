@@ -1,0 +1,31 @@
+{
+  "name": "主城商业街",
+  "dimension": "minecraft:hub",
+  "y": 65,
+  "floor": {
+    "x0": -60,
+    "z0": 24,
+    "x1": -24,
+    "z1": 62,
+    "mat": "minecraft:smooth_quartz",
+    "depth": 1
+  },
+  "defaults": { "samples": 12, "reload": false },
+  "items": [
+    { "template": "plugmc:arch", "at": [-52, 24] },
+    { "template": "plugmc:arch", "at": [-36, 24] },
+    { "template": "plugmc:arch_ns", "at": [-22, 30], "rotation": 90 },
+    { "template": "plugmc:lamp_post", "at": [-59, 26] },
+    { "template": "plugmc:lamp_post", "at": [-59, 44] },
+    { "template": "plugmc:lamp_post", "at": [-59, 60] },
+    { "template": "plugmc:lamp_post", "at": [-23, 26] },
+    { "template": "plugmc:lamp_post", "at": [-23, 44] },
+    { "template": "plugmc:lamp_post", "at": [-23, 60] },
+    { "template": "plugmc:planter", "at": [-58, 32] },
+    { "template": "plugmc:planter", "at": [-48, 32] },
+    { "template": "plugmc:planter", "at": [-36, 32] },
+    { "template": "plugmc:planter", "at": [-26, 32] },
+    { "template": "plugmc:planter", "at": [-58, 56] },
+    { "template": "plugmc:planter", "at": [-36, 56] }
+  ]
+}

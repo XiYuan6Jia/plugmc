@@ -72,7 +72,28 @@ public final class HubListener implements Listener {
 		if (!config.denyMobSpawn() || !plugin.hubWorld().isHub(event.getLocation())) {
 			return;
 		}
+		// 只拦自然刷出来的怪。插件和命令召唤的实体（人偶、盔甲架、展示实体）也走
+		// CreatureSpawnEvent，一律取消的话商业街的摊位模型和牌子根本建不出来。
+		if (!isNaturalSpawn(event.getSpawnReason())) {
+			return;
+		}
 		event.setCancelled(true);
+	}
+
+	/** 自然刷怪才拦；召唤、刷怪蛋、生成笼之外的人工来源都放行。 */
+	private static boolean isNaturalSpawn(CreatureSpawnEvent.SpawnReason reason) {
+		return reason == CreatureSpawnEvent.SpawnReason.NATURAL
+			|| reason == CreatureSpawnEvent.SpawnReason.CHUNK_GEN
+			|| reason == CreatureSpawnEvent.SpawnReason.SPAWNER
+			|| reason == CreatureSpawnEvent.SpawnReason.RAID
+			|| reason == CreatureSpawnEvent.SpawnReason.PATROL
+			|| reason == CreatureSpawnEvent.SpawnReason.VILLAGE_INVASION
+			|| reason == CreatureSpawnEvent.SpawnReason.REINFORCEMENTS
+			|| reason == CreatureSpawnEvent.SpawnReason.NETHER_PORTAL
+			|| reason == CreatureSpawnEvent.SpawnReason.LIGHTNING
+			|| reason == CreatureSpawnEvent.SpawnReason.INFECTION
+			|| reason == CreatureSpawnEvent.SpawnReason.DROWNED
+			|| reason == CreatureSpawnEvent.SpawnReason.SLIME_SPLIT;
 	}
 
 	@EventHandler

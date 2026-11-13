@@ -3,6 +3,7 @@ package com.xiyuan.plugmc.economy;
 import com.xiyuan.plugmc.economy.api.EconomyAuditService;
 import com.xiyuan.plugmc.economy.api.EconomyService;
 import com.xiyuan.plugmc.economy.api.EconomyTransactionEvent;
+import com.xiyuan.plugmc.economy.api.TradeBoard;
 import com.xiyuan.plugmc.economy.auction.AuctionCommand;
 import com.xiyuan.plugmc.economy.auction.AuctionConfig;
 import com.xiyuan.plugmc.economy.auction.AuctionService;
@@ -24,6 +25,7 @@ import com.xiyuan.plugmc.economy.internal.EconomyAuditServiceImpl;
 import com.xiyuan.plugmc.economy.internal.EconomyServiceImpl;
 import com.xiyuan.plugmc.economy.internal.EconomyStore;
 import com.xiyuan.plugmc.economy.internal.LedgerService;
+import com.xiyuan.plugmc.economy.internal.TradeBoardImpl;
 import com.xiyuan.plugmc.economy.mail.MailCommand;
 import com.xiyuan.plugmc.economy.mail.MailConfig;
 import com.xiyuan.plugmc.economy.mail.MailService;
@@ -66,6 +68,7 @@ public final class EconomyPlugin extends JavaPlugin implements Listener {
 	private MailService mailService;
 	private OrderService orderService;
 	private AuctionService auctionService;
+	private TradeBoardImpl tradeBoard;
 	private TradeManager tradeManager;
 	private BankService bankService;
 	private BukkitTask snapshotTask;
@@ -176,6 +179,15 @@ public final class EconomyPlugin extends JavaPlugin implements Listener {
 			tradeManager = new TradeManager(this);
 			getServer().getPluginManager().registerEvents(tradeManager, this);
 			registerCommand("trade", new TradeCommand(tradeManager, new TradeGui(tradeManager)));
+
+			// 三类交易的只读聚合视图，供主城商业街等外部插件实时展示
+			tradeBoard = new TradeBoardImpl(marketService, orderService, auctionService);
+			Bukkit.getServicesManager().register(
+				TradeBoard.class,
+				tradeBoard,
+				this,
+				ServicePriority.Normal
+			);
 			marketTask = marketService.startExpiryTask();
 			mailTask = mailService.startExpiryTask();
 			orderTask = orderService.startExpiryTask();
@@ -253,6 +265,10 @@ public final class EconomyPlugin extends JavaPlugin implements Listener {
 				getLogger().log(Level.SEVERE, "关闭经济数据存储失败", exception);
 			}
 			store = null;
+		}
+		if (tradeBoard != null) {
+			Bukkit.getServicesManager().unregister(TradeBoard.class, tradeBoard);
+			tradeBoard = null;
 		}
 		if (economyService != null) {
 			Bukkit.getServicesManager().unregister(EconomyService.class, economyService);

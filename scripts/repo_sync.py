@@ -318,6 +318,13 @@ def cmd_push(args: argparse.Namespace) -> int:
 # ---------------------------------------------------------------- 入口
 
 def main() -> None:
+    # 控制台默认是 GBK，脚本里的 ✓ 会直接抛 UnicodeEncodeError，而不是打出来乱码
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8", errors="replace")
+        except (AttributeError, ValueError):
+            pass
+
     parser = argparse.ArgumentParser(
         description="改动前检查远端更新、改动后提交推送",
     )
