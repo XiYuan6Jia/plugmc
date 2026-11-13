@@ -4,14 +4,19 @@
 用途：主城这类建筑落地前先看一眼比例和配色，不必进服务器、不必抢前台窗口。
 
 用法：
+    # 单个结构
     python scripts/preview_structure.py datapacks/plugmc-structures/data/plugmc/structure/house.nbt
     python scripts/preview_structure.py <a.nbt> --out preview.png --scale 4 --view iso|top|front
+
+    # 一整张摆放清单（整片街区）
+    python scripts/preview_structure.py --plan plans/plaza.json --out plaza.png --view all
 
 坐标：结构文件里 x 向东、y 向上、z 向南。
 """
 from __future__ import annotations
 
 import argparse
+import json
 import pathlib
 import sys
 
@@ -148,22 +153,90 @@ def render_front(blocks: list[dict], scale: int = 8) -> Image.Image:
     return img
 
 
+def merge_plan(plan_path: pathlib.Path) -> list[dict]:
+    """把一张摆放清单展开成一整片街区，返回合并后的方块列表。
+
+    每个模块的局部坐标按清单里的 at 平移；rotation 只支持 0/90/180/270，
+    和 /place template 的 rotation 参数语义一致（绕 Y 轴顺时针）。
+    """
+    plan = json.loads(plan_path.read_text(encoding="utf-8"))
+    struct_dir = (pathlib.Path(__file__).resolve().parents[1]
+                  / "datapacks" / "plugmc-structures" / "data")
+    anchor_y = plan.get("anchor_y", 0)
+    out: list[dict] = []
+    for it in plan.get("items", []):
+        tmpl = it.get("template", "")
+        if ":" not in tmpl:
+            print(f"  跳过 {tmpl!r}：模板 id 必须是 <命名空间>:<名字>", file=sys.stderr)
+            continue
+        ns, name = tmpl.split(":", 1)
+        nbt = struct_dir / ns / "structure" / f"{name}.nbt"
+        if not nbt.is_file():
+            print(f"  跳过 {tmpl}：找不到 {nbt}", file=sys.stderr)
+            continue
+        data = bp.read_structure(nbt)
+        sx, _, sz = data["size"]
+        ox, oz = it["at"]
+        oy = it.get("y", anchor_y)
+        rot = int(it.get("rotation", 0)) % 360
+        for b in data["blocks"]:
+            x, y, z = b["x"], b["y"], b["z"]
+            # 绕 Y 轴旋转后重新平移到非负，和 /place template 的朝向对齐
+            if rot == 90:
+                x, z = sz - 1 - z, x
+            elif rot == 180:
+                x, z = sx - 1 - x, sz - 1 - z
+            elif rot == 270:
+                x, z = z, sx - 1 - x
+            out.append({"x": ox + x, "y": oy + y, "z": oz + z, "block": b["block"]})
+
+    # 清单里的地面也画出来，否则预览看不到广场铺装
+    fl = plan.get("floor")
+    if fl:
+        y = anchor_y - 1
+        mat = fl.get("mat", "minecraft:stone_bricks")
+        for x in range(min(int(fl["x0"]), int(fl["x1"])), max(int(fl["x0"]), int(fl["x1"])) + 1):
+            for z in range(min(int(fl["z0"]), int(fl["z1"])), max(int(fl["z0"]), int(fl["z1"])) + 1):
+                out.append({"x": x, "y": y, "z": z, "block": mat})
+    return out
+
+
 def main() -> int:
-    ap = argparse.ArgumentParser(description="把 .nbt 结构渲染成等轴测预览图")
-    ap.add_argument("nbt", help="结构文件路径")
+    ap = argparse.ArgumentParser(description="把 .nbt 结构（或摆放清单）渲染成预览图")
+    ap.add_argument("nbt", nargs="?", help="结构文件路径")
+    ap.add_argument("--plan", help="摆放清单 JSON；给了它就渲染整片街区而不是单个结构")
     ap.add_argument("--out", help="输出 PNG（默认与输入同名 .png）")
     ap.add_argument("--scale", type=int, default=4, help="缩放倍数，默认 4")
     ap.add_argument("--view", choices=["iso", "top", "front", "all"], default="iso")
     args = ap.parse_args()
 
-    src = pathlib.Path(args.nbt)
-    if not src.exists():
-        print(f"找不到文件：{src}", file=sys.stderr)
-        return 2
-    data = bp.read_structure(src)
-    blocks = data["blocks"]
-    size = data["size"]
-    print(f"结构 {src.name}：尺寸 {size[0]}x{size[1]}x{size[2]}，{len(blocks)} 个方块")
+    if not args.plan and not args.nbt:
+        ap.error("要么给结构文件路径，要么给 --plan")
+
+    if args.plan:
+        plan_path = pathlib.Path(args.plan)
+        if not plan_path.is_file():
+            print(f"找不到清单：{plan_path}", file=sys.stderr)
+            return 2
+        blocks = merge_plan(plan_path)
+        if not blocks:
+            print("清单里没有任何可放置的模块", file=sys.stderr)
+            return 2
+        src = plan_path
+        xs = [b["x"] for b in blocks]
+        ys = [b["y"] for b in blocks]
+        zs = [b["z"] for b in blocks]
+        size = [max(xs) - min(xs) + 1, max(ys) - min(ys) + 1, max(zs) - min(zs) + 1]
+        print(f"街区 {src.name}：{size[0]}x{size[1]}x{size[2]}，{len(blocks)} 个方块")
+    else:
+        src = pathlib.Path(args.nbt)
+        if not src.exists():
+            print(f"找不到文件：{src}", file=sys.stderr)
+            return 2
+        data = bp.read_structure(src)
+        blocks = data["blocks"]
+        size = data["size"]
+        print(f"结构 {src.name}：尺寸 {size[0]}x{size[1]}x{size[2]}，{len(blocks)} 个方块")
 
     from collections import Counter
     for name, n in Counter(base_name(b["block"]) for b in blocks).most_common():

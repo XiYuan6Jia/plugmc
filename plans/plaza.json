@@ -1,0 +1,30 @@
+{
+  "_note": "示例：11x9 的小广场。at 是 [x, z]。anchor 是整张清单共用的地面探测点 —— 只在锚点探一次，所有项都放同一个 y，否则后放的会把先放的当成地面、一个广场摆出三种高度。floor 是整片铺装，在模块之前用 fill 铺一层。rotation 只支持 0/90/180/270，注意服务端是绕「放置点」旋转，转了之后结构会往负方向长。",
+  "world": "world",
+  "anchor": [1000, 1000],
+  "floor": {
+    "x0": 992,
+    "z0": 992,
+    "x1": 1011,
+    "z1": 1017,
+    "mat": "minecraft:stone_bricks",
+    "depth": 1
+  },
+  "defaults": {
+    "samples": 12,
+    "reload": true
+  },
+  "items": [
+    { "template": "plugmc:fountain", "at": [999, 999], "ground": true },
+
+    { "template": "plugmc:lamp_post", "at": [995, 995], "ground": true },
+    { "template": "plugmc:lamp_post", "at": [1004, 995], "ground": true },
+    { "template": "plugmc:lamp_post", "at": [995, 1004], "ground": true },
+    { "template": "plugmc:lamp_post", "at": [1004, 1004], "ground": true },
+
+    { "template": "plugmc:bench", "at": [997, 1001], "ground": true, "rotation": 90 },
+    { "template": "plugmc:bench", "at": [1003, 1001], "ground": true, "rotation": 270 },
+
+    { "template": "plugmc:house", "at": [998, 1009], "ground": true }
+  ]
+}
