@@ -1,0 +1,24 @@
+{
+  "name": "主城环廊",
+  "dimension": "minecraft:hub",
+  "note": "沿大厅外墙铺一圈 4 格宽的步道（x/z 25..28，贴着墙体），把南大街、西广场、北庭、东观赛区四条街串成一个连通的环。原先四条街各接一道门，斜着走会掉进虚空；有了环廊就能绕圈通行。四角补灯柱与树池，避免这一圈显得空。",
+  "y": 65,
+  "floor": [
+    {"x0": -28, "z0": -28, "x1": -25, "z1": 28, "mat": "minecraft:smooth_quartz", "depth": 1},
+    {"x0": 25, "z0": -28, "x1": 28, "z1": 28, "mat": "minecraft:smooth_quartz", "depth": 1},
+    {"x0": -24, "z0": -28, "x1": 24, "z1": -25, "mat": "minecraft:smooth_quartz", "depth": 1},
+    {"x0": -24, "z0": 25, "x1": 24, "z1": 28, "mat": "minecraft:smooth_quartz", "depth": 1}
+  ],
+  "defaults": {"reload": false},
+  "items": [
+    {"template": "plugmc:lamp_post", "at": [-26, -26], "note": "西北角"},
+    {"template": "plugmc:lamp_post", "at": [26, -26], "note": "东北角"},
+    {"template": "plugmc:lamp_post", "at": [-26, 26], "note": "西南角"},
+    {"template": "plugmc:lamp_post", "at": [26, 26], "note": "东南角"},
+
+    {"template": "plugmc:planter", "at": [-27, 0], "note": "西廊中段（西门两侧各一处）"},
+    {"template": "plugmc:planter", "at": [27, 0], "note": "东廊中段"},
+    {"template": "plugmc:planter", "at": [0, -27], "note": "北廊中段"},
+    {"template": "plugmc:planter", "at": [0, 27], "note": "南廊中段"}
+  ]
+}

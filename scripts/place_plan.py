@@ -97,20 +97,34 @@ def template_to_nbt(template: str) -> pathlib.Path | None:
     return p if p.is_file() else None
 
 
-def plan_floor_box(plan: dict, top: int) -> str | None:
-    """清单里可选的 floor 字段 -> fill 用的坐标串。
+def floor_boxes(plan: dict) -> list[dict]:
+    """清单里的 floor 统一读成「一组矩形」。
 
-    floor 是"整片街区共用的地面"，用原版 fill 铺一次，比给每个模块单独做底座省事：
-      "floor": {"x0": -458, "z0": -458, "x1": -442, "z1": -438,
-                "mat": "minecraft:stone_bricks", "depth": 1}
-    top 是地面**最上面一层**的 y，depth 是从它往下铺几层，默认 1。
+    支持两种写法：
+      单个矩形：  "floor": {"x0": …, "z0": …, "x1": …, "z1": …}
+      多个矩形：  "floor": [{…}, {…}]      —— 用于把几片街区连成一片（连接带）
+    多矩形是主城要的：十字形广场之间需要斜向补丁填掉虚空断口，
+    单矩形铺不到那些位置。
     """
     f = plan.get("floor")
     if not f:
-        return None
-    x0, z0, x1, z1 = int(f["x0"]), int(f["z0"]), int(f["x1"]), int(f["z1"])
-    depth = max(1, int(f.get("depth", 1)))
-    return f"{min(x0, x1)} {top - depth + 1} {min(z0, z1)} {max(x0, x1)} {top} {max(z0, z1)}"
+        return []
+    return list(f) if isinstance(f, list) else [f]
+
+
+def plan_floor_box(plan: dict, top: int) -> list[str]:
+    """把 floor（单个矩形或多个矩形）转成一组 fill 用的坐标串。
+
+    top 是地面**最上面一层**的 y，depth 是从它往下铺几层，默认 1。
+    """
+    boxes: list[str] = []
+    for f in floor_boxes(plan):
+        x0, z0, x1, z1 = int(f["x0"]), int(f["z0"]), int(f["x1"]), int(f["z1"])
+        depth = max(1, int(f.get("depth", 1)))
+        boxes.append(
+            f"{min(x0, x1)} {top - depth + 1} {min(z0, z1)} "
+            f"{max(x0, x1)} {top} {max(z0, z1)}")
+    return boxes
 
 
 def load_plan(path: pathlib.Path) -> dict:
@@ -328,17 +342,18 @@ def main() -> int:
 
     # 地面：在放模块之前铺，否则模块会被地面盖住。
     # 模块从 anchor_y 开始长，所以地面最上面一层是 anchor_y - 1。
-    floor_spec = plan.get("floor")
-    if floor_spec and anchor_y is not None:
-        box = plan_floor_box(plan, anchor_y - 1)
-        mat = floor_spec.get("mat", "minecraft:stone_bricks")
-        print(f"==> 铺地面 {box}  {mat}")
-        if not args.dry_run:
-            r = transport.run(f"fill {box} {mat}", wait=10.0)
-            print("    " + r.strip())
-            if "Too many blocks" in r:
-                raise SystemExit("    单次 fill 上限 32768 格，把 floor 拆成几段")
-    elif floor_spec and anchor_y is None:
+    # floor 可以是单个矩形也可以是矩形数组（连接带要用多个）。
+    boxes = plan_floor_box(plan, anchor_y - 1) if anchor_y is not None else []
+    if boxes:
+        for box, spec in zip(boxes, floor_boxes(plan)):
+            mat = spec.get("mat", "minecraft:stone_bricks")
+            print(f"==> 铺地面 {box}  {mat}")
+            if not args.dry_run:
+                r = transport.run(f"fill {box} {mat}", wait=10.0)
+                print("    " + r.strip())
+                if "Too many blocks" in r:
+                    raise SystemExit("    单次 fill 上限 32768 格，把 floor 拆成几段")
+    elif plan.get("floor"):
         print("==> 清单有 floor 但没 anchor/y，跳过铺地面（需要基准高度才知道铺在哪一层）")
 
     for i, it in enumerate(items, 1):

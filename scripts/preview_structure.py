@@ -227,14 +227,16 @@ def merge_plan(plan_path: pathlib.Path, include_lobby: bool = False) -> list[dic
                 x, z = z, sx - 1 - x
             out.append({"x": ox + x, "y": oy + y, "z": oz + z, "block": b["block"]})
 
-    # 清单里的地面也画出来，否则预览看不到广场铺装
+    # 清单里的地面也画出来，否则预览看不到广场铺装。
+    # floor 允许单个矩形，也允许矩形数组（连接带），这里统一按数组处理。
     fl = plan.get("floor")
     if fl:
         y = anchor_y - 1
-        mat = fl.get("mat", "minecraft:stone_bricks")
-        for x in range(min(int(fl["x0"]), int(fl["x1"])), max(int(fl["x0"]), int(fl["x1"])) + 1):
-            for z in range(min(int(fl["z0"]), int(fl["z1"])), max(int(fl["z0"]), int(fl["z1"])) + 1):
-                out.append({"x": x, "y": y, "z": z, "block": mat})
+        for one in (fl if isinstance(fl, list) else [fl]):
+            mat = one.get("mat", "minecraft:stone_bricks")
+            for x in range(min(int(one["x0"]), int(one["x1"])), max(int(one["x0"]), int(one["x1"])) + 1):
+                for z in range(min(int(one["z0"]), int(one["z1"])), max(int(one["z0"]), int(one["z1"])) + 1):
+                    out.append({"x": x, "y": y, "z": z, "block": mat})
     if include_lobby:
         out.extend(lobby_blocks())
     return out
