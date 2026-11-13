@@ -42,7 +42,13 @@ public record HubConfig(
 	double parkourBoardX,
 	double parkourBoardY,
 	double parkourBoardZ,
-	int parkourBoardRows
+	int parkourBoardRows,
+	Integer blueprintMinX,
+	Integer blueprintMinY,
+	Integer blueprintMinZ,
+	Integer blueprintMaxX,
+	Integer blueprintMaxY,
+	Integer blueprintMaxZ
 ) {
 	public HubConfig {
 		worldName = worldName == null || worldName.isBlank() ? "hub" : worldName.trim();
@@ -91,7 +97,14 @@ public record HubConfig(
 			config.getDouble("parkour.board.x", 34.5),
 			config.getDouble("parkour.board.y", 65.0),
 			config.getDouble("parkour.board.z", 5.5),
-			config.getInt("parkour.board.rows", 10)
+			config.getInt("parkour.board.rows", 10),
+			// 蓝本区域：留空（null）表示用默认的「大厅方形占地」
+			config.isSet("blueprint.min-x") ? config.getInt("blueprint.min-x") : null,
+			config.isSet("blueprint.min-y") ? config.getInt("blueprint.min-y") : null,
+			config.isSet("blueprint.min-z") ? config.getInt("blueprint.min-z") : null,
+			config.isSet("blueprint.max-x") ? config.getInt("blueprint.max-x") : null,
+			config.isSet("blueprint.max-y") ? config.getInt("blueprint.max-y") : null,
+			config.isSet("blueprint.max-z") ? config.getInt("blueprint.max-z") : null
 		);
 	}
 

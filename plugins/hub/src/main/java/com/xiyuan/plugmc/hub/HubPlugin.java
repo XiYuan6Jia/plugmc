@@ -14,6 +14,7 @@ public final class HubPlugin extends JavaPlugin {
 	private HubConfig settings;
 	private HubWorld hubWorld;
 	private HubMarker marker;
+	private HubBlueprint blueprint;
 	private HubManager hubManager;
 	private HubTeleportManager teleports;
 	private HubVitals vitals;
@@ -30,6 +31,7 @@ public final class HubPlugin extends JavaPlugin {
 
 		hubWorld = new HubWorld(this);
 		marker = new HubMarker(this);
+		blueprint = new HubBlueprint(getDataFolder());
 		if (!hubWorld.load(settings)) {
 			getLogger().log(Level.SEVERE, "主城维度 " + settings.worldName() + " 创建失败，插件将被禁用");
 			getServer().getPluginManager().disablePlugin(this);
@@ -109,6 +111,10 @@ public final class HubPlugin extends JavaPlugin {
 
 	public HubMarker marker() {
 		return marker;
+	}
+
+	public HubBlueprint blueprint() {
+		return blueprint;
 	}
 
 	public HubManager hubManager() {

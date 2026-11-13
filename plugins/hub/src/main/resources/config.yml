@@ -71,3 +71,15 @@ bell:
     z: 61.5
     rows: 10
 
+# 主城「蓝本」：把建筑师改过的样子存下来，/hub build 时按它还原
+# 用法：让建筑师改好 → /hub save → 之后 /hub build 就是这一版
+blueprint:
+  # 存/放的区域。留空 = 默认用大厅方形占地（x,z ∈ [-radius, radius]，y 从 floor-y 到屋顶）
+  # 想连周边的街区一起存进蓝本，就把这六项都写上
+  # min-x: -24
+  # min-y: 64
+  # min-z: -24
+  # max-x: 24
+  # max-y: 75
+  # max-z: 24
+

@@ -71,15 +71,29 @@ public final class HubLobby {
 	}
 
 	public static void build(World world, HubConfig config) {
-		int floorY = config.floorY();
-		int radius = config.radius();
+		clear(world, config);
+		buildDefaults(world, config);
+		spawnTexts(world, config);
+	}
+
+	/**
+	 * 只把大厅占地清空（悬浮文字与方块），不摆任何东西。
+	 *
+	 * <p>蓝本路线要先调这个再摆蓝本，否则蓝本会被下面的清场盖掉。
+	 */
+	public static void clear(World world, HubConfig config) {
 		clearTexts(world, config);
 		clearBlocks(world, config);
+	}
+
+	/** 按内置的硬编码布局摆出大厅（不含悬浮文字）。没有蓝本时才用。 */
+	public static void buildDefaults(World world, HubConfig config) {
+		int floorY = config.floorY();
+		int radius = config.radius();
 		buildFloor(world, floorY, radius);
 		buildWalls(world, floorY, radius);
 		buildRoof(world, floorY, radius);
 		buildInnerPillars(world, floorY, radius);
-		spawnTexts(world, config);
 	}
 
 	/**
@@ -208,7 +222,7 @@ public final class HubLobby {
 		}
 	}
 
-	private static void spawnTexts(World world, HubConfig config) {
+	static void spawnTexts(World world, HubConfig config) {
 		int floorY = config.floorY();
 		Location titleLocation = new Location(world, 0.5, floorY + 6.0, 0.5);
 		world.spawn(titleLocation, TextDisplay.class, display -> {

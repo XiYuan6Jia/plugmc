@@ -10,13 +10,14 @@ import org.bukkit.entity.Player;
 import java.util.List;
 import java.util.Locale;
 
-/** /hub [back|info|check|parkour|bell|setspawn|build|reload] */
+/** /hub [back|info|check|parkour|bell|setspawn|build|save|blueprint|reload] */
 public final class HubCommand implements CommandExecutor, TabCompleter {
 	private static final List<String> SUBCOMMANDS = List.of(
-		"back", "info", "check", "parkour", "bell", "setspawn", "build", "reload"
+		"back", "info", "check", "parkour", "bell", "setspawn", "build", "save", "blueprint", "reload"
 	);
 	private static final List<String> PARKOUR_SUBCOMMANDS = List.of("quit", "top", "best", "board");
 	private static final List<String> BELL_SUBCOMMANDS = List.of("top", "board", "reset");
+	private static final List<String> BLUEPRINT_SUBCOMMANDS = List.of("info", "delete");
 
 	private final HubPlugin plugin;
 
@@ -53,6 +54,8 @@ public final class HubCommand implements CommandExecutor, TabCompleter {
 			case "bell" -> bell(sender, args);
 			case "setspawn" -> setspawn(sender);
 			case "build" -> build(sender);
+			case "save" -> save(sender);
+			case "blueprint" -> blueprint(sender, args);
 			case "reload" -> reload(sender);
 			default -> usage(sender, label);		}
 		return true;
@@ -93,6 +96,10 @@ public final class HubCommand implements CommandExecutor, TabCompleter {
 		for (String line : HubLobby.verify(plugin.hubWorld().world(), plugin.settings(), plugin.marker().isBuilt())) {
 			sender.sendMessage(HubText.component(line));
 		}
+		sender.sendMessage(HubText.component("&6主城蓝本自检"));
+		for (String line : blueprintVerify()) {
+			sender.sendMessage(HubText.component(line));
+		}
 		ParkourManager parkour = plugin.parkour();
 		if (parkour != null && parkour.course() != null) {
 			sender.sendMessage(HubText.component("&6跑酷赛道自检"));
@@ -112,6 +119,23 @@ public final class HubCommand implements CommandExecutor, TabCompleter {
 				sender.sendMessage(HubText.component(line));
 			}
 		}
+	}
+
+	/** 蓝本自检：文件在不在、区域多大、要不要提醒建筑师。 */
+	private List<String> blueprintVerify() {
+		List<String> lines = new java.util.ArrayList<>();
+		HubBlueprint blueprint = plugin.blueprint();
+		HubConfig config = plugin.settings();
+		int[] size = blueprint.regionSize(config);
+		if (size == null) {
+			lines.add("&c✘ 蓝本区域配置无效 &7（检查 blueprint.min-x 等六项）");
+			return lines;
+		}
+		lines.add((blueprint.exists() ? "&a✔ " : "&7· ") + "蓝本文件 &7"
+			+ (blueprint.exists() ? "已保存" : "未保存（/hub build 会用内置默认样式）"));
+		lines.add("&7区域：&f" + size[0] + "×" + size[1] + "×" + size[2] + " &7格");
+		lines.add("&7说明：&f" + blueprint.describe(config));
+		return lines;
 	}
 
 	private void parkour(CommandSender sender, String[] args) {
@@ -229,10 +253,60 @@ public final class HubCommand implements CommandExecutor, TabCompleter {
 			sender.sendMessage(HubText.component("&c主城维度未加载。"));
 			return;
 		}
-		sender.sendMessage(HubText.component("&7正在重建主城大厅…"));
+		boolean hasBlueprint = plugin.blueprint().exists();
+		sender.sendMessage(HubText.component("&7正在重建主城大厅"
+			+ (hasBlueprint ? "（按蓝本）" : "（内置默认样式）") + "…"));
 		plugin.hubWorld().ensureLobby(plugin.settings(), true);
 		plugin.ensureParkour(true);
 		sender.sendMessage(HubText.component("&a主城大厅与跑酷赛道已重建。"));
+	}
+
+	/**
+	 * 把主城当前的样子存成蓝本。
+	 *
+	 * <p>这是「让 /hub build 还原成建筑师改过的版本」的入口：先让建筑师改好，再执行它。
+	 */
+	private void save(CommandSender sender) {
+		if (!sender.hasPermission("hub.admin")) {
+			sender.sendMessage(HubText.component("&c你没有权限保存主城蓝本。"));
+			return;
+		}
+		if (!plugin.hubWorld().ready()) {
+			sender.sendMessage(HubText.component("&c主城维度未加载。"));
+			return;
+		}
+		int[] size = plugin.blueprint().regionSize(plugin.settings());
+		if (size == null) {
+			sender.sendMessage(HubText.component("&c蓝本区域配置无效，检查 config.yml 的 blueprint.min-x 等六项。"));
+			return;
+		}
+		sender.sendMessage(HubText.component("&7正在把当前主城存成蓝本（区域 "
+			+ size[0] + "×" + size[1] + "×" + size[2] + "）…"));
+		long volume = plugin.hubWorld().saveBlueprint(plugin.settings());
+		if (volume <= 0) {
+			sender.sendMessage(HubText.component("&c保存失败，看服务端日志。"));
+			return;
+		}
+		sender.sendMessage(HubText.component("&a已保存蓝本：&f" + volume + " &a个方块。"
+			+ " &7之后 /hub build 会按它还原。"));
+	}
+
+	private void blueprint(CommandSender sender, String[] args) {
+		String action = args.length > 1 ? args[1].toLowerCase(Locale.ROOT) : "info";
+		switch (action) {
+			case "info" -> sender.sendMessage(HubText.component(plugin.blueprint().describe(plugin.settings())));
+			case "delete" -> {
+				if (!sender.hasPermission("hub.admin")) {
+					sender.sendMessage(HubText.component("&c你没有权限删除主城蓝本。"));
+					return;
+				}
+				boolean removed = plugin.blueprint().delete();
+				sender.sendMessage(HubText.component(removed
+					? "&a蓝本已删除，下次 /hub build 会用内置默认样式。"
+					: "&7没有蓝本可删。"));
+			}
+			default -> sender.sendMessage(HubText.component("&e用法：/hub blueprint [info|delete]"));
+		}
 	}
 
 	private void reload(CommandSender sender) {
@@ -248,7 +322,7 @@ public final class HubCommand implements CommandExecutor, TabCompleter {
 
 	private void usage(CommandSender sender, String label) {
 		sender.sendMessage(HubText.component("&e用法：/" + label
-			+ " [back|info|check|parkour|bell|setspawn|build|reload]"));
+			+ " [back|info|check|parkour|bell|setspawn|build|save|blueprint|reload]"));
 	}
 
 	private Player requirePlayer(CommandSender sender) {
@@ -276,6 +350,10 @@ public final class HubCommand implements CommandExecutor, TabCompleter {
 		if (args.length == 2 && args[0].equalsIgnoreCase("bell")) {
 			String prefix = args[1].toLowerCase(Locale.ROOT);
 			return BELL_SUBCOMMANDS.stream().filter(option -> option.startsWith(prefix)).toList();
+		}
+		if (args.length == 2 && args[0].equalsIgnoreCase("blueprint")) {
+			String prefix = args[1].toLowerCase(Locale.ROOT);
+			return BLUEPRINT_SUBCOMMANDS.stream().filter(option -> option.startsWith(prefix)).toList();
 		}
 		return List.of();
 	}

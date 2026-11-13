@@ -114,9 +114,27 @@ public final class HubWorld {
 			}
 		}
 		long start = System.currentTimeMillis();
-		HubLobby.build(world, config);
+		// 先清场：清悬浮文字 + 清方块。蓝本若不清场会被旧方块漏出来。
+		HubLobby.clear(world, config);
+		// 有蓝本就用蓝本（建筑师改过的那一版），没有才退回内置的硬编码大厅。
+		boolean placed = plugin.blueprint().place(world, config);
+		if (!placed) {
+			HubLobby.buildDefaults(world, config);
+		}
+		// 悬浮文字永远按配置现场生成 —— 它不进蓝本，进了就会每次重建叠一层。
+		HubLobby.spawnTexts(world, config);
 		plugin.marker().markBuilt(config);
-		plugin.getLogger().info("主城大厅已生成，用时 " + (System.currentTimeMillis() - start) + " ms");
+		plugin.getLogger().info("主城大厅已" + (placed ? "按蓝本摆放" : "生成")
+			+ "，用时 " + (System.currentTimeMillis() - start) + " ms");
 		return true;
+	}
+
+	/**
+	 * 把当前世界里的状态存成蓝本，供以后 {@code /hub build} 还原。
+	 *
+	 * @return 成功返回方块数（> 0），失败返回 -1
+	 */
+	public long saveBlueprint(HubConfig config) {
+		return plugin.blueprint().save(world, config);
 	}
 }
