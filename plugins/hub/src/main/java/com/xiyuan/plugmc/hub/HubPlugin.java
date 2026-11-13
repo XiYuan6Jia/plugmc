@@ -12,6 +12,7 @@ import java.util.logging.Level;
 public final class HubPlugin extends JavaPlugin {
 	private HubConfig settings;
 	private HubWorld hubWorld;
+	private HubMarker marker;
 	private HubManager hubManager;
 	private HubTeleportManager teleports;
 	private HubVitals vitals;
@@ -25,6 +26,7 @@ public final class HubPlugin extends JavaPlugin {
 		reloadSettings();
 
 		hubWorld = new HubWorld(this);
+		marker = new HubMarker(this);
 		if (!hubWorld.load(settings)) {
 			getLogger().log(Level.SEVERE, "主城维度 " + settings.worldName() + " 创建失败，插件将被禁用");
 			getServer().getPluginManager().disablePlugin(this);
@@ -78,6 +80,10 @@ public final class HubPlugin extends JavaPlugin {
 		return hubWorld;
 	}
 
+	public HubMarker marker() {
+		return marker;
+	}
+
 	public HubManager hubManager() {
 		return hubManager;
 	}
@@ -107,12 +113,13 @@ public final class HubPlugin extends JavaPlugin {
 			return;
 		}
 		parkourCourse = new ParkourCourse(hubWorld.world(), settings);
-		if (!force && ParkourCourse.isBuilt(hubWorld.world(), settings)) {
+		if (!force && marker.isParkourBuilt()) {
 			parkour.course(parkourCourse);
 			return;
 		}
 		long start = System.currentTimeMillis();
 		parkourCourse.build();
+		marker.markParkourBuilt();
 		parkour.course(parkourCourse);
 		getLogger().info("跑酷赛道已生成（" + parkourCourse.platformCount() + " 段跳台，"
 			+ parkourCourse.checkpointCount() + " 个检查点），用时 "

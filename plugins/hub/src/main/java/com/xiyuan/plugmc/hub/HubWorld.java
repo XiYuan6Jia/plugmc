@@ -92,16 +92,30 @@ public final class HubWorld {
 		return Difficulty.NORMAL;
 	}
 
-	/** 返回 true 表示这次真的重新生成了大厅。 */
+	/**
+	 * 返回 true 表示这次真的重新生成了大厅。
+	 *
+	 * <p>「建没建过」只看 {@link HubMarker} 里的文件，不看世界里的方块 —— 用方块当标记的话，
+	 * 建筑师一动那颗灯，下次开服就会把整片清空重建。
+	 */
 	public boolean ensureLobby(HubConfig config, boolean force) {
 		if (!config.autoBuild() && !force) {
 			return false;
 		}
-		if (!force && HubLobby.isBuilt(world, config)) {
-			return false;
+		if (!force) {
+			// 老存档：文件还没写，但世界里的旧标记还在 → 补写文件，不重建
+			if (plugin.marker().migrateFromLegacyBlock(world, config)) {
+				plugin.marker().warnIfGeometryChanged(config);
+				return false;
+			}
+			if (plugin.marker().isBuilt()) {
+				plugin.marker().warnIfGeometryChanged(config);
+				return false;
+			}
 		}
 		long start = System.currentTimeMillis();
 		HubLobby.build(world, config);
+		plugin.marker().markBuilt(config);
 		plugin.getLogger().info("主城大厅已生成，用时 " + (System.currentTimeMillis() - start) + " ms");
 		return true;
 	}

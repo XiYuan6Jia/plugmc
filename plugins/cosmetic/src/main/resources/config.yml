@@ -55,7 +55,9 @@ slots:
     spin: 0
   shoulder:
     name: "&a肩侧"
-    offset: [0.10, 1.16, 0.30]
+    # 手臂外沿在 |right| = 0.47（护臂再厚 0.06）。right 必须留在 0.47 + scale/2 之外，
+    # 否则整块东西会插进手臂里 —— 之前写 0.30 就是这么进去的。
+    offset: [0.0, 1.28, 0.66]
     scale: 0.36
     rotation: [0.0, 0.0, -8.0]
     transform: FIXED
@@ -63,7 +65,9 @@ slots:
     spin: 0
   back:
     name: "&6背后"
-    offset: [-0.42, 1.12, 0.0]
+    # 背甲（护甲层）后表面在 forward = -0.18 一带。整块东西半尺寸 0.30，
+    # 所以中心必须退到 -0.48 之后才不贴着背甲；这里取 -0.62 留一点余量。
+    offset: [-0.62, 1.12, 0.0]
     scale: 1.20
     rotation: [0.0, 180.0, 0.0]
     transform: FIXED
@@ -71,7 +75,10 @@ slots:
     spin: 0
   waist:
     name: "&e腰间"
-    offset: [0.14, 0.84, 0.26]
+    # 腰这一圈正好是胸甲（0.64~1.47）与护腿（到 0.76）盖住的位置，
+    # 所以不能只调高度，必须挪到护甲外表面之外（body 正面 0.12 + 护甲 0.06 = 0.18），
+    # 不然穿装备就被完全挡住。
+    offset: [0.44, 0.88, 0.24]
     scale: 0.38
     rotation: [0.0, 0.0, 0.0]
     transform: FIXED
@@ -86,7 +93,10 @@ slots:
     pitch-follow: false
     spin: 90
     orbit: true
-    orbit-radius: 0.60
+    # 环绕半径要比"手臂外沿到轴线的距离"再大出半尺寸：
+    # 护臂外沿 |right|=0.53、前后 0.18，合起来约 0.56；半尺寸 0.17。
+    # 半径 0.60 时内圈只有 0.52，转过来就切进手臂里 —— 抬到 0.78 内圈 0.61 才够。
+    orbit-radius: 0.78
 
 # 属性透传：装饰槽里的物品，其 attribute_modifiers 是否生效
 attributes:

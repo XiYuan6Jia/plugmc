@@ -64,7 +64,13 @@ public final class ParkourCourse {
 		layout();
 	}
 
-	public static boolean isBuilt(World world, HubConfig config) {
+	/**
+	 * 老版本用来判断「赛道已生成」的标记方块（起点那颗金块）。
+	 *
+	 * <p><b>不要再把它当成「建没建过」的依据。</b>建筑师换掉那颗金块，下次开服就会按默认
+	 * 布局重摆一遍赛道。判断改用 {@link HubMarker#isParkourBuilt()}，这里只为老存档升级认一下。
+	 */
+	public static boolean isLegacyBuilt(World world, HubConfig config) {
 		return world.getBlockAt(config.radius() + 10, config.floorY(), 0).getType() == Material.GOLD_BLOCK;
 	}
 

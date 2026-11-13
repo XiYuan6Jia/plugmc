@@ -69,7 +69,7 @@ public final class HubCommand implements CommandExecutor, TabCompleter {
 			+ String.format("%.1f, %.1f, %.1f", spawn.getX(), spawn.getY(), spawn.getZ())
 			+ " &7在线玩家：&f" + plugin.hubWorld().world().getPlayers().size()));
 		sender.sendMessage(HubText.component("&7大厅已生成：&f"
-			+ (HubLobby.isBuilt(plugin.hubWorld().world(), config) ? "是" : "否")
+			+ (plugin.marker().isBuilt() ? "是" : "否")
 			+ " &7跑酷：&f" + (plugin.parkour() != null && plugin.parkour().course() != null
 				? config.parkourEnabled() ? "已启用" : "已关闭"
 				: "未生成")));
@@ -88,7 +88,7 @@ public final class HubCommand implements CommandExecutor, TabCompleter {
 			return;
 		}
 		sender.sendMessage(HubText.component("&6主城大厅结构自检"));
-		for (String line : HubLobby.verify(plugin.hubWorld().world(), plugin.settings())) {
+		for (String line : HubLobby.verify(plugin.hubWorld().world(), plugin.settings(), plugin.marker().isBuilt())) {
 			sender.sendMessage(HubText.component(line));
 		}
 		ParkourManager parkour = plugin.parkour();
