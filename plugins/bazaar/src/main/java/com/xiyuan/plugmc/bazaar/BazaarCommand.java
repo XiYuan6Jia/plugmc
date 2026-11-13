@@ -111,6 +111,7 @@ public final class BazaarCommand implements CommandExecutor, TabCompleter {
 			return;
 		}
 		plugin.stalls().releaseAll();
+		plugin.distributor().reset();
 		BazaarTenants tenants = plugin.currentTenants();
 		if (tenants == null) {
 			sender.sendMessage(BazaarText.component("&e已清空摊位；经济系统没有提供交易数据，暂时不会重建。"));

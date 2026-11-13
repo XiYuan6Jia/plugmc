@@ -123,8 +123,21 @@ final class BazaarDistributor {
 		return lastOverflow;
 	}
 
-	/** 摊位总数，用于 /bazaar status。 */
+	/** 摊位总容量，用于 /bazaar status。 */
 	static int capacity(BazaarConfig config) {
 		return config.playerStalls().slots().size();
+	}
+
+	/**
+	 * 清空「谁占哪号位」的记录，让下一次 {@link #sync} 当成全部新占用。
+	 *
+	 * <p>必须和 {@link BazaarStalls#releaseAll()} 成对调用：只清摊位不清这里的话，
+	 * 分配器仍以为玩家已经站在摊上，{@code sync} 只会去 refresh 一个已经不存在的
+	 * 摊位状态（refresh 找不到状态就直接返回），结果是「摊位全空、玩家显示还没上摊」。</p>
+	 */
+	void reset() {
+		assigned.clear();
+		decorOf.clear();
+		lastOverflow = 0;
 	}
 }

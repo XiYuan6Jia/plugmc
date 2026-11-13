@@ -140,11 +140,11 @@ public record BazaarConfig(
 		static List<Decor> defaults() {
 			return List.of(
 				new Decor("quartz", "minecraft:stone_bricks", "minecraft:quartz_pillar[axis=y]",
-					"minecraft:smooth_quartz", "minecraft:white_wool"),
+					"minecraft:smooth_quartz", "minecraft:white_carpet"),
 				new Decor("oak", "minecraft:stone_bricks", "minecraft:oak_log[axis=y]",
-					"minecraft:oak_planks", "minecraft:oak_carpet"),
+					"minecraft:oak_planks", "minecraft:brown_carpet"),
 				new Decor("spruce", "minecraft:stone_bricks", "minecraft:spruce_log[axis=y]",
-					"minecraft:spruce_planks", "minecraft:spruce_carpet"),
+					"minecraft:spruce_planks", "minecraft:gray_carpet"),
 				new Decor("garden", "minecraft:moss_block", "minecraft:oak_log[axis=y]",
 					"minecraft:oak_leaves[persistent=true]", "minecraft:green_carpet"),
 				new Decor("nether", "minecraft:polished_blackstone_bricks", "minecraft:blackstone",
