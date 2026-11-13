@@ -38,6 +38,7 @@ view:
 # name    : 界面里显示的名字
 # offset  : [forward, up, right] 相对玩家的偏移（格）
 # scale   : 物品缩放
+# rotation: [x, y, z] 绕自身轴旋转的角度（度），用来把物品正面对着外侧
 # transform: ItemDisplayTransform，可选 NONE / GUI / GROUND / FIXED / HEAD /
 #            FIRSTPERSON_LEFTHAND / FIRSTPERSON_RIGHTHAND / THIRDPERSON_LEFTHAND / THIRDPERSON_RIGHTHAND
 # pitch-follow: true 时，玩家抬头低头也会带动这个槽（头顶槽用）
@@ -46,42 +47,46 @@ view:
 slots:
   head:
     name: "&b头顶"
-    offset: [0.0, 2.15, 0.0]
-    scale: 0.55
-    transform: GROUND
+    offset: [0.0, 1.90, 0.0]
+    scale: 0.72
+    rotation: [0.0, 0.0, 0.0]
+    transform: FIXED
     pitch-follow: true
-    spin: 45
+    spin: 0
   shoulder:
     name: "&a肩侧"
-    offset: [-0.05, 1.35, 0.36]
-    scale: 0.42
-    transform: GROUND
+    offset: [0.10, 1.16, 0.30]
+    scale: 0.36
+    rotation: [0.0, 0.0, -8.0]
+    transform: FIXED
     pitch-follow: false
     spin: 0
   back:
     name: "&6背后"
-    offset: [-0.32, 1.05, 0.0]
-    scale: 0.62
+    offset: [-0.42, 1.12, 0.0]
+    scale: 1.20
+    rotation: [0.0, 180.0, 0.0]
     transform: FIXED
     pitch-follow: false
     spin: 0
   waist:
     name: "&e腰间"
-    offset: [0.0, 0.95, 0.32]
+    offset: [0.14, 0.84, 0.26]
     scale: 0.38
-    transform: GROUND
+    rotation: [0.0, 0.0, 0.0]
+    transform: FIXED
     pitch-follow: false
     spin: 0
   orbit:
     name: "&d环绕"
-    offset: [0.0, 1.20, 0.0]
-    scale: 0.32
-    transform: GROUND
+    offset: [0.0, 0.62, 0.0]
+    scale: 0.34
+    rotation: [0.0, 0.0, 0.0]
+    transform: FIXED
     pitch-follow: false
-    # 环绕槽：物品绕着玩家转（会被 spin 与 orbit-radius 共同驱动）
-    orbit: true
-    orbit-radius: 0.85
     spin: 90
+    orbit: true
+    orbit-radius: 0.60
 
 # 属性透传：装饰槽里的物品，其 attribute_modifiers 是否生效
 attributes:

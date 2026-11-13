@@ -29,7 +29,10 @@ final class CosmeticConfig {
 		boolean orbit,
 		double orbitRadius,
 		float spinDegrees,
-		String permission
+		String permission,
+		double rotX,
+		double rotY,
+		double rotZ
 	) {
 	}
 
@@ -118,6 +121,10 @@ final class CosmeticConfig {
 				double forward = offset.size() > 0 ? offset.get(0) : 0.0;
 				double up = offset.size() > 1 ? offset.get(1) : 0.0;
 				double right = offset.size() > 2 ? offset.get(2) : 0.0;
+				List<Double> rotation = one.getDoubleList("rotation");
+				double rotX = rotation.size() > 0 ? rotation.get(0) : 0.0;
+				double rotY = rotation.size() > 1 ? rotation.get(1) : 0.0;
+				double rotZ = rotation.size() > 2 ? rotation.get(2) : 0.0;
 				slots.add(new Slot(
 					id.toLowerCase(Locale.ROOT),
 					one.getString("name", id),
@@ -130,7 +137,10 @@ final class CosmeticConfig {
 					one.getBoolean("orbit", false),
 					one.getDouble("orbit-radius", 0.8),
 					(float) one.getDouble("spin", 0.0),
-					one.getString("permission", "")
+					one.getString("permission", ""),
+					rotX,
+					rotY,
+					rotZ
 				));
 			}
 		}

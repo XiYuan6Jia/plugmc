@@ -169,11 +169,26 @@ final class CosmeticDisplays {
 		float scale = slot.scale();
 		Transformation wanted = new Transformation(
 			new Vector3f(0.0f, 0.0f, 0.0f),
-			new AxisAngle4f(0.0f, 0.0f, 0.0f, 1.0f),
+			euler(slot.rotX(), slot.rotY(), slot.rotZ()),
 			new Vector3f(scale, scale, scale),
-			new AxisAngle4f(0.0f, 0.0f, 0.0f, 1.0f)
+			new org.joml.Quaternionf()
 		);
 		display.setTransformation(wanted);
+	}
+
+	/** 把「先绕 X、再绕 Y、最后绕 Z」的欧拉角（度）合成为四元数。 */
+	private static org.joml.Quaternionf euler(double rotX, double rotY, double rotZ) {
+		org.joml.Quaternionf quat = new org.joml.Quaternionf();
+		if (rotY != 0.0) {
+			quat.rotateY((float) Math.toRadians(rotY));
+		}
+		if (rotX != 0.0) {
+			quat.rotateX((float) Math.toRadians(rotX));
+		}
+		if (rotZ != 0.0) {
+			quat.rotateZ((float) Math.toRadians(rotZ));
+		}
+		return quat;
 	}
 
 	/**

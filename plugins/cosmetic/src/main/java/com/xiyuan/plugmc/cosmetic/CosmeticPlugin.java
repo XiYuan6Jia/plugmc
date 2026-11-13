@@ -104,6 +104,15 @@ public final class CosmeticPlugin extends JavaPlugin {
 	void reload() {
 		reloadConfig();
 		config = CosmeticConfig.load(this);
+		// 必须先让「旧的」attributes 摘掉它自己加过的修饰符，再换新实例。
+		// 否则新实例的 applied 表是空的，strip() 什么也摘不掉，
+		// 老修饰符留在玩家身上，新实例再 add 就会撞
+		// 「Modifier is already applied on this attribute!」，reload 后属性加成直接失效。
+		if (attributes != null) {
+			for (Player player : Bukkit.getOnlinePlayers()) {
+				attributes.strip(player);
+			}
+		}
 		if (displays != null) {
 			displays.shutdown();
 		}
