@@ -1,0 +1,29 @@
+{
+  "name": "主城西广场",
+  "dimension": "minecraft:hub",
+  "note": "大厅西门外：西门轴线上的门架 + 中央喷泉 + 西侧两间铺面 + 灯柱与树池。不动大厅本体（|x| <= 24）与跑酷（东侧）。",
+  "y": 65,
+  "floor": {"x0": -58, "z0": -20, "x1": -25, "z1": 18, "mat": "minecraft:smooth_quartz", "depth": 1},
+  "defaults": {"reload": true},
+  "items": [
+    {"template": "plugmc:arch_ns", "at": [-32, -4], "note": "横跨西门轴线（z=-4..4）的门架"},
+
+    {"template": "plugmc:fountain", "at": [-42, -1], "note": "广场中心，占 x -42..-40 / z -1..1"},
+
+    {"template": "plugmc:lamp_post", "at": [-34, -3]},
+    {"template": "plugmc:lamp_post", "at": [-34, 3]},
+    {"template": "plugmc:lamp_post", "at": [-46, -3]},
+    {"template": "plugmc:lamp_post", "at": [-46, 3]},
+
+    {"template": "plugmc:shop_east", "at": [-56, -16], "note": "西排铺面，门朝东（x=-50 面）"},
+    {"template": "plugmc:shop_east", "at": [-56, -6], "note": "西排铺面，门朝东（x=-50 面）"},
+
+    {"template": "plugmc:planter", "at": [-45, 10]},
+    {"template": "plugmc:planter", "at": [-45, -12]},
+    {"template": "plugmc:planter", "at": [-38, 10]},
+    {"template": "plugmc:planter", "at": [-38, -12]},
+
+    {"template": "plugmc:bench", "at": [-38, 5]},
+    {"template": "plugmc:bench", "at": [-38, -7]}
+  ]
+}

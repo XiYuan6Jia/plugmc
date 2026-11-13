@@ -1,0 +1,22 @@
+{
+  "name": "主城东侧观赛区",
+  "dimension": "minecraft:hub",
+  "note": "跑酷起点北侧的空地：观赛平台 + 长椅 + 灯柱。铺装从 z=1 起，接上东门到跑酷走廊（x 25..31, z -1..1），避免出门踩空；跳台（x 38..114, z -3/0/3）完全不碰。",
+  "y": 65,
+  "floor": {"x0": 25, "z0": 1, "x1": 34, "z1": 16, "mat": "minecraft:smooth_quartz", "depth": 1},
+  "defaults": {"reload": true},
+  "items": [
+    {"template": "plugmc:arch", "at": [26, 8], "rotation": 90,
+     "note": "转 90 度让门架跨度沿 z 轴（8..16），两端都踩在铺装上"},
+
+    {"template": "plugmc:lamp_post", "at": [28, 8]},
+    {"template": "plugmc:lamp_post", "at": [28, 15]},
+
+    {"template": "plugmc:bench", "at": [30, 9]},
+    {"template": "plugmc:bench", "at": [30, 12]},
+    {"template": "plugmc:bench", "at": [30, 15]},
+
+    {"template": "plugmc:planter", "at": [32, 7]},
+    {"template": "plugmc:planter", "at": [32, 16]}
+  ]
+}

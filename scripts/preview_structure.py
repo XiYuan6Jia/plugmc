@@ -52,6 +52,19 @@ COLORS: dict[str, tuple[int, int, int]] = {
     "bricks": (150, 96, 84),
     "white_wool": (233, 236, 236),
     "spruce_trapdoor": (96, 70, 40),
+    # 主城风格（与 HubLobby 一致）
+    "smooth_quartz": (235, 229, 222),
+    "quartz_block": (236, 230, 223),
+    "chiseled_quartz_block": (231, 225, 217),
+    "quartz_pillar": (233, 227, 219),
+    "quartz_bricks": (229, 223, 215),
+    "quartz_stairs": (235, 229, 222),
+    "smooth_quartz_slab": (235, 229, 222),
+    "polished_andesite": (132, 135, 133),
+    "andesite": (136, 136, 136),
+    "smooth_stone": (158, 158, 158),
+    "azalea_leaves": (92, 132, 62),
+    "barrel": (140, 100, 60),
 }
 DEFAULT_COLOR = (200, 90, 200)  # 未知方块用洋红，一眼能看出漏配颜色
 
@@ -153,7 +166,29 @@ def render_front(blocks: list[dict], scale: int = 8) -> Image.Image:
     return img
 
 
-def merge_plan(plan_path: pathlib.Path) -> list[dict]:
+def lobby_blocks(floor_y: int = 64, radius: int = 24) -> list[dict]:
+    """画出主城大厅的占地与屋顶，用来检查新街区有没有压到大厅或跑到屋顶上。
+
+    只画三层参考物，不做完整建模：
+      - y=floor_y        地板整片（square，radius 半径）
+      - y=floor_y+11     屋顶整片（同尺寸，中央 13x13 换成玻璃天窗）
+      - 四道外墙的顶点    仅 y=floor_y+1 一圈，标出边界
+    """
+    out: list[dict] = []
+    for x in range(-radius, radius + 1):
+        for z in range(-radius, radius + 1):
+            out.append({"x": x, "y": floor_y, "z": z,
+                        "block": "minecraft:smooth_quartz"})
+            skylight = abs(x) <= 6 and abs(z) <= 6
+            out.append({"x": x, "y": floor_y + 11, "z": z,
+                        "block": "minecraft:glass" if skylight else "minecraft:smooth_quartz"})
+            if max(abs(x), abs(z)) == radius:
+                out.append({"x": x, "y": floor_y + 1, "z": z,
+                            "block": "minecraft:stone_bricks"})
+    return out
+
+
+def merge_plan(plan_path: pathlib.Path, include_lobby: bool = False) -> list[dict]:
     """把一张摆放清单展开成一整片街区，返回合并后的方块列表。
 
     每个模块的局部坐标按清单里的 at 平移；rotation 只支持 0/90/180/270，
@@ -162,7 +197,9 @@ def merge_plan(plan_path: pathlib.Path) -> list[dict]:
     plan = json.loads(plan_path.read_text(encoding="utf-8"))
     struct_dir = (pathlib.Path(__file__).resolve().parents[1]
                   / "datapacks" / "plugmc-structures" / "data")
-    anchor_y = plan.get("anchor_y", 0)
+    # 清单顶层 "y" 是模块起始层（显式写死，虚空维度必用）；
+    # 老清单可能用 "anchor_y"，都没有就当 0。
+    anchor_y = int(plan.get("y", plan.get("anchor_y", 0)))
     out: list[dict] = []
     for it in plan.get("items", []):
         tmpl = it.get("template", "")
@@ -198,6 +235,8 @@ def merge_plan(plan_path: pathlib.Path) -> list[dict]:
         for x in range(min(int(fl["x0"]), int(fl["x1"])), max(int(fl["x0"]), int(fl["x1"])) + 1):
             for z in range(min(int(fl["z0"]), int(fl["z1"])), max(int(fl["z0"]), int(fl["z1"])) + 1):
                 out.append({"x": x, "y": y, "z": z, "block": mat})
+    if include_lobby:
+        out.extend(lobby_blocks())
     return out
 
 
@@ -205,20 +244,43 @@ def main() -> int:
     ap = argparse.ArgumentParser(description="把 .nbt 结构（或摆放清单）渲染成预览图")
     ap.add_argument("nbt", nargs="?", help="结构文件路径")
     ap.add_argument("--plan", help="摆放清单 JSON；给了它就渲染整片街区而不是单个结构")
+    ap.add_argument("--plans", nargs="+", help="多份清单一起渲染（看整座主城），配合 --with-lobby")
+    ap.add_argument("--with-lobby", action="store_true",
+                    help="叠加主城大厅（地板 + 屋顶 + 外墙轮廓），检查新街区有没有压到大厅")
     ap.add_argument("--out", help="输出 PNG（默认与输入同名 .png）")
     ap.add_argument("--scale", type=int, default=4, help="缩放倍数，默认 4")
     ap.add_argument("--view", choices=["iso", "top", "front", "all"], default="iso")
     args = ap.parse_args()
 
-    if not args.plan and not args.nbt:
-        ap.error("要么给结构文件路径，要么给 --plan")
+    if not args.plan and not args.plans and not args.nbt:
+        ap.error("要么给结构文件路径，要么给 --plan / --plans")
 
-    if args.plan:
+    if args.plans:
+        blocks = []
+        for p in args.plans:
+            pp = pathlib.Path(p)
+            if not pp.is_file():
+                print(f"找不到清单：{pp}", file=sys.stderr)
+                return 2
+            got = merge_plan(pp, include_lobby=args.with_lobby)
+            print(f"  {pp.name}: {len(got)} 个方块")
+            blocks.extend(got)
+        if not blocks:
+            print("清单里没有任何可放置的模块", file=sys.stderr)
+            return 2
+        src = pathlib.Path(args.plans[0])
+        xs = [b["x"] for b in blocks]
+        ys = [b["y"] for b in blocks]
+        zs = [b["z"] for b in blocks]
+        size = [max(xs) - min(xs) + 1, max(ys) - min(ys) + 1, max(zs) - min(zs) + 1]
+        print(f"整城：{size[0]}x{size[1]}x{size[2]}，{len(blocks)} 个方块"
+              f"（x {min(xs)}..{max(xs)} / y {min(ys)}..{max(ys)} / z {min(zs)}..{max(zs)}）")
+    elif args.plan:
         plan_path = pathlib.Path(args.plan)
         if not plan_path.is_file():
             print(f"找不到清单：{plan_path}", file=sys.stderr)
             return 2
-        blocks = merge_plan(plan_path)
+        blocks = merge_plan(plan_path, include_lobby=args.with_lobby)
         if not blocks:
             print("清单里没有任何可放置的模块", file=sys.stderr)
             return 2

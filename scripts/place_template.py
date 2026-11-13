@@ -176,6 +176,35 @@ class RconTransport:
                 self.sock = None
 
 
+class DimensionTransport:
+    """把每条命令都包成 `execute in <维度> run <命令>`，坐标就落在目标维度。
+
+    为什么需要它：RCON / 面板 API 发的命令默认在命令源的维度执行（也就是 overworld）。
+    主城是一个独立的虚空维度（minecraft:hub），不套这一层的话，`place template`
+    会把方块放到主世界的同名坐标上，而且**一样回 "Loaded template"**，完全不报错。
+    实测：不放前缀时 (200,64,200) 在主世界命中、在 hub 里全空。
+    """
+
+    # 这几个命令不吃维度上下文（要么是服务端级操作，要么套壳后反而报错）
+    BYPASS = ("reload", "version", "tps", "plugins", "list", "say", "help", "stop")
+
+    def __init__(self, inner, dimension: str):
+        self.inner = inner
+        self.dimension = dimension
+
+    def run(self, command: str, wait: float = 20.0) -> str:
+        head = command.strip().split(" ", 1)[0].lstrip("/")
+        if head in self.BYPASS:
+            return self.inner.run(command, wait=wait)
+        return self.inner.run(f"execute in {self.dimension} run {command}", wait=wait)
+
+    def close(self) -> None:
+        self.inner.close()
+
+    def __getattr__(self, item):
+        return getattr(self.inner, item)
+
+
 # ------------------------------------------------------------------ 查询
 
 def is_block(transport, x: int, y: int, z: int, block: str, wait: float = 2.5) -> bool:
@@ -233,6 +262,8 @@ def main() -> int:
     ap.add_argument("--rcon-host", default="127.0.0.1")
     ap.add_argument("--rcon-port", type=int, default=25576)
     ap.add_argument("--rcon-password", default="probe123")
+    ap.add_argument("--dimension", default=None,
+                    help="目标维度（如 minecraft:hub）。不给就在命令源维度执行")
     ap.add_argument("--template", required=True, help="模板 id：<命名空间>:<名字>")
     ap.add_argument("--at", nargs=2, type=int, metavar=("X", "Z"), required=True)
     ap.add_argument("--y", type=int, default=None, help="放置基准 Y")
@@ -258,6 +289,9 @@ def main() -> int:
         transport = RconTransport(args.rcon_host, args.rcon_port, args.rcon_password)
     else:
         transport = ApiTransport()
+    if args.dimension:
+        transport = DimensionTransport(transport, args.dimension)
+        print(f"==> 维度 {args.dimension}（所有命令都套 execute in）")
     state = transport.state()
     print(f"==> 目标 {transport.kind}（state={state}）")
     if transport.kind == "api" and state != "running":

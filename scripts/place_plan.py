@@ -97,20 +97,20 @@ def template_to_nbt(template: str) -> pathlib.Path | None:
     return p if p.is_file() else None
 
 
-def plan_floor_box(plan: dict, y: int) -> str | None:
+def plan_floor_box(plan: dict, top: int) -> str | None:
     """清单里可选的 floor 字段 -> fill 用的坐标串。
 
     floor 是"整片街区共用的地面"，用原版 fill 铺一次，比给每个模块单独做底座省事：
       "floor": {"x0": -458, "z0": -458, "x1": -442, "z1": -438,
                 "mat": "minecraft:stone_bricks", "depth": 1}
-    depth 向下铺几层，默认 1。
+    top 是地面**最上面一层**的 y，depth 是从它往下铺几层，默认 1。
     """
     f = plan.get("floor")
     if not f:
         return None
     x0, z0, x1, z1 = int(f["x0"]), int(f["z0"]), int(f["x1"]), int(f["z1"])
     depth = max(1, int(f.get("depth", 1)))
-    return f"{min(x0, x1)} {y - depth} {min(z0, z1)} {max(x0, x1)} {y - 1} {max(z0, z1)}"
+    return f"{min(x0, x1)} {top - depth + 1} {min(z0, z1)} {max(x0, x1)} {top} {max(z0, z1)}"
 
 
 def load_plan(path: pathlib.Path) -> dict:
@@ -118,13 +118,19 @@ def load_plan(path: pathlib.Path) -> dict:
     items = plan.get("items")
     if not isinstance(items, list) or not items:
         raise SystemExit(f"{path} 里的 items 必须是非空数组")
+    # 清单顶层给了 y 或 anchor，整张清单就有统一高度，单项不必再写 y
+    plan_y = plan.get("y")
+    if plan_y is None and isinstance(plan.get("anchor"), list) and len(plan["anchor"]) == 2:
+        plan_y = "anchor"
     for i, it in enumerate(items):
         if "template" not in it:
             raise SystemExit(f"第 {i + 1} 项缺 template")
         if "at" not in it or len(it["at"]) != 2:
             raise SystemExit(f"第 {i + 1} 项（{it['template']}）的 at 必须是 [x, z]")
-        if "y" not in it and not it.get("ground"):
-            raise SystemExit(f"第 {i + 1} 项（{it['template']}）要么给 y，要么给 ground: true")
+        if plan_y is None and "y" not in it and not it.get("ground"):
+            raise SystemExit(
+                f"第 {i + 1} 项（{it['template']}）要么给 y，要么给 ground: true，"
+                "要么让清单顶层给 y / anchor")
         if it.get("clear") and not it.get("yes_clear"):
             raise SystemExit(
                 f"第 {i + 1} 项（{it['template']}）开了 clear 但没写 yes_clear —— "
@@ -248,6 +254,8 @@ def main() -> int:
     ap.add_argument("--rcon-host", default="127.0.0.1")
     ap.add_argument("--rcon-port", type=int, default=25576)
     ap.add_argument("--rcon-password", default="probe123")
+    ap.add_argument("--dimension", default=None,
+                    help="目标维度（如 minecraft:hub）。清单里写 dimension 也行")
     ap.add_argument("--only", default=None, help="只跑 template 名字里含这个子串的项")
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--stop-on-miss", action="store_true",
@@ -274,6 +282,10 @@ def main() -> int:
         transport = pt.RconTransport(args.rcon_host, args.rcon_port, args.rcon_password)
     else:
         transport = pt.ApiTransport()
+    dimension = args.dimension or plan.get("dimension")
+    if dimension:
+        transport = pt.DimensionTransport(transport, dimension)
+        print(f"==> 维度 {dimension}（所有命令都套 execute in）")
     state = transport.state()
     print(f"==> 目标 {transport.kind}（state={state}）")
     if transport.kind == "api" and state != "running":
@@ -284,11 +296,19 @@ def main() -> int:
         print("==> reload 数据包")
         transport.run("reload", wait=10.0)
 
-    # 清单级基准高度：给了 anchor 就只探测一次，整张清单共用同一个 y。
-    # 不这么做的话，先放的喷泉/灯柱会被后面的项当成"地面"，一个广场摆出三种高度。
+    # 清单级基准高度，三档优先级：
+    #   1) 顶层 "y": 64 —— 直接写死。虚空维度（hub）必须用这个：
+    #      那里从 y=200 往下找，第一格非空气是**大厅屋顶 y=75**，anchor 会探成 76，
+    #      整片街区就飘到屋顶上了。
+    #   2) 顶层 "anchor": [x, z] —— 有真实地面的世界用，只探测一次、全清单共用。
+    #      不这么做的话，先放的喷泉/灯柱会被后面的项当成"地面"，一个广场摆出三种高度。
+    #   3) 都没有 —— 逐项按 ground 各自找地面。
     anchor_y: int | None = None
+    if plan.get("y") is not None:
+        anchor_y = int(plan["y"])
+        print(f"==> 清单指定基准高度 y={anchor_y}（不探测地面）")
     anchor = plan.get("anchor")
-    if anchor and len(anchor) == 2:
+    if anchor and len(anchor) == 2 and anchor_y is None:
         ax, az = anchor
         if args.dry_run:
             print(f"==> 基准高度锚点 ({ax},{az})：dry-run 不探测")
@@ -307,9 +327,10 @@ def main() -> int:
     bad: list[str] = []
 
     # 地面：在放模块之前铺，否则模块会被地面盖住。
+    # 模块从 anchor_y 开始长，所以地面最上面一层是 anchor_y - 1。
     floor_spec = plan.get("floor")
     if floor_spec and anchor_y is not None:
-        box = plan_floor_box(plan, anchor_y)
+        box = plan_floor_box(plan, anchor_y - 1)
         mat = floor_spec.get("mat", "minecraft:stone_bricks")
         print(f"==> 铺地面 {box}  {mat}")
         if not args.dry_run:
@@ -318,7 +339,7 @@ def main() -> int:
             if "Too many blocks" in r:
                 raise SystemExit("    单次 fill 上限 32768 格，把 floor 拆成几段")
     elif floor_spec and anchor_y is None:
-        print("==> 清单有 floor 但没 anchor，跳过铺地面（需要基准高度才知道铺在哪一层）")
+        print("==> 清单有 floor 但没 anchor/y，跳过铺地面（需要基准高度才知道铺在哪一层）")
 
     for i, it in enumerate(items, 1):
         print(f"==> [{i}/{len(items)}] {it['template']}")

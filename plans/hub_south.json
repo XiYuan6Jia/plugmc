@@ -1,0 +1,34 @@
+{
+  "name": "主城南大街",
+  "dimension": "minecraft:hub",
+  "note": "大厅南门外的主干道：中轴大道 + 两侧六间铺面 + 尽头凉亭。不动大厅本体（|x|,|z| <= 24）与任何既有功能点。",
+  "anchor": [],
+  "y": 65,
+  "floor": {"x0": -22, "z0": 25, "x1": 22, "z1": 63, "mat": "minecraft:smooth_quartz", "depth": 1},
+  "defaults": {"reload": true, "search_from": 200, "search_to": -64},
+  "items": [
+    {"template": "plugmc:arch", "at": [-4, 26], "note": "大街入口门架，跨中轴"},
+
+    {"template": "plugmc:lamp_post", "at": [-3, 30]},
+    {"template": "plugmc:lamp_post", "at": [3, 30]},
+    {"template": "plugmc:lamp_post", "at": [-3, 40]},
+    {"template": "plugmc:lamp_post", "at": [3, 40]},
+    {"template": "plugmc:lamp_post", "at": [-3, 50]},
+    {"template": "plugmc:lamp_post", "at": [3, 50]},
+
+    {"template": "plugmc:shop_east", "at": [-10, 29], "note": "西侧铺面，门朝东开向大道"},
+    {"template": "plugmc:shop_east", "at": [-10, 41], "note": "西侧铺面，门朝东开向大道"},
+    {"template": "plugmc:shop_west", "at": [4, 35], "note": "东侧铺面，门朝西开向大道"},
+    {"template": "plugmc:shop_west", "at": [4, 47], "note": "东侧铺面，门朝西开向大道"},
+
+    {"template": "plugmc:planter", "at": [-9, 36]},
+    {"template": "plugmc:planter", "at": [-9, 48]},
+    {"template": "plugmc:planter", "at": [6, 30]},
+    {"template": "plugmc:planter", "at": [6, 42]},
+
+    {"template": "plugmc:bench", "at": [-1, 52]},
+    {"template": "plugmc:bench", "at": [2, 52]},
+
+    {"template": "plugmc:pavilion", "at": [-4, 54], "note": "大道尽头的凉亭，作为南端对景"}
+  ]
+}

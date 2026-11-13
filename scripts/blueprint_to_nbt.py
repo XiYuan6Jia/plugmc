@@ -676,10 +676,160 @@ def gen_fountain() -> list[dict]:
     return blocks
 
 
+# ---- 主城风格构件 ----
+# 主城大厅（HubLobby）用的是一套固定材料：石砖墙裙 / 中段玻璃 / 上半石英，
+# 石英柱 + 柱顶海晶灯，平滑石英平顶 + 玻璃天窗，地面石英 + 磨制安山岩网格线。
+# 新增建筑全部复用这一套，才能跟大厅、跑酷走廊、三个摊位连成一片。
+HUB_STYLE = {
+    "floor": "minecraft:smooth_quartz",
+    "grid": "minecraft:polished_andesite",
+    "base": "minecraft:stone_bricks",
+    "wall": "minecraft:smooth_quartz",
+    "pillar": "minecraft:quartz_pillar[axis=y]",
+    "accent": "minecraft:chiseled_quartz_block",
+    "glass": "minecraft:glass_pane",
+    "lamp": "minecraft:sea_lantern",
+    "lantern": "minecraft:lantern[hanging=false]",
+    "leaf": "minecraft:azalea_leaves[persistent=true]",
+    "log": "minecraft:oak_log[axis=y]",
+}
+
+
+def gen_pavilion(span: int = 7) -> list[dict]:
+    """凉亭：石砖基座 + 石英内铺 + 四角石英柱顶海晶灯 + 平顶 + 中央吊灯。"""
+    s = span - 1
+    blocks: list[dict] = []
+    for x in range(span):
+        for z in range(span):
+            edge = x in (0, s) or z in (0, s)
+            blocks.append({"x": x, "y": 0, "z": z,
+                           "block": HUB_STYLE["base"] if edge else HUB_STYLE["floor"]})
+    for px, pz in ((0, 0), (s, 0), (0, s), (s, s)):
+        for y in (1, 2):
+            blocks.append({"x": px, "y": y, "z": pz, "block": HUB_STYLE["pillar"]})
+        blocks.append({"x": px, "y": 3, "z": pz, "block": HUB_STYLE["lamp"]})
+    for x in range(-1, span + 1):
+        for z in range(-1, span + 1):
+            blocks.append({"x": x, "y": 4, "z": z, "block": HUB_STYLE["wall"]})
+    blocks.append({"x": s // 2, "y": 3, "z": s // 2,
+                   "block": "minecraft:lantern[hanging=true]"})
+    return blocks
+
+
+def gen_arch(span: int = 9) -> list[dict]:
+    """门洞拱架：两根石英柱 + 顶部横梁 + 中悬吊灯，跨度内可通行。"""
+    s = span - 1
+    blocks: list[dict] = []
+    for px in (0, s):
+        blocks.append({"x": px, "y": 0, "z": 0, "block": HUB_STYLE["base"]})
+        for y in (1, 2, 3):
+            blocks.append({"x": px, "y": y, "z": 0, "block": HUB_STYLE["pillar"]})
+        blocks.append({"x": px, "y": 4, "z": 0, "block": HUB_STYLE["lamp"]})
+    for x in range(span):
+        blocks.append({"x": x, "y": 5, "z": 0, "block": HUB_STYLE["wall"]})
+    blocks.append({"x": s // 2, "y": 4, "z": 0,
+                   "block": "minecraft:lantern[hanging=true]"})
+    blocks.append({"x": s // 2, "y": 6, "z": 0, "block": HUB_STYLE["accent"]})
+    return blocks
+
+
+def gen_arch_ns(span: int = 9) -> list[dict]:
+    """南北向门架：和 gen_arch 一样，但跨度沿 z 轴。
+
+    主城四个门朝向不同，门架不能只有东西向一种 —— 从西门、东门进来的路
+    需要横跨在南北方向上的门架。
+    """
+    return [{"x": b["z"], "y": b["y"], "z": b["x"], "block": b["block"]}
+            for b in gen_arch(span)]
+
+
+def gen_shop(w: int = 7, d: int = 5, h: int = 5, door_face: str = "south") -> list[dict]:
+    """临街铺面：石砖墙裙 + 玻璃带窗 + 石英上墙 + 平顶女儿墙，某一面留门。
+
+    door_face 决定门开在哪面墙（south/north/east/west），默认南面。
+    店铺是给主城沿街摆的，门必须朝街，不能一律朝同一方向。
+    """
+    blocks: list[dict] = []
+    face = door_face if door_face in ("south", "north", "east", "west") else "south"
+
+    def is_door(x: int, z: int, y: int) -> bool:
+        if y > 2:
+            return False
+        if face in ("south", "north"):
+            zz = d - 1 if face == "south" else 0
+            return z == zz and x == w // 2
+        xx = w - 1 if face == "east" else 0
+        return x == xx and z == d // 2
+
+    for x in range(w):
+        for z in range(d):
+            blocks.append({"x": x, "y": 0, "z": z, "block": HUB_STYLE["floor"]})
+    for x in range(w):
+        for z in range(d):
+            if 0 < x < w - 1 and 0 < z < d - 1:
+                continue
+            for y in range(1, h):
+                if is_door(x, z, y):
+                    continue
+                if y <= 2:
+                    mat = HUB_STYLE["base"]
+                elif y == 3:
+                    mat = HUB_STYLE["glass"]
+                else:
+                    mat = HUB_STYLE["wall"]
+                blocks.append({"x": x, "y": y, "z": z, "block": mat})
+    for x in range(w):
+        for z in range(d):
+            blocks.append({"x": x, "y": h, "z": z, "block": HUB_STYLE["wall"]})
+            if x in (0, w - 1) or z in (0, d - 1):
+                blocks.append({"x": x, "y": h + 1, "z": z, "block": HUB_STYLE["base"]})
+
+    # 店内一盏吊灯 + 门两侧一对壁灯
+    blocks.append({"x": w // 2, "y": h - 1, "z": d // 2, "block": HUB_STYLE["lantern"]})
+    if face in ("south", "north"):
+        zz = d - 1 if face == "south" else 0
+        for px in (w // 2 - 2, w // 2 + 2):
+            if 0 <= px < w:
+                blocks.append({"x": px, "y": 3, "z": zz, "block": HUB_STYLE["lantern"]})
+    else:
+        xx = w - 1 if face == "east" else 0
+        for pz in (d // 2 - 1, d // 2 + 1):
+            if 0 <= pz < d:
+                blocks.append({"x": xx, "y": 3, "z": pz, "block": HUB_STYLE["lantern"]})
+    return blocks
+
+
+def gen_planter() -> list[dict]:
+    """树池：石砖池沿 + 磨制安山岩池底 + 一棵矮树。"""
+    blocks: list[dict] = []
+    for x in range(3):
+        for z in range(3):
+            edge = x in (0, 2) or z in (0, 2)
+            blocks.append({"x": x, "y": 0, "z": z,
+                           "block": HUB_STYLE["base"] if edge else HUB_STYLE["grid"]})
+    blocks.append({"x": 1, "y": 1, "z": 1, "block": HUB_STYLE["log"]})
+    blocks.append({"x": 1, "y": 2, "z": 1, "block": HUB_STYLE["log"]})
+    for dx, dz in ((0, 1), (2, 1), (1, 0), (1, 2)):
+        blocks.append({"x": dx, "y": 2, "z": dz, "block": HUB_STYLE["leaf"]})
+    for x in range(3):
+        for z in range(3):
+            blocks.append({"x": x, "y": 3, "z": z, "block": HUB_STYLE["leaf"]})
+    blocks.append({"x": 1, "y": 4, "z": 1, "block": HUB_STYLE["leaf"]})
+    return blocks
+
+
 GENERATORS = {
     "lamp_post": gen_lamp_post,
     "bench": gen_bench,
     "fountain": gen_fountain,
+    "pavilion": gen_pavilion,
+    "arch": gen_arch,
+    "arch_ns": gen_arch_ns,
+    "shop": gen_shop,
+    "shop_north": lambda: gen_shop(door_face="north"),
+    "shop_east": lambda: gen_shop(door_face="east"),
+    "shop_west": lambda: gen_shop(door_face="west"),
+    "planter": gen_planter,
 }
 
 # 建筑设计类的预设（走 expand_blueprint，比手摆方块更适合做单体建筑）
