@@ -63,13 +63,18 @@ final class BazaarStalls {
 	 *
 	 * <p>只清带 {@link #TAG} 标签的实体 —— 摊位装饰方块在磁盘上仍然存在，
 	 * 但实体不属于存档里「该有的东西」，重启后必须由本插件重新生成。</p>
+	 *
+	 * <p>实体是随区块一起从磁盘读出来的，区块没加载就扫不到。所以先把所有摊位
+	 * 覆盖到的区块点一遍：不这么做，遗留的人偶会在下次有人路过时才冒出来，
+	 * 而且和刚生成的那个重复。</p>
 	 */
 	int sweepOrphans() {
-		int removed = 0;
 		World world = world();
 		if (world == null) {
 			return 0;
 		}
+		loadStallChunks(world);
+		int removed = 0;
 		for (Entity entity : world.getEntities()) {
 			if (entity.getScoreboardTags().contains(TAG)) {
 				entity.remove();
@@ -77,6 +82,18 @@ final class BazaarStalls {
 			}
 		}
 		return removed;
+	}
+
+	/** 把所有摊位占地涉及的区块拉进内存（只为让 {@link #sweepOrphans} 能看见其中的实体）。 */
+	private void loadStallChunks(World world) {
+		for (int[] slot : config.playerStalls().slots()) {
+			world.getChunkAt(slot[0] >> 4, slot[1] >> 4);
+			world.getChunkAt((slot[0] + WIDTH) >> 4, (slot[1] + DEPTH) >> 4);
+		}
+		for (BazaarConfig.FixedStall fixed : config.fixedStalls()) {
+			world.getChunkAt(fixed.x() >> 4, fixed.z() >> 4);
+			world.getChunkAt((fixed.x() + WIDTH) >> 4, (fixed.z() + DEPTH) >> 4);
+		}
 	}
 
 	World world() {
@@ -135,8 +152,43 @@ final class BazaarStalls {
 		if (world == null) {
 			return;
 		}
+		if (!loaded(world, slot)) {
+			return;
+		}
+		ensureActors(world, state, slot, tenant);
 		updateText(state, tenant);
 		updateItems(state, tenant, world, slot);
+	}
+
+	/**
+	 * 补齐丢失的展示实体。
+	 *
+	 * <p>实体不是插件状态的一部分：`/kill`、区块被别的插件抢走、管理员手工清理，
+	 * 都会让它们消失，而 {@code occupied} 里还记着玩家占着这个摊。
+	 * 每轮刷新顺手补上，比等玩家撤摊再重新上摊要体面。</p>
+	 */
+	private void ensureActors(World world, Occupancy state, int[] slot, BazaarTenants.Tenant tenant) {
+		if (!alive(state.mannequinId)) {
+			state.mannequinId = spawnMannequin(world, slot, tenant).getUniqueId();
+		}
+		if (!alive(state.textId)) {
+			state.textId = spawnTradeText(world, slot).getUniqueId();
+		}
+	}
+
+	/**
+	 * 摊位所在区块是否已经加载。
+	 *
+	 * <p>实体没加载时 {@link Bukkit#getEntity} 一样返回 null。不先判这一下，
+	 * 刷新就会把「没加载」误当成「被杀了」，每 40 tick 补一个新实体 ——
+	 * 而且补实体需要区块加载，等于逼着服务端把这一片永远读进内存。</p>
+	 */
+	private boolean loaded(World world, int[] slot) {
+		return world.isChunkLoaded(slot[0] >> 4, slot[1] >> 4);
+	}
+
+	private static boolean alive(UUID id) {
+		return id != null && Bukkit.getEntity(id) != null;
 	}
 
 	/** 解放一个摊位：撤掉人偶与商品，把装饰方块逐格还原。 */
@@ -213,7 +265,7 @@ final class BazaarStalls {
 			entity.setInvulnerable(true);
 			entity.setSilent(true);
 			entity.setCollidable(false);
-			entity.setPersistent(false);
+			entity.setPersistent(true);
 			entity.customName(BazaarText.component("&f" + fixedLabel(fixed.kind())));
 			entity.setCustomNameVisible(true);
 		});
@@ -222,7 +274,7 @@ final class BazaarStalls {
 		Location textAt = new Location(world, x0 + WIDTH / 2.0, y + 3.2, z0 + 1.5);
 		TextDisplay text = world.spawn(textAt, TextDisplay.class, entity -> {
 			entity.addScoreboardTag(TAG);
-			entity.setPersistent(false);
+			entity.setPersistent(true);
 			entity.setBillboard(Display.Billboard.CENTER);
 			entity.setSeeThrough(false);
 			entity.setShadowed(true);
@@ -251,7 +303,7 @@ final class BazaarStalls {
 			Location at = new Location(world, x0 + 1 + i + 0.5, y + 2.05, z0 + DEPTH - 1 + 0.5);
 			ItemDisplay display = world.spawn(at, ItemDisplay.class, entity -> {
 				entity.addScoreboardTag(TAG);
-				entity.setPersistent(false);
+				entity.setPersistent(true);
 				entity.setBillboard(Display.Billboard.VERTICAL);
 				entity.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.FIXED);
 				entity.setViewRange(1.0f);
@@ -383,29 +435,43 @@ final class BazaarStalls {
 	// ---------------------------------------------------------------- 人偶与展示
 
 	private void placeActors(World world, Occupancy state, int[] slot, BazaarTenants.Tenant tenant) {
+		state.mannequinId = spawnMannequin(world, slot, tenant).getUniqueId();
+		state.textId = spawnTradeText(world, slot).getUniqueId();
+		updateText(state, tenant);
+		updateItems(state, tenant, world, slot);
+	}
+
+	/** 摊位后面的玩家模型：套摊主的皮肤，头顶显示名字。 */
+	private Mannequin spawnMannequin(World world, int[] slot, BazaarTenants.Tenant tenant) {
 		int x0 = slot[0];
 		int z0 = slot[1];
 		int y = config.floorY();
 
-		Location mannequinAt = new Location(world, x0 + WIDTH / 2.0 + 0.0, y + 1.0, z0 + 1.5);
-		Mannequin mannequin = world.spawn(mannequinAt, Mannequin.class, entity -> {
+		Location at = new Location(world, x0 + WIDTH / 2.0, y + 1.0, z0 + 1.5);
+		return world.spawn(at, Mannequin.class, entity -> {
 			entity.addScoreboardTag(TAG);
 			entity.setImmovable(true);
 			entity.setInvulnerable(true);
 			entity.setSilent(true);
 			entity.setCollidable(false);
-			entity.setPersistent(false);
+			entity.setPersistent(true);
 			entity.setProfile(profileOf(tenant.name()));
 			entity.setDescription(BazaarText.component("&f" + tenant.name()));
 			entity.customName(BazaarText.component("&f" + tenant.name()));
 			entity.setCustomNameVisible(true);
 		});
-		state.mannequinId = mannequin.getUniqueId();
+	}
 
-		Location textAt = new Location(world, x0 + WIDTH / 2.0, y + 3.7, z0 + 1.5);
-		TextDisplay text = world.spawn(textAt, TextDisplay.class, entity -> {
+	/** 头顶那块浮空招牌（交易明细写在这里）。 */
+	private TextDisplay spawnTradeText(World world, int[] slot) {
+		int x0 = slot[0];
+		int z0 = slot[1];
+		int y = config.floorY();
+
+		Location at = new Location(world, x0 + WIDTH / 2.0, y + 3.7, z0 + 1.5);
+		return world.spawn(at, TextDisplay.class, entity -> {
 			entity.addScoreboardTag(TAG);
-			entity.setPersistent(false);
+			entity.setPersistent(true);
 			entity.setBillboard(Display.Billboard.CENTER);
 			entity.setSeeThrough(false);
 			entity.setShadowed(true);
@@ -415,9 +481,6 @@ final class BazaarStalls {
 			entity.setAlignment(TextDisplay.TextAlignment.CENTER);
 			entity.setViewRange(1.0f);
 		});
-		state.textId = text.getUniqueId();
-		updateText(state, tenant);
-		updateItems(state, tenant, world, slot);
 	}
 
 	private void updateText(Occupancy state, BazaarTenants.Tenant tenant) {
@@ -446,16 +509,7 @@ final class BazaarStalls {
 		// 先补齐/裁剪实体数量
 		while (state.itemIds.size() < want) {
 			int index = state.itemIds.size();
-			Location at = new Location(world, x0 + 1 + index + 0.5, y + 2.05, z0 + DEPTH - 1 + 0.5);
-			ItemDisplay display = world.spawn(at, ItemDisplay.class, entity -> {
-				entity.addScoreboardTag(TAG);
-				entity.setPersistent(false);
-				entity.setBillboard(Display.Billboard.VERTICAL);
-				entity.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.FIXED);
-				entity.setViewRange(1.0f);
-				entity.setTeleportDuration(0);
-			});
-			state.itemIds.add(display.getUniqueId());
+			state.itemIds.add(spawnItemDisplay(world, slot, index).getUniqueId());
 		}
 		while (state.itemIds.size() > want) {
 			UUID id = state.itemIds.remove(state.itemIds.size() - 1);
@@ -464,16 +518,36 @@ final class BazaarStalls {
 				entity.remove();
 			}
 		}
-		// 再刷新内容
+		// 再刷新内容；实体中途没了的就地补一个新的（位置由序号决定，不会跳格）
 		for (int i = 0; i < want; i++) {
+			ItemDisplay display;
 			Entity entity = Bukkit.getEntity(state.itemIds.get(i));
-			if (!(entity instanceof ItemDisplay display)) {
-				continue;
+			if (entity instanceof ItemDisplay existing) {
+				display = existing;
+			} else {
+				display = spawnItemDisplay(world, slot, i);
+				state.itemIds.set(i, display.getUniqueId());
 			}
 			BazaarDeal deal = tenant.deals().get(i);
 			display.setItemStack(deal.icon());
 			display.setTransformation(spin(i));
 		}
+	}
+
+	/** 货台上方的旋转商品。 */
+	private ItemDisplay spawnItemDisplay(World world, int[] slot, int index) {
+		int x0 = slot[0];
+		int z0 = slot[1];
+		int y = config.floorY();
+		Location at = new Location(world, x0 + 1 + index + 0.5, y + 2.05, z0 + DEPTH - 1 + 0.5);
+		return world.spawn(at, ItemDisplay.class, entity -> {
+			entity.addScoreboardTag(TAG);
+			entity.setPersistent(true);
+			entity.setBillboard(Display.Billboard.VERTICAL);
+			entity.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.FIXED);
+			entity.setViewRange(1.0f);
+			entity.setTeleportDuration(0);
+		});
 	}
 
 	/** 让商品缓缓自转，三个错开相位。 */
