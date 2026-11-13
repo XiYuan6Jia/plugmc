@@ -1,5 +1,6 @@
 package com.xiyuan.plugmc.bazaar;
 
+import com.xiyuan.plugmc.economy.api.TradeMenus;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -50,12 +51,15 @@ final class BazaarMenu implements InventoryHolder, Listener {
 	/** 这一屏上每个按钮对应的交易类型，下标 i 的按钮占 slot i*2。 */
 	private final List<BazaarDeal.Kind> kinds = new ArrayList<>();
 	private Inventory inventory;
+	/** 这一屏属于谁 —— 点按钮时要按这个人的 UUID 过滤界面。 */
+	private java.util.UUID ownerId;
 
 	private BazaarMenu() {
 	}
 
-	private BazaarMenu(List<BazaarDeal.Kind> kinds) {
+	private BazaarMenu(List<BazaarDeal.Kind> kinds, java.util.UUID ownerId) {
 		this.kinds.addAll(kinds);
+		this.ownerId = ownerId;
 	}
 
 	/**
@@ -78,11 +82,12 @@ final class BazaarMenu implements InventoryHolder, Listener {
 			viewer.sendMessage(BazaarText.component("&7这个摊位已经空了。"));
 			return;
 		}
+		java.util.UUID owner = tenant.ownerId();
 		if (present.size() == 1) {
-			run(viewer, present.get(0));
+			run(viewer, present.get(0), owner);
 			return;
 		}
-		BazaarMenu menu = new BazaarMenu(present);
+		BazaarMenu menu = new BazaarMenu(present, owner);
 		menu.build(tenant);
 		viewer.openInventory(menu.inventory);
 	}
@@ -146,11 +151,30 @@ final class BazaarMenu implements InventoryHolder, Listener {
 		}
 		BazaarDeal.Kind kind = menu.kinds.get(slot / 2);
 		player.closeInventory();
-		run(player, kind);
+		run(player, kind, menu.ownerId);
 	}
 
-	/** 交给经济系统自己的入口命令，界面与校验都用它原有的。 */
-	private static void run(Player viewer, BazaarDeal.Kind kind) {
+	/**
+	 * 交给经济系统打开「这个人」的界面。
+	 *
+	 * <p>优先走 {@link TradeMenus}（列表已按卖家过滤）；经济系统没提供该服务、
+	 * 或这个人的对应交易刚好在这一瞬间消失了，就退回原来的无参命令 —— 至少能打开
+	 * 全服列表，不会让玩家点了没反应。</p>
+	 */
+	private static void run(Player viewer, BazaarDeal.Kind kind, java.util.UUID ownerId) {
+		var registration = Bukkit.getServicesManager().getRegistration(TradeMenus.class);
+		TradeMenus menus = registration == null ? null : registration.getProvider();
+		if (menus != null && ownerId != null) {
+			boolean opened = switch (kind) {
+				case MARKET -> menus.openMarketOf(viewer, ownerId);
+				case AUCTION -> menus.openAuctionOf(viewer, ownerId);
+				case ORDER -> menus.openOrderOf(viewer, ownerId);
+			};
+			if (opened) {
+				return;
+			}
+			viewer.sendMessage(BazaarText.component("&7这些交易刚刚结束了，已为你打开全部列表。"));
+		}
 		String command = COMMANDS.get(kind);
 		if (command != null) {
 			Bukkit.dispatchCommand(viewer, command);

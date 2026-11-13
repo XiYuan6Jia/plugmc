@@ -61,6 +61,21 @@ public record BazaarTenants(List<Tenant> tenants) {
 			return Bukkit.getPlayerExact(name);
 		}
 
+		/**
+		 * 摊主的 UUID（取任一交易记录上的 owner）。
+		 *
+		 * <p>同一个人的三类交易 owner 必然相同，所以拿第一条非空的就够。
+		 * 全为空时返回 null —— 调用方应该退回「打开全服列表」而不是崩溃。</p>
+		 */
+		public java.util.UUID ownerId() {
+			for (BazaarDeal deal : deals) {
+				if (deal.ownerId() != null) {
+					return deal.ownerId();
+				}
+			}
+			return null;
+		}
+
 		/** 招牌第一行：种类概览，如「售卖 2 · 拍卖 1」。 */
 		public String kindSummary() {
 			int market = 0;
@@ -115,6 +130,7 @@ public record BazaarTenants(List<Tenant> tenants) {
 				listing.amount(),
 				listing.unitPrice().toPlainString(),
 				nameOf(listing.sellerName(), listing.seller()),
+				listing.seller(),
 				listing.item()
 			));
 		}
@@ -138,6 +154,7 @@ public record BazaarTenants(List<Tenant> tenants) {
 				listing.item().getAmount(),
 				price,
 				nameOf(listing.sellerName(), listing.seller()),
+				listing.seller(),
 				listing.item()
 			));
 		}
@@ -155,6 +172,7 @@ public record BazaarTenants(List<Tenant> tenants) {
 				order.remaining(),
 				"单价 " + order.unitPrice().toPlainString(),
 				nameOf(order.buyerName(), order.buyer()),
+				order.buyer(),
 				order.template()
 			));
 		}

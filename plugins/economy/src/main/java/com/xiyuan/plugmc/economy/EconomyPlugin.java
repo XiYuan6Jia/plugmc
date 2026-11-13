@@ -4,6 +4,7 @@ import com.xiyuan.plugmc.economy.api.EconomyAuditService;
 import com.xiyuan.plugmc.economy.api.EconomyService;
 import com.xiyuan.plugmc.economy.api.EconomyTransactionEvent;
 import com.xiyuan.plugmc.economy.api.TradeBoard;
+import com.xiyuan.plugmc.economy.api.TradeMenus;
 import com.xiyuan.plugmc.economy.auction.AuctionCommand;
 import com.xiyuan.plugmc.economy.auction.AuctionConfig;
 import com.xiyuan.plugmc.economy.auction.AuctionService;
@@ -26,6 +27,7 @@ import com.xiyuan.plugmc.economy.internal.EconomyServiceImpl;
 import com.xiyuan.plugmc.economy.internal.EconomyStore;
 import com.xiyuan.plugmc.economy.internal.LedgerService;
 import com.xiyuan.plugmc.economy.internal.TradeBoardImpl;
+import com.xiyuan.plugmc.economy.internal.TradeMenusImpl;
 import com.xiyuan.plugmc.economy.mail.MailCommand;
 import com.xiyuan.plugmc.economy.mail.MailConfig;
 import com.xiyuan.plugmc.economy.mail.MailService;
@@ -72,6 +74,7 @@ public final class EconomyPlugin extends JavaPlugin implements Listener {
 	private OrderService orderService;
 	private AuctionService auctionService;
 	private TradeBoardImpl tradeBoard;
+	private TradeMenusImpl tradeMenus;
 	private TradeManager tradeManager;
 	private BankService bankService;
 	private VaultService vaultService;
@@ -164,7 +167,9 @@ public final class EconomyPlugin extends JavaPlugin implements Listener {
 			mailService = new MailService(this, store, ledger, mailConfig);
 			MarketConfig marketConfig = MarketConfig.load(getConfig(), config.decimalPlaces());
 			marketService = new MarketService(this, ledger, store, mailService, marketConfig);
-			registerCommand("market", new MarketCommand(marketService, new MarketGui(marketService, chatPrompt)));
+			// 三个界面留引用：商业街要能按摊主直接打开它们（见 TradeMenus）
+			MarketGui marketGui = new MarketGui(marketService, chatPrompt);
+			registerCommand("market", new MarketCommand(marketService, marketGui));
 			registerCommand("mail", new MailCommand(mailService, new MailGui(mailService)));
 			orderService = new OrderService(
 				this,
@@ -173,7 +178,8 @@ public final class EconomyPlugin extends JavaPlugin implements Listener {
 				mailService,
 				OrderConfig.load(getConfig(), config.decimalPlaces())
 			);
-			registerCommand("order", new OrderCommand(orderService, new OrderGui(orderService, chatPrompt)));
+			OrderGui orderGui = new OrderGui(orderService, chatPrompt);
+			registerCommand("order", new OrderCommand(orderService, orderGui));
 			auctionService = new AuctionService(
 				this,
 				ledger,
@@ -181,10 +187,8 @@ public final class EconomyPlugin extends JavaPlugin implements Listener {
 				mailService,
 				AuctionConfig.load(getConfig(), config.decimalPlaces())
 			);
-			registerCommand("auction", new AuctionCommand(
-				auctionService,
-				new AuctionGui(auctionService, chatPrompt)
-			));
+			AuctionGui auctionGui = new AuctionGui(auctionService, chatPrompt);
+			registerCommand("auction", new AuctionCommand(auctionService, auctionGui));
 			tradeManager = new TradeManager(this);
 			getServer().getPluginManager().registerEvents(tradeManager, this);
 			registerCommand("trade", new TradeCommand(tradeManager, new TradeGui(tradeManager)));
@@ -194,6 +198,14 @@ public final class EconomyPlugin extends JavaPlugin implements Listener {
 			Bukkit.getServicesManager().register(
 				TradeBoard.class,
 				tradeBoard,
+				this,
+				ServicePriority.Normal
+			);
+			// 按摊主打开交易界面：商业街点人偶时用，界面仍是上面那三个
+			tradeMenus = new TradeMenusImpl(marketGui, auctionGui, orderGui);
+			Bukkit.getServicesManager().register(
+				TradeMenus.class,
+				tradeMenus,
 				this,
 				ServicePriority.Normal
 			);
@@ -279,6 +291,10 @@ public final class EconomyPlugin extends JavaPlugin implements Listener {
 		if (tradeBoard != null) {
 			Bukkit.getServicesManager().unregister(TradeBoard.class, tradeBoard);
 			tradeBoard = null;
+		}
+		if (tradeMenus != null) {
+			Bukkit.getServicesManager().unregister(TradeMenus.class, tradeMenus);
+			tradeMenus = null;
 		}
 		if (economyService != null) {
 			Bukkit.getServicesManager().unregister(EconomyService.class, economyService);

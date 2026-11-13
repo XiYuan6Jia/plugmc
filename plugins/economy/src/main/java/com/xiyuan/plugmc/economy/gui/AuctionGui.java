@@ -2,6 +2,7 @@ package com.xiyuan.plugmc.economy.gui;
 
 import com.xiyuan.plugmc.economy.auction.AuctionListing;
 import com.xiyuan.plugmc.economy.auction.AuctionService;
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -28,12 +29,43 @@ public final class AuctionGui {
 	}
 
 	public void openList(Player player, int page) {
-		List<AuctionListing> listings = service.listings();
+		openList(player, page, null);
+	}
+
+	/**
+	 * 打开某一个卖家的拍卖。
+	 *
+	 * <p>拍卖的翻页和详情都会重新取列表，所以过滤条件必须一路带着往下传
+	 * （{@code seller} 为 null 表示"全部"）。只在入口过滤一次的话，
+	 * 玩家一按下一页就会看到全服的拍卖了。</p>
+	 *
+	 * @return 这个卖家是否还有进行中的拍卖
+	 */
+	public boolean openSeller(Player player, java.util.UUID seller) {
+		boolean any = service.listings().stream()
+			.anyMatch(listing -> listing.active() && listing.seller().equals(seller));
+		if (!any) {
+			return false;
+		}
+		openList(player, 0, seller);
+		return true;
+	}
+
+	private void openList(Player player, int page, java.util.UUID seller) {
+		List<AuctionListing> listings = service.listings().stream()
+			.filter(AuctionListing::active)
+			.filter(listing -> seller == null || listing.seller().equals(seller))
+			.toList();
+		String heading = "&8拍卖行";
+		if (seller != null) {
+			String name = Bukkit.getOfflinePlayer(seller).getName();
+			heading = "&8" + (name == null ? "这个摊主" : name) + " 的拍卖";
+		}
 		int pageCount = Math.max(1, (listings.size() + PAGE_SIZE - 1) / PAGE_SIZE);
 		int current = Math.max(0, Math.min(page, pageCount - 1));
 		EconomyMenuHolder holder = new EconomyMenuHolder(
 			6,
-			"&8拍卖行 &7(" + (current + 1) + "/" + pageCount + ")"
+			heading + " &7(" + (current + 1) + "/" + pageCount + ")"
 		);
 		holder.fill(filler());
 
@@ -43,13 +75,13 @@ public final class AuctionGui {
 			int start = current * PAGE_SIZE;
 			for (int index = 0; index < PAGE_SIZE && start + index < listings.size(); index++) {
 				AuctionListing listing = listings.get(start + index);
-				holder.set(index, icon(listing), p -> openDetail(p, listing.id(), page));
+				holder.set(index, icon(listing), p -> openDetail(p, listing.id(), current, seller));
 			}
 		}
 
 		if (current > 0) {
 			holder.set(45, item(Material.ARROW, "&e上一页", List.of()),
-				p -> openList(p, current - 1));
+				p -> openList(p, current - 1, seller));
 		}
 		holder.set(49, GuiNavigation.backButton(), GuiNavigation::back);
 		holder.set(50, item(Material.EMERALD, "&a上拍主手物品", List.of(
@@ -58,7 +90,7 @@ public final class AuctionGui {
 		)), this::startCreate);
 		if (current + 1 < pageCount) {
 			holder.set(53, item(Material.ARROW, "&e下一页", List.of()),
-				p -> openList(p, current + 1));
+				p -> openList(p, current + 1, seller));
 		}
 		player.openInventory(holder.getInventory());
 	}
@@ -70,14 +102,14 @@ public final class AuctionGui {
 			openList(player, 0);
 			return;
 		}
-		openDetail(player, mine.get(0).id(), 0);
+		openDetail(player, mine.get(0).id(), 0, null);
 	}
 
-	private void openDetail(Player player, long id, int backPage) {
+	private void openDetail(Player player, long id, int backPage, java.util.UUID seller) {
 		AuctionListing listing = service.listing(id);
 		if (listing == null || !listing.active()) {
 			player.sendMessage("该拍卖已结束。");
-			openList(player, backPage);
+			openList(player, backPage, seller);
 			return;
 		}
 
@@ -100,13 +132,13 @@ public final class AuctionGui {
 					: "&e无人出价"),
 				"&7最低加价：&f" + service.format(nextIncrement),
 				"&8点击后输入金额"
-			)), p -> promptBid(p, id, backPage));
+			)), p -> promptBid(p, id, backPage, seller));
 			if (listing.hasBuyout()) {
 				holder.set(22, item(Material.GOLD_BLOCK, "&6一口价购买", List.of(
 					"&7价格：&e" + service.format(listing.buyoutPrice())
 				)), p -> {
 					service.buyout(p, id);
-					openList(p, backPage);
+					openList(p, backPage, seller);
 				});
 			}
 		} else if (!listing.hasBid()) {
@@ -114,17 +146,17 @@ public final class AuctionGui {
 				"&7物品会退回邮箱"
 			)), p -> {
 				service.cancel(p, id);
-				openList(p, backPage);
+				openList(p, backPage, seller);
 			});
 		}
 
 		holder.set(45, item(Material.ARROW, "&e返回拍卖行", List.of()),
-			p -> openList(p, backPage));
+			p -> openList(p, backPage, seller));
 		holder.set(49, item(Material.BARRIER, "&c关闭", List.of()), Player::closeInventory);
 		player.openInventory(holder.getInventory());
 	}
 
-	private void promptBid(Player player, long id, int backPage) {
+	private void promptBid(Player player, long id, int backPage, java.util.UUID seller) {
 		AuctionListing listing = service.listing(id);
 		if (listing == null || !listing.active()) {
 			player.sendMessage("该拍卖已结束。");
@@ -145,7 +177,7 @@ public final class AuctionGui {
 				return;
 			}
 			service.bid(player, id, amount);
-			openDetail(player, id, backPage);
+			openDetail(player, id, backPage, seller);
 		});
 	}
 

@@ -20,6 +20,10 @@ commands:
     description: 打印玩家当前打开的界面标题
     usage: /openinv <玩家>
     permission: probe.admin
+  invitems:
+    description: 列出玩家当前界面里的每个物品（确认按摊主过滤是否生效）
+    usage: /invitems <玩家>
+    permission: probe.admin
   astp:
     description: 把玩家传送到某世界坐标（跨维度）
     usage: /astp <玩家> <世界> <x> <y> <z>

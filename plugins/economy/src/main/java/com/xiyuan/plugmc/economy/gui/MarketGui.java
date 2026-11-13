@@ -2,6 +2,7 @@ package com.xiyuan.plugmc.economy.gui;
 
 import com.xiyuan.plugmc.economy.market.MarketListing;
 import com.xiyuan.plugmc.economy.market.MarketService;
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -40,6 +41,28 @@ public final class MarketGui {
 			.filter(listing -> listing.seller().equals(player.getUniqueId()))
 			.toList();
 		openList(player, "&8我的挂单", own, 0, "");
+	}
+
+	/**
+	 * 打开某一个卖家名下的挂单。
+	 *
+	 * <p>列表本身就是「谁在卖什么」的自洽视图，所以只要把 {@code service.listings()}
+	 * 换成按卖家过滤后的子集，翻页、详情、返回都会自然留在这个人身上 —— 不需要
+	 * 另外维护「过滤条件」这种状态。</p>
+	 *
+	 * @return 这个卖家是否还有在售挂单；false 时调用方自己给提示
+	 */
+	public boolean openSeller(Player player, java.util.UUID seller) {
+		List<MarketListing> listings = service.listings().stream()
+			.filter(MarketListing::active)
+			.filter(listing -> listing.seller().equals(seller))
+			.toList();
+		if (listings.isEmpty()) {
+			return false;
+		}
+		String name = Bukkit.getOfflinePlayer(seller).getName();
+		openList(player, "&8" + (name == null ? "这个摊主" : name) + " 的在售", listings, 0, "");
+		return true;
 	}
 
 	private void openList(

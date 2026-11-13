@@ -2,6 +2,7 @@ package com.xiyuan.plugmc.economy.gui;
 
 import com.xiyuan.plugmc.economy.order.BuyOrder;
 import com.xiyuan.plugmc.economy.order.OrderService;
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -36,12 +37,41 @@ public final class OrderGui {
 	}
 
 	public void openList(Player player, int page) {
-		List<BuyOrder> orders = service.orders();
+		openList(player, page, null);
+	}
+
+	/**
+	 * 打开某一个买家名下的收购订单。
+	 *
+	 * <p>同 {@code AuctionGui}：翻页与详情返回都会重新取列表，过滤条件要一路带着走。</p>
+	 *
+	 * @return 这个买家是否还有进行中的收购单
+	 */
+	public boolean openBuyer(Player player, java.util.UUID buyer) {
+		boolean any = service.orders().stream()
+			.anyMatch(order -> order.active() && order.buyer().equals(buyer));
+		if (!any) {
+			return false;
+		}
+		openList(player, 0, buyer);
+		return true;
+	}
+
+	private void openList(Player player, int page, java.util.UUID buyer) {
+		List<BuyOrder> orders = service.orders().stream()
+			.filter(BuyOrder::active)
+			.filter(order -> buyer == null || order.buyer().equals(buyer))
+			.toList();
+		String heading = "&8收购订单";
+		if (buyer != null) {
+			String name = Bukkit.getOfflinePlayer(buyer).getName();
+			heading = "&8" + (name == null ? "这个摊主" : name) + " 的收购";
+		}
 		int pageCount = Math.max(1, (orders.size() + PAGE_SIZE - 1) / PAGE_SIZE);
 		int current = Math.max(0, Math.min(page, pageCount - 1));
 		EconomyMenuHolder holder = new EconomyMenuHolder(
 			6,
-			"&8收购订单 &7(" + (current + 1) + "/" + pageCount + ")"
+			heading + " &7(" + (current + 1) + "/" + pageCount + ")"
 		);
 		holder.fill(filler());
 
@@ -51,12 +81,13 @@ public final class OrderGui {
 			int start = current * PAGE_SIZE;
 			for (int index = 0; index < PAGE_SIZE && start + index < orders.size(); index++) {
 				BuyOrder order = orders.get(start + index);
-				holder.set(index, icon(order), p -> openDetail(p, order.id(), page));
+				holder.set(index, icon(order), p -> openDetail(p, order.id(), current, buyer));
 			}
 		}
 
 		if (current > 0) {
-			holder.set(45, item(Material.ARROW, "&e上一页", List.of()), p -> openList(p, current - 1));
+			holder.set(45, item(Material.ARROW, "&e上一页", List.of()),
+				p -> openList(p, current - 1, buyer));
 		}
 		holder.set(49, GuiNavigation.backButton(), GuiNavigation::back);
 		holder.set(48, item(Material.COMPASS, "&b选择物品求购", List.of(
@@ -68,16 +99,17 @@ public final class OrderGui {
 			"&8点击后输入单价"
 		)), this::startCreate);
 		if (current + 1 < pageCount) {
-			holder.set(53, item(Material.ARROW, "&e下一页", List.of()), p -> openList(p, current + 1));
+			holder.set(53, item(Material.ARROW, "&e下一页", List.of()),
+				p -> openList(p, current + 1, buyer));
 		}
 		player.openInventory(holder.getInventory());
 	}
 
-	private void openDetail(Player player, long id, int backPage) {
+	private void openDetail(Player player, long id, int backPage, java.util.UUID buyer) {
 		BuyOrder order = service.order(id);
 		if (order == null || !order.active()) {
 			player.sendMessage("该收购订单已结束。");
-			openList(player, backPage);
+			openList(player, backPage, buyer);
 			return;
 		}
 
@@ -93,28 +125,29 @@ public final class OrderGui {
 				"&7剩余托管资金退回余额"
 			)), p -> {
 				service.cancel(p, id);
-				openList(p, backPage);
+				openList(p, backPage, buyer);
 			});
 		} else {
 			holder.set(20, item(Material.LIME_STAINED_GLASS_PANE, "&a交付 1 个", List.of(
 				"&7从背包扣除对应物品",
 				"&8物品送达买方邮箱，钱立即到账"
-			)), p -> fill(p, id, 1, false, backPage));
+			)), p -> fill(p, id, 1, false, backPage, buyer));
 			holder.set(21, item(Material.LIME_STAINED_GLASS_PANE, "&a交付 16 个", List.of()), p ->
-				fill(p, id, 16, false, backPage));
+				fill(p, id, 16, false, backPage, buyer));
 			holder.set(22, item(Material.LIME_STAINED_GLASS_PANE, "&a交付全部", List.of(
 				"&7最多交付订单剩余数量"
-			)), p -> fill(p, id, 0, true, backPage));
+			)), p -> fill(p, id, 0, true, backPage, buyer));
 		}
 
-		holder.set(45, item(Material.ARROW, "&e返回收购列表", List.of()), p -> openList(p, backPage));
+		holder.set(45, item(Material.ARROW, "&e返回收购列表", List.of()),
+			p -> openList(p, backPage, buyer));
 		holder.set(49, item(Material.BARRIER, "&c关闭", List.of()), Player::closeInventory);
 		player.openInventory(holder.getInventory());
 	}
 
-	private void fill(Player player, long id, int amount, boolean all, int backPage) {
+	private void fill(Player player, long id, int amount, boolean all, int backPage, java.util.UUID buyer) {
 		service.fill(player, id, amount, all);
-		openDetail(player, id, backPage);
+		openDetail(player, id, backPage, buyer);
 	}
 
 	private void startCreate(Player player) {

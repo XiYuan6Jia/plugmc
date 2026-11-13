@@ -26,7 +26,7 @@ import java.util.Locale;
  */
 public final class ProbePlugin extends JavaPlugin implements CommandExecutor {
 	private static final String[] COMMANDS =
-		{"asplayer", "probeblock", "asclick", "openinv", "astp", "asheal", "invclick", "asbell"};
+		{"asplayer", "probeblock", "asclick", "openinv", "invitems", "astp", "asheal", "invclick", "asbell"};
 
 	@Override
 	public void onEnable() {
@@ -45,6 +45,7 @@ public final class ProbePlugin extends JavaPlugin implements CommandExecutor {
 			case "probeblock" -> probeBlock(sender, args);
 			case "asclick" -> asClick(sender, args);
 			case "openinv" -> openInv(sender, args);
+			case "invitems" -> invItems(sender, args);
 			case "astp" -> asTeleport(sender, args);
 			case "asheal" -> asHeal(sender, args);
 			case "invclick" -> invClick(sender, args);
@@ -228,6 +229,44 @@ public final class ProbePlugin extends JavaPlugin implements CommandExecutor {
 		sender.sendMessage("[" + target.getName() + "] 当前界面 = " + title
 			+ "｜类型 = " + view.getType()
 			+ "｜格数 = " + view.getTopInventory().getSize());
+		return true;
+	}
+
+	/**
+	 * 列出玩家当前打开界面里的每个物品。
+	 *
+	 * <p>只看标题证明不了内容真的被过滤过 —— 得把界面里的东西逐格数出来，
+	 * 才能确认"这个摊位只显示这个人的货"。</p>
+	 */
+	private boolean invItems(CommandSender sender, String[] args) {
+		if (args.length < 1) {
+			sender.sendMessage("用法：/invitems <玩家>");
+			return true;
+		}
+		Player target = Bukkit.getPlayerExact(args[0]);
+		if (target == null) {
+			sender.sendMessage("玩家不在线：" + args[0]);
+			return true;
+		}
+		InventoryView view = target.getOpenInventory();
+		org.bukkit.inventory.Inventory top = view.getTopInventory();
+		int filled = 0;
+		StringBuilder line = new StringBuilder();
+		for (int i = 0; i < top.getSize(); i++) {
+			org.bukkit.inventory.ItemStack stack = top.getItem(i);
+			if (stack == null || stack.getType().isAir()) {
+				continue;
+			}
+			filled++;
+			String name = net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText()
+				.serialize(stack.displayName());
+			line.append(" [").append(i).append("]").append(stack.getType().name())
+				.append("×").append(stack.getAmount());
+			if (!name.isBlank()) {
+				line.append("(").append(name).append(")");
+			}
+		}
+		sender.sendMessage("[" + target.getName() + "] 界面共 " + filled + " 格有物品" + line);
 		return true;
 	}
 

@@ -11,6 +11,7 @@ import org.bukkit.inventory.ItemStack;
  * {@link BazaarText} 决定怎么排版。</p>
  *
  * @param tradeId 经济系统里的编号，用于点摊位时直接提示对应的命令
+ * @param ownerId 摊主的 UUID，点摊位时用它把界面过滤到这个人（可能为 null，见下）
  * @param icon    摆在货台上的实物展示（数量固定为 1，否则客户端会画出堆叠角标）
  */
 public record BazaarDeal(
@@ -20,6 +21,7 @@ public record BazaarDeal(
 	int amount,
 	String priceLine,
 	String ownerName,
+	java.util.UUID ownerId,
 	ItemStack icon
 ) {
 	public enum Kind {

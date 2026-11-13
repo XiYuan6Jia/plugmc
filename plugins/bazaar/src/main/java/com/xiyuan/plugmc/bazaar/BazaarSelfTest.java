@@ -24,6 +24,15 @@ import java.util.Map;
  * 也不会写进经济系统的账目。</p>
  */
 final class BazaarSelfTest {
+	/**
+	 * 自检用的假 UUID。
+	 *
+	 * <p>必须给一个具体值：点摊位时要按摊主 UUID 过滤界面，自检摊主如果不带 UUID，
+	 * 「右键打开的交易界面里只有这个摊位的东西」这条就验不出来了。</p>
+	 */
+	private static final java.util.UUID SELF_TEST_ID =
+		java.util.UUID.fromString("00000000-0000-0000-0000-0000000ba2aa");
+
 	private final BazaarPlugin plugin;
 	private final BazaarStalls stalls;
 
@@ -152,9 +161,9 @@ final class BazaarSelfTest {
 	/** 自检用的临时摊主：三笔交易，覆盖售卖/拍卖/求购三种。 */
 	private static BazaarTenants.Tenant syntheticTenant() {
 		List<BazaarDeal> deals = List.of(
-			new BazaarDeal(BazaarDeal.Kind.MARKET, 1L, "钻石", 16, "12.50 / 个", "自检", new ItemStack(Material.DIAMOND)),
-			new BazaarDeal(BazaarDeal.Kind.AUCTION, 2L, "附魔金苹果", 1, "起拍 100.00", "自检", new ItemStack(Material.ENCHANTED_GOLDEN_APPLE)),
-			new BazaarDeal(BazaarDeal.Kind.ORDER, 3L, "铁锭", 64, "单价 0.80", "自检", new ItemStack(Material.IRON_INGOT))
+			new BazaarDeal(BazaarDeal.Kind.MARKET, 1L, "钻石", 16, "12.50 / 个", "自检", SELF_TEST_ID, new ItemStack(Material.DIAMOND)),
+			new BazaarDeal(BazaarDeal.Kind.AUCTION, 2L, "附魔金苹果", 1, "起拍 100.00", "自检", SELF_TEST_ID, new ItemStack(Material.ENCHANTED_GOLDEN_APPLE)),
+			new BazaarDeal(BazaarDeal.Kind.ORDER, 3L, "铁锭", 64, "单价 0.80", "自检", SELF_TEST_ID, new ItemStack(Material.IRON_INGOT))
 		);
 		return new BazaarTenants.Tenant("BazaarSelfTest", deals);
 	}
@@ -162,7 +171,7 @@ final class BazaarSelfTest {
 	/** 同一摊主追加一件挂单：用来验证「招牌随交易实时更新」。 */
 	private static BazaarTenants.Tenant syntheticTenantUpdated() {
 		List<BazaarDeal> deals = new ArrayList<>(syntheticTenant().deals());
-		deals.add(new BazaarDeal(BazaarDeal.Kind.MARKET, 4L, "青金石", 32, "3.00 / 个", "自检", new ItemStack(Material.LAPIS_LAZULI)));
+		deals.add(new BazaarDeal(BazaarDeal.Kind.MARKET, 4L, "青金石", 32, "3.00 / 个", "自检", SELF_TEST_ID, new ItemStack(Material.LAPIS_LAZULI)));
 		return new BazaarTenants.Tenant("BazaarSelfTest", deals);
 	}
 
