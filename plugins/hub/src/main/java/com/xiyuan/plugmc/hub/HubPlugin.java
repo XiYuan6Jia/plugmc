@@ -1,5 +1,6 @@
 package com.xiyuan.plugmc.hub;
 
+import org.bukkit.Bukkit;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -19,6 +20,8 @@ public final class HubPlugin extends JavaPlugin {
 	private HubReturns hubReturns;
 	private ParkourManager parkour;
 	private ParkourCourse parkourCourse;
+	private BellRanking bell;
+	private ParkourBoard parkourBoard;
 
 	@Override
 	public void onEnable() {
@@ -46,6 +49,23 @@ public final class HubPlugin extends JavaPlugin {
 		parkour.load();
 		ensureParkour(false);
 		getServer().getPluginManager().registerEvents(new HubListener(this), this);
+
+		// 敲钟与跑酷两块榜牌：都在主城维度里，跟着 hub 一起启停
+		bell = new BellRanking(this);
+		bell.load();
+		getServer().getPluginManager().registerEvents(bell, this);
+		parkourBoard = new ParkourBoard(this);
+		getServer().getPluginManager().registerEvents(parkourBoard, this);
+		Bukkit.getScheduler().runTaskLater(this, () -> {
+			bell.ensureBoard();
+			parkourBoard.ensureBoard();
+		}, 40L);
+		// 榜牌不每秒重画，只做「缺了就补」；内容变了由各自的 refresh 立即推
+		Bukkit.getScheduler().runTaskTimer(this, () -> {
+			bell.tick();
+			parkourBoard.tick();
+		}, 100L, 100L);
+
 		PluginCommand command = getCommand("hub");
 		if (command != null) {
 			HubCommand executor = new HubCommand(this);
@@ -61,6 +81,13 @@ public final class HubPlugin extends JavaPlugin {
 
 	@Override
 	public void onDisable() {
+		if (bell != null) {
+			bell.save();
+			bell = null;
+		}
+		if (parkourBoard != null) {
+			parkourBoard = null;
+		}
 		if (vitals != null) {
 			vitals.stop();
 			vitals = null;
@@ -102,6 +129,14 @@ public final class HubPlugin extends JavaPlugin {
 
 	public ParkourManager parkour() {
 		return parkour;
+	}
+
+	public BellRanking bell() {
+		return bell;
+	}
+
+	public ParkourBoard parkourBoard() {
+		return parkourBoard;
 	}
 
 	/**

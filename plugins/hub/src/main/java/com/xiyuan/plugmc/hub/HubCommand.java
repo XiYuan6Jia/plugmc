@@ -10,12 +10,13 @@ import org.bukkit.entity.Player;
 import java.util.List;
 import java.util.Locale;
 
-/** /hub [back|info|check|parkour|setspawn|build|reload] */
+/** /hub [back|info|check|parkour|bell|setspawn|build|reload] */
 public final class HubCommand implements CommandExecutor, TabCompleter {
 	private static final List<String> SUBCOMMANDS = List.of(
-		"back", "info", "check", "parkour", "setspawn", "build", "reload"
+		"back", "info", "check", "parkour", "bell", "setspawn", "build", "reload"
 	);
-	private static final List<String> PARKOUR_SUBCOMMANDS = List.of("quit", "top", "best");
+	private static final List<String> PARKOUR_SUBCOMMANDS = List.of("quit", "top", "best", "board");
+	private static final List<String> BELL_SUBCOMMANDS = List.of("top", "board", "reset");
 
 	private final HubPlugin plugin;
 
@@ -49,6 +50,7 @@ public final class HubCommand implements CommandExecutor, TabCompleter {
 			case "info" -> info(sender);
 			case "check" -> check(sender);
 			case "parkour" -> parkour(sender, args);
+			case "bell" -> bell(sender, args);
 			case "setspawn" -> setspawn(sender);
 			case "build" -> build(sender);
 			case "reload" -> reload(sender);
@@ -98,6 +100,18 @@ public final class HubCommand implements CommandExecutor, TabCompleter {
 				sender.sendMessage(HubText.component(line));
 			}
 		}
+		if (plugin.parkourBoard() != null) {
+			sender.sendMessage(HubText.component("&6跑酷排行榜自检"));
+			for (String line : plugin.parkourBoard().verifyLines()) {
+				sender.sendMessage(HubText.component(line));
+			}
+		}
+		if (plugin.bell() != null) {
+			sender.sendMessage(HubText.component("&6敲钟排行榜自检"));
+			for (String line : plugin.bell().verifyLines()) {
+				sender.sendMessage(HubText.component(line));
+			}
+		}
 	}
 
 	private void parkour(CommandSender sender, String[] args) {
@@ -126,7 +140,59 @@ public final class HubCommand implements CommandExecutor, TabCompleter {
 					player.sendMessage(HubText.component(line));
 				}
 			}
-			default -> player.sendMessage(HubText.component("&e用法：/hub parkour [quit|top|best]"));
+			case "board" -> {
+				if (!player.hasPermission("hub.admin")) {
+					player.sendMessage(HubText.component("&c你没有权限重建跑酷榜牌。"));
+					return;
+				}
+				plugin.parkourBoard().rebuildBoard();
+				player.sendMessage(HubText.component("&a跑酷榜牌已重建。"));
+			}
+			default -> player.sendMessage(HubText.component("&e用法：/hub parkour [quit|top|best|board]"));
+		}
+	}
+
+	private void bell(CommandSender sender, String[] args) {
+		BellRanking bell = plugin.bell();
+		if (bell == null) {
+			sender.sendMessage(HubText.component("&c敲钟功能未启用。"));
+			return;
+		}
+		String action = args.length > 1 ? args[1].toLowerCase(Locale.ROOT) : "top";
+		switch (action) {
+			case "top" -> {
+				List<String> lines = bell.topLines(10);
+				if (lines.isEmpty()) {
+					sender.sendMessage(HubText.component("&7还没有人敲过钟。"));
+					return;
+				}
+				sender.sendMessage(HubText.component("&6敲钟排行榜"));
+				for (String line : lines) {
+					sender.sendMessage(HubText.component(line));
+				}
+			}
+			case "board" -> {
+				if (!sender.hasPermission("hub.admin")) {
+					sender.sendMessage(HubText.component("&c你没有权限重建敲钟榜牌。"));
+					return;
+				}
+				bell.rebuildBoard();
+				sender.sendMessage(HubText.component("&a敲钟榜牌已重建。"));
+			}
+			case "reset" -> {
+				if (!sender.hasPermission("hub.admin")) {
+					sender.sendMessage(HubText.component("&c你没有权限清空敲钟记录。"));
+					return;
+				}
+				if (args.length < 3) {
+					sender.sendMessage(HubText.component("&e用法：/hub bell reset <玩家名>"));
+					return;
+				}
+				sender.sendMessage(bell.reset(args[2])
+					? HubText.component("&a已清空 &f" + args[2] + " &a的敲钟记录。")
+					: HubText.component("&7没有找到 &f" + args[2] + " &7的敲钟记录。"));
+			}
+			default -> sender.sendMessage(HubText.component("&e用法：/hub bell [top|board|reset <玩家名>]"));
 		}
 	}
 
@@ -182,7 +248,7 @@ public final class HubCommand implements CommandExecutor, TabCompleter {
 
 	private void usage(CommandSender sender, String label) {
 		sender.sendMessage(HubText.component("&e用法：/" + label
-			+ " [back|info|check|parkour|setspawn|build|reload]"));
+			+ " [back|info|check|parkour|bell|setspawn|build|reload]"));
 	}
 
 	private Player requirePlayer(CommandSender sender) {
@@ -206,6 +272,10 @@ public final class HubCommand implements CommandExecutor, TabCompleter {
 		if (args.length == 2 && args[0].equalsIgnoreCase("parkour")) {
 			String prefix = args[1].toLowerCase(Locale.ROOT);
 			return PARKOUR_SUBCOMMANDS.stream().filter(option -> option.startsWith(prefix)).toList();
+		}
+		if (args.length == 2 && args[0].equalsIgnoreCase("bell")) {
+			String prefix = args[1].toLowerCase(Locale.ROOT);
+			return BELL_SUBCOMMANDS.stream().filter(option -> option.startsWith(prefix)).toList();
 		}
 		return List.of();
 	}

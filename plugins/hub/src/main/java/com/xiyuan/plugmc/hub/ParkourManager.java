@@ -157,6 +157,10 @@ public final class ParkourManager {
 		if (record) {
 			bests.put(player.getUniqueId(), new Best(player.getName(), millis));
 			save();
+			// 榜牌立刻跟着变，不用等下一轮定时刷新
+			if (plugin.parkourBoard() != null) {
+				plugin.parkourBoard().refresh();
+			}
 		}
 		player.sendMessage(HubText.component("&a完成跑酷！用时 &e" + seconds(millis)
 			+ (record ? " &6&l新纪录！" : " &7（最佳 " + seconds(previous.millis()) + "）")));

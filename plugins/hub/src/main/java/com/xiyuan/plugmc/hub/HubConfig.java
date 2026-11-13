@@ -30,13 +30,27 @@ public record HubConfig(
 	boolean lockHealth,
 	boolean noNaturalRegen,
 	boolean parkourEnabled,
-	boolean parkourAnnounce
+	boolean parkourAnnounce,
+	boolean bellEnabled,
+	int bellX,
+	int bellY,
+	int bellZ,
+	double bellBoardX,
+	double bellBoardY,
+	double bellBoardZ,
+	int bellBoardRows,
+	double parkourBoardX,
+	double parkourBoardY,
+	double parkourBoardZ,
+	int parkourBoardRows
 ) {
 	public HubConfig {
 		worldName = worldName == null || worldName.isBlank() ? "hub" : worldName.trim();
 		floorY = clamp(floorY, -32, 200);
 		radius = clamp(radius, 8, 48);
 		teleportWarmupSeconds = clamp(teleportWarmupSeconds, 0, 60);
+		bellBoardRows = clamp(bellBoardRows, 1, 20);
+		parkourBoardRows = clamp(parkourBoardRows, 1, 20);
 	}
 
 	public static HubConfig load(FileConfiguration config) {
@@ -65,7 +79,19 @@ public record HubConfig(
 			config.getBoolean("protect.lock-health", true),
 			config.getBoolean("protect.no-natural-regen", true),
 			config.getBoolean("parkour.enabled", true),
-			config.getBoolean("parkour.announce-records", true)
+			config.getBoolean("parkour.announce-records", true),
+			config.getBoolean("bell.enabled", true),
+			config.getInt("bell.x", 0),
+			config.getInt("bell.y", 66),
+			config.getInt("bell.z", 58),
+			config.getDouble("bell.board.x", 0.437),
+			config.getDouble("bell.board.y", 66.0),
+			config.getDouble("bell.board.z", 61.5),
+			config.getInt("bell.board.rows", 10),
+			config.getDouble("parkour.board.x", 34.5),
+			config.getDouble("parkour.board.y", 65.0),
+			config.getDouble("parkour.board.z", 5.5),
+			config.getInt("parkour.board.rows", 10)
 		);
 	}
 

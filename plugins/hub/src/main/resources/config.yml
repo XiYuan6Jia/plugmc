@@ -50,3 +50,24 @@ parkour:
   enabled: true
   # 有人刷新纪录时全服播报
   announce-records: true
+  # 起点旁边的排行榜牌
+  board:
+    x: 34.5
+    y: 65.0
+    z: 5.5
+    rows: 10
+
+# 主城南侧钟亭里的那口钟 + 敲钟排行榜
+bell:
+  enabled: true
+  # 只统计敲这一口钟的人，坐标要精确到方块
+  x: 0
+  y: 66
+  z: 58
+  # 榜牌挂在钟亭背面（远离主城的一侧）
+  board:
+    x: 0.437
+    y: 66.0
+    z: 61.5
+    rows: 10
+

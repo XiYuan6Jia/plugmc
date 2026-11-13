@@ -32,6 +32,10 @@ commands:
     description: 在当前打开的界面里点一个格子
     usage: /invclick <玩家> <槽位>
     permission: probe.admin
+  asbell:
+    description: 以指定玩家身份合成一次敲钟
+    usage: /asbell <玩家> <世界> <x> <y> <z>
+    permission: probe.admin
 permissions:
   probe.admin:
     description: 允许使用探针命令

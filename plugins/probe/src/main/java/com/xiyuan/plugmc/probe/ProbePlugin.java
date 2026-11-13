@@ -26,7 +26,7 @@ import java.util.Locale;
  */
 public final class ProbePlugin extends JavaPlugin implements CommandExecutor {
 	private static final String[] COMMANDS =
-		{"asplayer", "probeblock", "asclick", "openinv", "astp", "asheal", "invclick"};
+		{"asplayer", "probeblock", "asclick", "openinv", "astp", "asheal", "invclick", "asbell"};
 
 	@Override
 	public void onEnable() {
@@ -48,6 +48,7 @@ public final class ProbePlugin extends JavaPlugin implements CommandExecutor {
 			case "astp" -> asTeleport(sender, args);
 			case "asheal" -> asHeal(sender, args);
 			case "invclick" -> invClick(sender, args);
+			case "asbell" -> asBell(sender, args);
 			default -> asPlayer(sender, args);
 		};
 	}
@@ -262,6 +263,40 @@ public final class ProbePlugin extends JavaPlugin implements CommandExecutor {
 				org.bukkit.event.inventory.InventoryAction.PICKUP_ALL);
 		Bukkit.getPluginManager().callEvent(event);
 		sender.sendMessage("已合成点击槽位 " + slot + (event.isCancelled() ? "（已被取消）" : "（未被取消）"));
+		return true;
+	}
+
+	/**
+	 * 合成一次敲钟。
+	 *
+	 * <p>26.3 的 {@code BellRingEvent} 用 {@code getEntity()} 拿敲的人；这里直接合成事件，
+	 * 走的是和真人右键钟完全一样的监听链，用来验证「计数 +1、榜牌跟着变」。
+	 * 参数 {@code <玩家> <世界> <x> <y> <z>}。</p>
+	 */
+	private boolean asBell(CommandSender sender, String[] args) {
+		if (args.length < 5) {
+			sender.sendMessage("用法：/asbell <玩家> <世界> <x> <y> <z>");
+			return true;
+		}
+		Player target = Bukkit.getPlayerExact(args[0]);
+		if (target == null) {
+			sender.sendMessage("玩家不在线：" + args[0]);
+			return true;
+		}
+		org.bukkit.World world = Bukkit.getWorld(args[1]);
+		if (world == null) {
+			sender.sendMessage("世界没加载：" + args[1]);
+			return true;
+		}
+		org.bukkit.block.Block block = world.getBlockAt(
+			Integer.parseInt(args[2]), Integer.parseInt(args[3]), Integer.parseInt(args[4]));
+		org.bukkit.event.block.BellRingEvent event = new org.bukkit.event.block.BellRingEvent(
+			block, org.bukkit.block.BlockFace.NORTH, target);
+		Bukkit.getPluginManager().callEvent(event);
+		sender.sendMessage("已合成敲钟：" + target.getName() + " → "
+			+ world.getName() + " " + block.getX() + " " + block.getY() + " " + block.getZ()
+			+ "（" + block.getType().name() + "）"
+			+ (event.isCancelled() ? "（已被取消）" : "（未被取消）"));
 		return true;
 	}
 }
