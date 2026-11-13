@@ -51,6 +51,11 @@ commands:
     description: "每日签到与在线奖励"
     usage: /daily [status|reload]
     aliases: [qiandao]
+  vault:
+    description: "回收箱：把箱子或木桶变成自动结算的特殊容器"
+    usage: /vault [bind|unbind|info|settle]（对着箱子直接 /vault 即可）
+    aliases: [huishouxiang, collector]
+    permission: economy.vault.use
 permissions:
   economy.balance.others:
     description: "查看其他玩家余额"
@@ -105,4 +110,10 @@ permissions:
     default: true
   economy.bank.admin:
     description: "重载建材银行配置"
+    default: op
+  economy.vault.use:
+    description: "把箱子或木桶变成回收箱"
+    default: true
+  economy.vault.admin:
+    description: "解除别人的回收箱绑定"
     default: op

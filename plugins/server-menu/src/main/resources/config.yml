@@ -116,6 +116,15 @@ menu:
       action: player_command
       value: "bank"
       permission: economy.bank.use
+    "42":
+      material: CHEST
+      name: "&6回收箱"
+      lore:
+        - "&7把箱子或木桶变成自动结算的容器"
+        - "&7别人往里放的物品会换成金币与建材额度"
+        - "&8点击查看怎么用"
+      action: vault_panel
+      permission: economy.vault.use
     "44":
       material: SADDLE
       name: "&b玩家骑乘"

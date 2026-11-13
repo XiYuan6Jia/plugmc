@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 
 public final class ShopService {
 	private static final int MAX_TRANSACTION_AMOUNT = 2304;
@@ -246,6 +247,34 @@ public final class ShopService {
 		if (!checkAvailable(player)) {
 			return false;
 		}
+		SellResult result = sellBatchFor(player.getUniqueId(), offered, leftoversLeftInGui);
+		int soldTotal = result.soldCount();
+		if (soldTotal > 0) {
+			player.sendMessage("批量回收完成：出售 " + soldTotal + " 件，获得 "
+				+ ledger.format(result.earned()) + "（含交易税 " + ledger.format(result.tax()) + "），余额 "
+				+ ledger.format(ledger.balance(player.getUniqueId())) + "。");
+		} else {
+			player.sendMessage("没有可回收的物品。");
+		}
+		if (!result.unsellable().isEmpty()) {
+			player.sendMessage("以下物品商店不回收（只收矿石原矿），已留在原地："
+				+ String.join("、", result.unsellable()));
+		}
+		if (!result.limited().isEmpty()) {
+			player.sendMessage("以下商品达到今日回收上限，剩余部分已留在原地："
+				+ String.join("、", result.limited()));
+		}
+		return soldTotal > 0;
+	}
+
+	/**
+	 * 按玩家 UUID 回收，不要求玩家在线。回收箱的绑定玩家可能早就下线了，
+	 * 钱仍然要记进他的账上，限额也按他的账号算。
+	 *
+	 * <p>与 {@link #sellBatch} 的唯一区别：不发聊天消息、不要求 Player，
+	 * 收不掉的物品一律放进 leftovers 由调用方决定怎么还。</p>
+	 */
+	public SellResult sellBatchFor(UUID ownerId, List<ItemStack> offered, List<ItemStack> leftovers) {
 		BigDecimal earned = Money.zero(ledger.decimalPlaces());
 		BigDecimal taxTotal = Money.zero(ledger.decimalPlaces());
 		int soldTotal = 0;
@@ -259,20 +288,18 @@ public final class ShopService {
 			ShopItem item = goods.matchSellable(stack, settings.allowCustomItems());
 			if (item == null) {
 				unsellable.add(stack.getType().name());
-				leftoversLeftInGui.add(stack.clone());
+				leftovers.add(stack.clone());
 				continue;
 			}
 			int limit = settings.effectiveSellLimit(item.dailySellLimit());
-			int remaining = dailyLimits.remaining(player, "sell", item.id(), limit);
+			int remaining = dailyLimits.remaining(ownerId, "sell", item.id(), limit);
 			int sellable = Math.min(stack.getAmount(), remaining);
 			if (sellable <= 0) {
 				limited.add(item.id());
-				leftoversLeftInGui.add(stack.clone());
+				leftovers.add(stack.clone());
 				continue;
 			}
 
-			ItemStack sold = stack.clone();
-			sold.setAmount(sellable);
 			BigDecimal gross = total(item.sellPrice(), sellable);
 			BigDecimal tax = settings.tax(gross, ledger.decimalPlaces());
 			BigDecimal net = gross.subtract(tax);
@@ -280,21 +307,21 @@ public final class ShopService {
 				if (!ledger.commitEntries(
 					List.of(
 						new JournalRecord.Entry(LedgerService.MINT, gross.negate()),
-						new JournalRecord.Entry(LedgerService.playerKey(player.getUniqueId()), net),
+						new JournalRecord.Entry(LedgerService.playerKey(ownerId), net),
 						new JournalRecord.Entry(LedgerService.TAX, tax)
 					),
 					List.of(),
 					"SHOP_SELL",
 					item.id()
 				)) {
-					leftoversLeftInGui.add(stack.clone());
+					leftovers.add(stack.clone());
 					continue;
 				}
 			} catch (RuntimeException exception) {
-				leftoversLeftInGui.add(stack.clone());
+				leftovers.add(stack.clone());
 				continue;
 			}
-			dailyLimits.consume(player, "sell", item.id(), sellable);
+			dailyLimits.consume(ownerId, "sell", item.id(), sellable);
 			earned = earned.add(net);
 			taxTotal = taxTotal.add(tax);
 			soldTotal += sellable;
@@ -303,27 +330,31 @@ public final class ShopService {
 			if (rest > 0) {
 				ItemStack leftover = stack.clone();
 				leftover.setAmount(rest);
-				leftoversLeftInGui.add(leftover);
+				leftovers.add(leftover);
 				limited.add(item.id());
 			}
 		}
+		return new SellResult(soldTotal, earned, taxTotal, unsellable, limited);
+	}
 
-		if (soldTotal > 0) {
-			player.sendMessage("批量回收完成：出售 " + soldTotal + " 件，获得 "
-				+ ledger.format(earned) + "（含交易税 " + ledger.format(taxTotal) + "），余额 "
-				+ ledger.format(ledger.balance(player.getUniqueId())) + "。");
-		} else {
-			player.sendMessage("没有可回收的物品。");
+	/**
+	 * 一次批量回收的结果，供不依赖聊天的调用方（回收箱）自行组织文案。
+	 */
+	public record SellResult(
+		int soldCount,
+		BigDecimal earned,
+		BigDecimal tax,
+		Set<String> unsellable,
+		Set<String> limited
+	) {
+		public SellResult {
+			unsellable = Set.copyOf(unsellable);
+			limited = Set.copyOf(limited);
 		}
-		if (!unsellable.isEmpty()) {
-			player.sendMessage("以下物品商店不回收（只收矿石原矿），已留在原地："
-				+ String.join("、", unsellable));
+
+		public boolean soldAnything() {
+			return soldCount > 0;
 		}
-		if (!limited.isEmpty()) {
-			player.sendMessage("以下商品达到今日回收上限，剩余部分已留在原地："
-				+ String.join("、", limited));
-		}
-		return soldTotal > 0;
 	}
 
 	public int countInInventory(Player player, ShopItem item) {

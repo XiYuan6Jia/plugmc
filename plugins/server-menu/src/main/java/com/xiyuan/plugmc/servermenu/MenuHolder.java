@@ -13,7 +13,8 @@ public final class MenuHolder implements InventoryHolder {
 		PLUGINS,
 		ADMIN,
 		HUB,
-		COSMETIC
+		COSMETIC,
+		VAULT
 	}
 
 	private final Inventory inventory;

@@ -44,6 +44,9 @@ import com.xiyuan.plugmc.economy.shop.ShopConfig;
 import com.xiyuan.plugmc.economy.shop.ShopService;
 import com.xiyuan.plugmc.economy.trade.TradeCommand;
 import com.xiyuan.plugmc.economy.trade.TradeManager;
+import com.xiyuan.plugmc.economy.vault.VaultCommand;
+import com.xiyuan.plugmc.economy.vault.VaultListener;
+import com.xiyuan.plugmc.economy.vault.VaultService;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.TabCompleter;
@@ -71,6 +74,7 @@ public final class EconomyPlugin extends JavaPlugin implements Listener {
 	private TradeBoardImpl tradeBoard;
 	private TradeManager tradeManager;
 	private BankService bankService;
+	private VaultService vaultService;
 	private BukkitTask snapshotTask;
 	private BukkitTask marketTask;
 	private BukkitTask mailTask;
@@ -147,6 +151,11 @@ public final class EconomyPlugin extends JavaPlugin implements Listener {
 			getServer().getPluginManager().registerEvents(new MenuListener(), this);
 			registerCommand("shop", new ShopCommand(shopService, shopGui));
 			registerCommand("bank", new BankCommand(bankService, bankGui));
+
+			// 回收箱：箱子/木桶绑定玩家后，往里放的物品自动进建材银行或卖到官方商店
+			vaultService = new VaultService(this, shopService, bankService, economyService);
+			getServer().getPluginManager().registerEvents(new VaultListener(vaultService), this);
+			registerCommand("vault", new VaultCommand(vaultService, bankService, economyService));
 
 			ChatPrompt chatPrompt = new ChatPrompt(this);
 			getServer().getPluginManager().registerEvents(chatPrompt, this);
@@ -253,6 +262,7 @@ public final class EconomyPlugin extends JavaPlugin implements Listener {
 			bankService.save();
 			bankService = null;
 		}
+		vaultService = null;
 		for (Player player : Bukkit.getOnlinePlayers()) {
 			if (player.getOpenInventory().getTopInventory().getHolder(false) instanceof EconomyMenuHolder) {
 				player.closeInventory();

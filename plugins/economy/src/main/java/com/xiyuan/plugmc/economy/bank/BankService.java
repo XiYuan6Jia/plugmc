@@ -311,6 +311,16 @@ public final class BankService {
 		BankPools.add(poolsOf(player.getUniqueId()), category, points);
 	}
 
+	private void addCredit(UUID ownerId, String ownerName, String category, long points) {
+		if (points <= 0) {
+			return;
+		}
+		if (ownerName != null && !ownerName.isBlank()) {
+			names.put(ownerId, ownerName);
+		}
+		BankPools.add(poolsOf(ownerId), category, points);
+	}
+
 	/**
 	 * 一次商店抵扣的组成，退款时按原路退回，避免额度跨分类漂移。
 	 */
@@ -510,6 +520,36 @@ public final class BankService {
 			player.sendMessage("建材银行未开启。");
 			return 0;
 		}
+		DepositResult result = depositBatchFor(
+			player.getUniqueId(),
+			player.getName(),
+			offered,
+			leftovers
+		);
+		if (result.count() <= 0) {
+			player.sendMessage("没有可以存入的建材，物品已退回。");
+			return 0;
+		}
+		player.sendMessage("已批量存入 " + result.kinds() + " 种共 " + result.count() + " 个建材"
+			+ summary(result.detail()) + "，获得额度 " + format(result.points())
+			+ gainsDetail(result.gains()) + "，当前总额度 "
+			+ format(creditOf(player.getUniqueId())) + "。");
+		return result.count();
+	}
+
+	/**
+	 * 按玩家 UUID 批量存入建材，不要求玩家在线。
+	 * 回收箱的绑定玩家可能已经下线，额度仍记进他的账号。
+	 */
+	public DepositResult depositBatchFor(
+		UUID ownerId,
+		String ownerName,
+		List<ItemStack> offered,
+		List<ItemStack> leftovers
+	) {
+		if (!enabled()) {
+			return DepositResult.EMPTY;
+		}
 		int remaining = config.maxPerOperation();
 		Map<String, Long> gains = new LinkedHashMap<>();
 		int count = 0;
@@ -541,25 +581,35 @@ public final class BankService {
 			remaining -= take;
 			detail.merge(item.id(), take, Integer::sum);
 		}
+		Map<String, Long> credited = Map.copyOf(gains);
+		Map<String, Integer> detailCopy = Map.copyOf(detail);
 		if (count <= 0) {
-			player.sendMessage("没有可以存入的建材，物品已退回。");
-			return 0;
+			return new DepositResult(0, 0, 0, credited, detailCopy);
 		}
-		gains.forEach((category, points) -> addCredit(player, category, points));
+		gains.forEach((category, points) -> addCredit(ownerId, ownerName, category, points));
 		save();
-		player.sendMessage("已批量存入 " + detail.size() + " 种共 " + count + " 个建材"
-			+ summary(detail) + "，获得额度 " + format(BankPools.total(gains))
-			+ gainsDetail(gains) + "，当前总额度 "
-			+ format(creditOf(player.getUniqueId())) + "。");
-		return count;
+		return new DepositResult(count, BankPools.total(gains), detailCopy.size(), credited, detailCopy);
 	}
+
+	/**
+	 * 一次批量存入的结果，供不依赖聊天的调用方（回收箱）自行组织文案。
+	 */
+	public record DepositResult(
+		int count,
+		long points,
+		int kinds,
+		Map<String, Long> gains,
+		Map<String, Integer> detail
+	) {
+		public static final DepositResult EMPTY = new DepositResult(0, 0, 0, Map.of(), Map.of());
+	}
+
 
 	private String gainsDetail(Map<String, Long> gains) {
 		if (gains.size() <= 1) {
 			return "";
 		}
-		StringBuilder builder = new StringBuilder("（");
-		int shown = 0;
+		StringBuilder builder = new StringBuilder("（");		int shown = 0;
 		for (Map.Entry<String, Long> entry : gains.entrySet()) {
 			if (shown == 4) {
 				builder.append("…");

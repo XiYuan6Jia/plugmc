@@ -27,7 +27,7 @@ import java.util.Set;
 public final class MenuManager {
 	private static final Set<String> ACTIONS = Set.of(
 		"balance", "toggle_hud", "message", "player_command", "console_command", "plugin_list",
-		"economy_admin", "hub_panel", "cosmetic_panel", "prompt_command", "daily", "none", "close"
+		"economy_admin", "hub_panel", "cosmetic_panel", "prompt_command", "daily", "vault_panel", "none", "close"
 	);
 	private static final int PLUGIN_PAGE_CAPACITY = 45;
 	private static final int CONFIG_VERSION = 15;
@@ -136,6 +136,7 @@ public final class MenuManager {
 
 		ensurePluginListButton(defaults);
 		ensureCosmeticButton(defaults);
+		ensureVaultButton(defaults);
 		migrateConfigVersion(defaults);
 		plugin.saveConfig();
 	}
@@ -180,6 +181,65 @@ public final class MenuManager {
 		}
 	}
 
+	/**
+	 * 把「回收箱」按钮增量合并进已有配置。
+	 *
+	 * 与 ensureCosmeticButton 同一套保守策略：先试默认槽位，被占就找第一个空格，
+	 * 菜单真的排满才报错。绝不整体重置 menu.items —— 服主自己排的顺序必须保留。
+	 */
+	private void ensureVaultButton(YamlConfiguration defaults) {
+		ConfigurationSection configuredButtons = plugin.getConfig().getConfigurationSection("menu.items");
+		if (configuredButtons == null) {
+			return;
+		}
+		boolean hasVault = configuredButtons.getKeys(false).stream()
+			.anyMatch(key -> "vault_panel".equalsIgnoreCase(
+				plugin.getConfig().getString("menu.items." + key + ".action", "")
+			));
+		if (hasVault) {
+			return;
+		}
+		ConfigurationSection defaultButtons = defaults.getConfigurationSection("menu.items");
+		if (defaultButtons == null) {
+			return;
+		}
+		Map.Entry<String, ConfigurationSection> defaultEntry = defaultButtons.getKeys(false).stream()
+			.map(key -> Map.entry(key, defaultButtons.getConfigurationSection(key)))
+			.filter(entry -> entry.getValue() != null
+				&& "vault_panel".equalsIgnoreCase(entry.getValue().getString("action", "")))
+			.findFirst()
+			.orElse(null);
+		if (defaultEntry == null) {
+			return;
+		}
+
+		int rows = plugin.getConfig().getInt("menu.rows", 3);
+		int slot = -1;
+		int defaultSlot = Integer.parseInt(defaultEntry.getKey());
+		if (!configuredButtons.getKeys(false).contains(Integer.toString(defaultSlot)) && defaultSlot < rows * 9) {
+			slot = defaultSlot;
+		}
+		for (int candidate = 0; candidate < rows * 9; candidate++) {
+			if (slot >= 0) {
+				break;
+			}
+			if (configuredButtons.getConfigurationSection(Integer.toString(candidate)) == null) {
+				slot = candidate;
+				break;
+			}
+		}
+		if (slot < 0 && rows < 6) {
+			slot = rows * 9;
+			plugin.getConfig().set("menu.rows", rows + 1);
+		}
+		if (slot < 0) {
+			plugin.getLogger().warning("菜单已满，未能自动加入「回收箱」按钮；请手动在 menu.items 留出空位");
+			return;
+		}
+
+		plugin.getConfig().set("menu.items." + slot, defaultEntry.getValue().getValues(false));
+		plugin.getLogger().info("已将「回收箱」按钮合并到菜单位置 " + slot);
+	}
 	private void ensureCosmeticButton(YamlConfiguration defaults) {
 		ConfigurationSection configuredButtons = plugin.getConfig().getConfigurationSection("menu.items");
 		if (configuredButtons == null) {
@@ -535,6 +595,23 @@ public final class MenuManager {
 			}
 			return;
 		}
+		if (holder.getPage() == MenuHolder.Page.VAULT) {
+			switch (slot) {
+				case 20, 22 -> {
+					player.closeInventory();
+					player.performCommand("vault");
+				}
+				case 30 -> {
+					player.closeInventory();
+					player.performCommand("vault unbind");
+				}
+				case 45 -> open(player);
+				case 49 -> player.closeInventory();
+				default -> {
+				}
+			}
+			return;
+		}
 		if (holder.getPage() == MenuHolder.Page.ADMIN) {
 			switch (slot) {
 				case 13 -> promptTreasuryFund(player);
@@ -593,6 +670,7 @@ public final class MenuManager {
 			case "economy_admin" -> openAdminPanel(player);
 			case "hub_panel" -> openHubPanel(player);
 			case "cosmetic_panel" -> openCosmeticPanel(player);
+			case "vault_panel" -> openVaultPanel(player);
 			case "daily" -> {
 				player.performCommand("daily");
 				open(player);
@@ -696,6 +774,47 @@ public final class MenuManager {
 	}
 
 	/**
+	 * 回收箱入口：说明 + 代玩家执行一次 /vault。
+	 *
+	 * 绑定目标只能是玩家准星指着的那个方块，菜单里没法替他选，
+	 * 所以按钮只代他敲一次命令，选哪个箱子仍然由他自己决定。
+	 */
+	public void openVaultPanel(Player player) {
+		MenuHolder holder = new MenuHolder(54, "&8回收箱", Map.of(), MenuHolder.Page.VAULT, 0);
+		if (filler != null) {
+			for (int slot = 0; slot < 54; slot++) {
+				holder.setButtonItem(slot, filler.clone());
+			}
+		}
+		holder.setButtonItem(4, navigationItem(Material.HOPPER, "&6回收箱"));
+		holder.setButtonItem(20, navigationItem(Material.CHEST,
+			"&e绑定一个箱子",
+			"&7对着箱子执行这条命令，",
+			"&7它就会变成只属于你的回收箱"
+		));
+		holder.setButtonItem(22, navigationItem(Material.BUCKET,
+			"&e绑定一个木桶",
+			"&7木桶同样可以，",
+			"&7收东西的规则完全一致"
+		));
+		holder.setButtonItem(24, navigationItem(Material.WRITABLE_BOOK,
+			"&e怎么运作",
+			"&7别人往里放的物品会自动结算：",
+			"&7能进建材银行的换成额度，",
+			"&7其余的卖到官方商店，",
+			"&7收益全部记在你的账上。",
+			"&7两边都不收的会留在箱子里。"
+		));
+		holder.setButtonItem(30, navigationItem(Material.BARRIER,
+			"&c解除绑定",
+			"&7对着你的回收箱执行",
+			"&7/vault unbind"
+		));
+		holder.setButtonItem(45, navigationItem(Material.ARROW, "&e返回菜单"));
+		holder.setButtonItem(49, navigationItem(Material.BARRIER, "&c关闭"));
+		player.openInventory(holder.getInventory());
+	}
+	/**
 	 * 装备外观入口：直接把 cosmetic 插件的外观界面推给玩家。
 	 * 菜单只负责导航，槽位渲染与物品读写全部留在 cosmetic 内部，
 	 * 这样两个插件之间不需要相互依赖（server-menu 只 depend economy）。
@@ -772,6 +891,23 @@ public final class MenuManager {
 		ItemStack item = new ItemStack(material);
 		ItemMeta meta = item.getItemMeta();
 		meta.displayName(MenuText.component(name));
+		item.setItemMeta(meta);
+		return item;
+	}	
+	/**
+	 * 带说明文字的导航项。name 是第一行，lore 逐行作为灰色说明。
+	 */
+	private ItemStack navigationItem(Material material, String name, String... lore) {
+		ItemStack item = navigationItem(material, name);
+		if (lore.length == 0) {
+			return item;
+		}
+		ItemMeta meta = item.getItemMeta();
+		java.util.List<net.kyori.adventure.text.Component> lines = new java.util.ArrayList<>();
+		for (String line : lore) {
+			lines.add(MenuText.component(line));
+		}
+		meta.lore(lines);
 		item.setItemMeta(meta);
 		return item;
 	}
