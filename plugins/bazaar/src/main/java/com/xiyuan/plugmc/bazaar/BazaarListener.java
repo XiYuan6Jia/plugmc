@@ -10,11 +10,11 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.EquipmentSlot;
 
 /**
- * 摊位交互：点人偶或点装饰方块，都弹出这个人当前的全部在售项。
+ * 摊位交互：点人偶或点装饰方块，直接打开这个人对应的交易界面。
  *
- * <p>只做提示、不做操作 —— 真正的买/出价/交货还是走经济系统自己的命令，
- * 这样商业街不复制一套交易逻辑，也不会和经济系统的校验规则跑偏
- * （余额、税费、托管、限购这些都在经济系统里）。</p>
+ * <p>打开的是经济系统自己的界面（售卖 / 拍卖 / 求购 / 银行 / 官方商店），
+ * 商业街这边只负责「点谁 → 开哪个」，不复制任何一套交易逻辑，
+ * 玩家在界面里的每一步仍然走经济系统原有的校验（余额、税费、托管、限购）。</p>
  */
 final class BazaarListener implements Listener {
 	private final BazaarPlugin plugin;
@@ -42,17 +42,15 @@ final class BazaarListener implements Listener {
 			String fixed = stalls.fixedAtBlock(event.getClickedBlock().getLocation());
 			if (fixed != null) {
 				event.setCancelled(true);
-				event.getPlayer().sendMessage(BazaarText.component("&f&l" + fixed));
-				event.getPlayer().sendMessage(BazaarText.component(
-					"&7这是常设摊位，不需要交易 —— 里面的东西随时都能买/存。"));
+				openFixed(event.getPlayer(), fixed);
 			}
 			return;
 		}
 		event.setCancelled(true);
-		show(event.getPlayer(), owner);
+		open(event.getPlayer(), owner);
 	}
 
-	/** 点人偶：同样弹出摊主的在售项。 */
+	/** 点人偶：打开摊主的交易界面。 */
 	@EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
 	public void onInteractEntity(PlayerInteractEntityEvent event) {
 		if (event.getHand() != EquipmentSlot.HAND) {
@@ -60,13 +58,18 @@ final class BazaarListener implements Listener {
 		}
 		String owner = stalls.tenantAtEntity(event.getRightClicked().getUniqueId());
 		if (owner == null) {
+			String fixed = stalls.fixedAtEntity(event.getRightClicked().getUniqueId());
+			if (fixed != null) {
+				event.setCancelled(true);
+				openFixed(event.getPlayer(), fixed);
+			}
 			return;
 		}
 		event.setCancelled(true);
-		show(event.getPlayer(), owner);
+		open(event.getPlayer(), owner);
 	}
 
-	private void show(Player viewer, String ownerName) {
+	private void open(Player viewer, String ownerName) {
 		BazaarTenants tenants = plugin.currentTenants();
 		if (tenants == null) {
 			return;
@@ -77,11 +80,15 @@ final class BazaarListener implements Listener {
 			viewer.sendMessage(BazaarText.component("&7这个摊位已经空了。"));
 			return;
 		}
-		viewer.sendMessage(BazaarText.component(
-			"&f&l" + tenant.name() + " &7的在售项（" + tenant.kindSummary() + "）"));
-		for (BazaarDeal deal : tenant.deals()) {
-			viewer.sendMessage(BazaarText.component(BazaarText.dealLine(deal)));
-			viewer.sendMessage(BazaarText.component(BazaarText.hintFor(deal.kind())));
+		BazaarMenu.open(viewer, tenant);
+	}
+
+	/** 固定摊位的用途名 → 对应的经济系统界面。 */
+	private static void openFixed(Player viewer, String label) {
+		switch (label) {
+			case "银行" -> BazaarMenu.openFixed(viewer, "bank");
+			case "官方商店" -> BazaarMenu.openFixed(viewer, "official");
+			default -> BazaarMenu.openFixed(viewer, "event");
 		}
 	}
 }

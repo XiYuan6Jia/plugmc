@@ -17,18 +17,21 @@ refresh:
 
 stalls:
   # 固定摊位：官方商店、银行、活动摊等。kind 只用于招牌与点击提示。
+  #
+  # 三个摊位沿 x 等距排列，间距 10（摊位本身宽 5，所以相邻两个之间空 5 格）。
+  # 改了任何一个的 x 就要一起调，否则一排摊位会疏密不齐 —— /bazaar check 会查这一项。
   fixed:
     official:
       kind: official
-      x: -54
+      x: -52
       z: 28
     bank:
       kind: bank
-      x: -40
+      x: -42
       z: 28
     event:
       kind: event
-      x: -30
+      x: -32
       z: 28
 
   # 玩家摊位区：24 个位置（x 方向 6 列 × z 方向 4 行）
@@ -47,17 +50,17 @@ stalls:
       base: minecraft:stone_bricks
       pillar: minecraft:quartz_pillar[axis=y]
       canopy: minecraft:smooth_quartz
-      carpet: minecraft:white_wool
+      carpet: minecraft:white_carpet
     - id: oak
       base: minecraft:stone_bricks
       pillar: minecraft:oak_log[axis=y]
       canopy: minecraft:oak_planks
-      carpet: minecraft:oak_carpet
+      carpet: minecraft:brown_carpet
     - id: spruce
       base: minecraft:stone_bricks
       pillar: minecraft:spruce_log[axis=y]
       canopy: minecraft:spruce_planks
-      carpet: minecraft:spruce_carpet
+      carpet: minecraft:gray_carpet
     - id: garden
       base: minecraft:moss_block
       pillar: minecraft:oak_log[axis=y]

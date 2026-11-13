@@ -41,6 +41,7 @@ public final class BazaarPlugin extends JavaPlugin {
 		stalls.buildFixed();
 
 		getServer().getPluginManager().registerEvents(new BazaarListener(this, stalls), this);
+		getServer().getPluginManager().registerEvents(BazaarMenu.listener(), this);
 		BazaarCommand command = new BazaarCommand(this);
 		if (getCommand("bazaar") != null) {
 			getCommand("bazaar").setExecutor(command);

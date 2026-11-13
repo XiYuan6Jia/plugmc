@@ -2,7 +2,7 @@ name: probe
 version: '${version}'
 main: com.xiyuan.plugmc.probe.ProbePlugin
 api-version: '${api_version}'
-description: 测试服专用：以真实玩家身份派发命令，用于没有键鼠注入通道时做端到端验证
+description: 测试服专用：以真实玩家身份派发命令/合成点击，用于没有键鼠注入通道时做端到端验证
 commands:
   asplayer:
     description: 以指定玩家身份执行一条命令
@@ -12,7 +12,27 @@ commands:
     description: 读一格方块的真实 id
     usage: /probeblock <世界> <x> <y> <z>
     permission: probe.admin
+  asclick:
+    description: 合成一次右键实体
+    usage: /asclick <玩家> [实体类型]
+    permission: probe.admin
+  openinv:
+    description: 打印玩家当前打开的界面标题
+    usage: /openinv <玩家>
+    permission: probe.admin
+  astp:
+    description: 把玩家传送到某世界坐标（跨维度）
+    usage: /astp <玩家> <世界> <x> <y> <z>
+    permission: probe.admin
+  asheal:
+    description: 满血复活
+    usage: /asheal <玩家>
+    permission: probe.admin
+  invclick:
+    description: 在当前打开的界面里点一个格子
+    usage: /invclick <玩家> <槽位>
+    permission: probe.admin
 permissions:
   probe.admin:
-    description: 允许使用 /asplayer
+    description: 允许使用探针命令
     default: op

@@ -44,6 +44,16 @@ final class BazaarStalls {
 	static final int WIDTH = 5;
 	static final int DEPTH = 3;
 
+	/**
+	 * 招牌挂在摊位<b>正前方</b>、离地 3.4 格、距离占地前沿 0.2 格。
+	 *
+	 * <p>不能挂在摊位内部：顶棚在 {@code y+4}，招牌以自身中心上下摊开，交易列到六七条时
+	 * 上半截会直接嵌进顶棚方块里，玩家只能看到下半截。移到占地之外就没有任何方块压着它，
+	 * 行数再多也不会穿模；高度 3.4 又刚好高过玩家视平线，从街上看过去正好。</p>
+	 */
+	static final double SIGN_HEIGHT = 3.4;
+	static final double SIGN_FRONT = 0.2;
+
 	private final JavaPlugin plugin;
 	private final BazaarConfig config;
 
@@ -258,7 +268,8 @@ final class BazaarStalls {
 		int z0 = slot[1];
 		int y = config.floorY();
 
-		Location mannequinAt = new Location(world, x0 + WIDTH / 2.0, y + 1.0, z0 + 1.5);
+		Location mannequinAt = new Location(world, x0 + WIDTH / 2.0,
+			surfaceY(world, x0 + WIDTH / 2.0, z0 + 1.5, config.floorY()), z0 + 1.5);
 		Mannequin mannequin = world.spawn(mannequinAt, Mannequin.class, entity -> {
 			entity.addScoreboardTag(TAG);
 			entity.setImmovable(true);
@@ -266,12 +277,14 @@ final class BazaarStalls {
 			entity.setSilent(true);
 			entity.setCollidable(false);
 			entity.setPersistent(true);
+			// 同上：人偶默认带一段 "NPC" 描述，不藏起来会和名牌叠在一起
+			entity.setDescription(null);
 			entity.customName(BazaarText.component("&f" + fixedLabel(fixed.kind())));
 			entity.setCustomNameVisible(true);
 		});
 		state.mannequinId = mannequin.getUniqueId();
 
-		Location textAt = new Location(world, x0 + WIDTH / 2.0, y + 3.2, z0 + 1.5);
+		Location textAt = new Location(world, x0 + WIDTH / 2.0, y + SIGN_HEIGHT, z0 + DEPTH + SIGN_FRONT);
 		TextDisplay text = world.spawn(textAt, TextDisplay.class, entity -> {
 			entity.addScoreboardTag(TAG);
 			entity.setPersistent(true);
@@ -345,6 +358,16 @@ final class BazaarStalls {
 		return null;
 	}
 
+	/** 点到哪个固定摊位的实体（人偶或货台上的展示品），返回它的用途名。 */
+	String fixedAtEntity(UUID entityId) {
+		for (Occupancy state : fixedStalls) {
+			if (entityId.equals(state.mannequinId) || state.itemIds.contains(entityId)) {
+				return state.displayName;
+			}
+		}
+		return null;
+	}
+
 	/** 某坐标是否被某个摊位占着（点击判定用）。 */
 	boolean isStallBlock(Location location) {
 		for (Occupancy state : occupied.values()) {
@@ -382,10 +405,15 @@ final class BazaarStalls {
 		int z0 = slot[1];
 		int y = config.floorY();
 
-		// 地毯：铺在地板层上（会覆盖广场铺装，解放时还原）
+		// 地毯：铺在广场铺装**上面**那一层（floorY + 1），不是把铺装挖掉换成地毯。
+		// floorY 这一层是铺装本身、也是玩家站立面，地毯写在这一层等于把地面压低 15/16 格，
+		// 站在上面的人偶就成了"陷进地里、只露个头"。抬到上面一层后地毯顶面是 floorY + 1.0625，
+		// 比周围地面只高 1/16，视觉上是平贴的。
+		// 只铺 z0 + 0、z0 + 1 两排 —— 最前一排（z0 + 2）是货台，同层会互相覆盖。
+		int ground = y + 1;
 		for (int dx = 1; dx <= 3; dx++) {
-			for (int dz = 1; dz <= 2; dz++) {
-				set(state, world, x0 + dx, y, z0 + dz, state.decor.carpet());
+			for (int dz = 0; dz <= 1; dz++) {
+				set(state, world, x0 + dx, ground, z0 + dz, state.decor.carpet());
 			}
 		}
 		// 柱：后排两角，三层高
@@ -441,13 +469,32 @@ final class BazaarStalls {
 		updateItems(state, tenant, world, slot);
 	}
 
+	/**
+	 * 人偶脚底该站在多高 —— 按脚下那格方块的<b>真实顶面</b>算，不是按整数层算。
+	 *
+	 * <p>广场铺装的最上面一层是 {@code floorY}（可站立面 {@code floorY + 1.0}），
+	 * 摊位地毯铺在它<b>上面</b>那一层（{@code floorY + 1}）。地毯只有 1/16 格高，
+	 * 顶面是 {@code floorY + 1.0625}。人偶要是照"整方块"写死 {@code floorY + 1.0}，
+	 * 脚底就会比地毯低 1/16，人偶半截陷进地毯里；照旧版把地毯铺在 {@code floorY} 层的话，
+	 * 地毯反而是把地面压低了一整格，人偶站在上面就只剩个头在地面以上。</p>
+	 *
+	 * <p>所以这里只问一件事：{@code floorY + 1} 那一格有没有东西（地毯）——
+	 * 有就踩它的碰撞盒顶面，没有（或压根没铺装饰）就站回 {@code floorY + 1.0}。</p>
+	 */
+	private static double surfaceY(World world, double x, double z, int floorY) {
+		org.bukkit.block.Block above = world.getBlockAt(
+			(int) Math.floor(x), floorY + 1, (int) Math.floor(z));
+		double top = above.getBoundingBox().getMaxY();
+		// 空气没有碰撞盒（maxY 会是 0），此时站回铺装面 floorY + 1.0
+		return top > 0.0 ? top : floorY + 1.0;
+	}
+
 	/** 摊位后面的玩家模型：套摊主的皮肤，头顶显示名字。 */
 	private Mannequin spawnMannequin(World world, int[] slot, BazaarTenants.Tenant tenant) {
 		int x0 = slot[0];
 		int z0 = slot[1];
-		int y = config.floorY();
 
-		Location at = new Location(world, x0 + WIDTH / 2.0, y + 1.0, z0 + 1.5);
+		Location at = new Location(world, x0 + WIDTH / 2.0, surfaceY(world, x0 + WIDTH / 2.0, z0 + 1.5, config.floorY()), z0 + 1.5);
 		return world.spawn(at, Mannequin.class, entity -> {
 			entity.addScoreboardTag(TAG);
 			entity.setImmovable(true);
@@ -456,7 +503,10 @@ final class BazaarStalls {
 			entity.setCollidable(false);
 			entity.setPersistent(true);
 			entity.setProfile(profileOf(tenant.name()));
-			entity.setDescription(BazaarText.component("&f" + tenant.name()));
+			// 人偶自带一段 description（原版文本是 "NPC"），它和 CustomName 会一起画在名字牌上，
+			// 两段同名文字叠在一起就看不清了。传 null 等于「把 description 藏起来」，
+			// 名牌上只剩 CustomName 这一份。
+			entity.setDescription(null);
 			entity.customName(BazaarText.component("&f" + tenant.name()));
 			entity.setCustomNameVisible(true);
 		});
@@ -468,7 +518,7 @@ final class BazaarStalls {
 		int z0 = slot[1];
 		int y = config.floorY();
 
-		Location at = new Location(world, x0 + WIDTH / 2.0, y + 3.7, z0 + 1.5);
+		Location at = new Location(world, x0 + WIDTH / 2.0, y + SIGN_HEIGHT, z0 + DEPTH + SIGN_FRONT);
 		return world.spawn(at, TextDisplay.class, entity -> {
 			entity.addScoreboardTag(TAG);
 			entity.setPersistent(true);
