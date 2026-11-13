@@ -1,5 +1,6 @@
 package com.xiyuan.plugmc.tpa;
 
+import com.xiyuan.plugmc.sethome.api.HomeService;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -71,11 +72,53 @@ public final class TpaCommand implements CommandExecutor, TabCompleter {
 				}
 				manager.request(player, target, TpaRequest.Direction.TO_SENDER);
 			}
+			case "tpahome" -> requestHome(player, args);
 			default -> {
 				return false;
 			}
 		}
 		return true;
+	}
+
+	/**
+	 * /tpahome <玩家> [家园名]：申请传送到别人的家。
+	 *
+	 * <p>不给家园名时走那个人的默认家园；给了就先确认存在，免得发出一条注定失败的申请。</p>
+	 */
+	private void requestHome(Player player, String[] args) {
+		if (args.length == 0) {
+			player.sendMessage(TpaText.of("&c用法：/tpahome <玩家> [家园名]"));
+			player.sendMessage(TpaText.of("&7先 &f/tpa <玩家> &7看看谁在线；不知道对方有哪些家时"
+				+ "可以不写家园名，用他的默认家园。"));
+			return;
+		}
+		Player target = Bukkit.getPlayerExact(args[0]);
+		if (target == null) {
+			player.sendMessage(TpaText.of("&c找不到在线玩家：" + args[0]));
+			return;
+		}
+		String home = args.length >= 2 ? args[1] : null;
+		if (home == null) {
+			HomeService service = Bukkit.getServicesManager().load(HomeService.class);
+			if (service != null) {
+				List<String> names = service.names(target.getUniqueId());
+				if (names.isEmpty()) {
+					player.sendMessage(TpaText.of("&c" + target.getName() + " 还没有设置家园。"));
+					return;
+				}
+				if (names.size() == 1) {
+					home = names.get(0);
+				} else {
+					// 有多个家又没指定：让他自己挑，别替他猜
+					player.sendMessage(TpaText.of("&e" + target.getName() + " 有 "
+						+ names.size() + " 个家园，请指定一个："));
+					player.sendMessage(TpaText.of("&7  " + String.join("&7、&f", names)));
+					player.sendMessage(TpaText.of("&7用法：&f/tpahome " + target.getName() + " <家园名>"));
+					return;
+				}
+			}
+		}
+		manager.request(player, target, TpaRequest.Direction.TO_HOME, home);
 	}
 
 	@Override
@@ -92,6 +135,22 @@ public final class TpaCommand implements CommandExecutor, TabCompleter {
 			}
 			options.addAll(onlineNames(player, prefix));
 			return options;
+		}
+		if (name.equals("tpahome")) {
+			if (args.length == 1) {
+				return onlineNames(player, args[0].toLowerCase(Locale.ROOT));
+			}
+			if (args.length == 2) {
+				Player target = Bukkit.getPlayerExact(args[0]);
+				if (target == null) {
+					return List.of();
+				}
+				String prefix = args[1].toLowerCase(Locale.ROOT);
+				return manager.homeNamesOf(target).stream()
+					.filter(home -> home.toLowerCase(Locale.ROOT).startsWith(prefix))
+					.toList();
+			}
+			return List.of();
 		}
 		if ((name.equals("tpahere") || name.equals("tpaccept") || name.equals("tpadeny")
 			|| name.equals("tpcancel")) && args.length == 1) {

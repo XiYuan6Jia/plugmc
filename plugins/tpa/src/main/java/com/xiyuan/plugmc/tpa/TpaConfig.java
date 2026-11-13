@@ -12,7 +12,8 @@ public record TpaConfig(
 	int cooldownSeconds,
 	boolean cancelOnMove,
 	boolean cancelOnDamage,
-	boolean allowCrossWorld
+	boolean allowCrossWorld,
+	boolean allowHomeRequest
 ) {
 	public TpaConfig {
 		requestTimeoutSeconds = clamp(requestTimeoutSeconds, 10, 600);
@@ -28,7 +29,8 @@ public record TpaConfig(
 			config.getInt("cooldown-seconds", 10),
 			config.getBoolean("cancel-on-move", true),
 			config.getBoolean("cancel-on-damage", true),
-			config.getBoolean("allow-cross-world", true)
+			config.getBoolean("allow-cross-world", true),
+			config.getBoolean("allow-home-request", true)
 		);
 	}
 

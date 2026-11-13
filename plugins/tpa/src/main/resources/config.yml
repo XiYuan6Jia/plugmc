@@ -1,7 +1,18 @@
+# 申请传送
 enabled: true
+
+# 申请多久没被处理就失效
 request-timeout-seconds: 60
+
+# 对方接受后，读秒多久才真正传送；读秒期间移动或受伤会取消
 warmup-seconds: 3
+
+# 发起一次申请后的冷却
 cooldown-seconds: 10
+
 cancel-on-move: true
 cancel-on-damage: true
 allow-cross-world: true
+
+# 是否允许 /tpahome 申请传送到别人的家（需要 sethome 插件提供家园数据）
+allow-home-request: true

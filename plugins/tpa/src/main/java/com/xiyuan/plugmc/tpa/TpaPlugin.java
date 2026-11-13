@@ -11,7 +11,7 @@ public final class TpaPlugin extends JavaPlugin {
 		manager = new TpaManager(this, TpaConfig.load(getConfig()));
 		TpaGui gui = new TpaGui(manager);
 		TpaCommand command = new TpaCommand(this, manager, gui);
-		for (String name : new String[]{"tpa", "tpahere", "tpaccept", "tpadeny", "tpcancel"}) {
+		for (String name : new String[]{"tpa", "tpahere", "tpahome", "tpaccept", "tpadeny", "tpcancel"}) {
 			var pluginCommand = getCommand(name);
 			if (pluginCommand == null) {
 				getLogger().warning("plugin.yml 缺少命令定义：" + name);

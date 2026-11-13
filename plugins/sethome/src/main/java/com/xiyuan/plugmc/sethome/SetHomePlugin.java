@@ -1,7 +1,9 @@
 package com.xiyuan.plugmc.sethome;
 
+import com.xiyuan.plugmc.sethome.api.HomeService;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.entity.Player;
+import org.bukkit.plugin.ServicePriority;
 import org.bukkit.plugin.java.JavaPlugin;
 
 /**
@@ -12,6 +14,7 @@ public final class SetHomePlugin extends JavaPlugin {
 
 	private HomeStore homes;
 	private TeleportManager teleports;
+	private HomeService homeService;
 	private int maxHomes;
 	private int warmupSeconds;
 	private int cooldownSeconds;
@@ -27,6 +30,10 @@ public final class SetHomePlugin extends JavaPlugin {
 		teleports = new TeleportManager(this);
 		getServer().getPluginManager().registerEvents(teleports, this);
 		getServer().getPluginManager().registerEvents(new DeathPointListener(this), this);
+
+		// 别的插件（比如申请传送）要查「某人的家在哪」，只给只读入口
+		homeService = new HomeServiceImpl(homes);
+		getServer().getServicesManager().register(HomeService.class, homeService, this, ServicePriority.Normal);
 
 		HomeCommand executor = new HomeCommand(this);
 		for (String name : COMMANDS) {
@@ -45,6 +52,10 @@ public final class SetHomePlugin extends JavaPlugin {
 
 	@Override
 	public void onDisable() {
+		if (homeService != null) {
+			getServer().getServicesManager().unregister(HomeService.class, homeService);
+			homeService = null;
+		}
 		if (homes != null) {
 			homes.save();
 		}

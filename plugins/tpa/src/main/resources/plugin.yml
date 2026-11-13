@@ -4,6 +4,7 @@ main: com.xiyuan.plugmc.tpa.TpaPlugin
 api-version: '${api_version}'
 authors: [XiYuan6Jia]
 description: "申请传送：一键接受/拒绝，无需手输指令"
+softdepend: [sethome]
 commands:
   tpa:
     description: "申请传送到玩家，或打开在线玩家列表"
@@ -12,6 +13,10 @@ commands:
   tpahere:
     description: "申请把玩家传送到你这里"
     usage: /tpahere <玩家>
+  tpahome:
+    description: "申请传送到某人的家（对方同意后读秒传送）"
+    usage: /tpahome <玩家> [家园名]
+    aliases: [tphome]
   tpaccept:
     description: "接受传送申请"
     usage: /tpaccept [玩家]
@@ -26,6 +31,9 @@ commands:
 permissions:
   tpa.use:
     description: "使用申请传送"
+    default: true
+  tpa.home:
+    description: "申请传送到别人的家"
     default: true
   tpa.admin:
     description: "重载传送配置"
