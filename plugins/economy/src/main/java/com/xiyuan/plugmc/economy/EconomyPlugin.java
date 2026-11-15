@@ -159,6 +159,8 @@ public final class EconomyPlugin extends JavaPlugin implements Listener {
 			vaultService = new VaultService(this, shopService, bankService, economyService);
 			getServer().getPluginManager().registerEvents(new VaultListener(vaultService), this);
 			registerCommand("vault", new VaultCommand(vaultService, bankService, economyService));
+			// 结算信息不逐条发：漏斗灌料会连着触发很多次，攒起来定时合并成一条
+			vaultService.startReportTask(getConfig().getInt("vault.report-interval-seconds", 15));
 
 			ChatPrompt chatPrompt = new ChatPrompt(this);
 			getServer().getPluginManager().registerEvents(chatPrompt, this);
@@ -274,7 +276,11 @@ public final class EconomyPlugin extends JavaPlugin implements Listener {
 			bankService.save();
 			bankService = null;
 		}
-		vaultService = null;
+		if (vaultService != null) {
+			// 停服前把没发出去的结算信息发掉，否则玩家白攒一轮
+			vaultService.stopReportTask();
+			vaultService = null;
+		}
 		for (Player player : Bukkit.getOnlinePlayers()) {
 			if (player.getOpenInventory().getTopInventory().getHolder(false) instanceof EconomyMenuHolder) {
 				player.closeInventory();
@@ -319,6 +325,10 @@ public final class EconomyPlugin extends JavaPlugin implements Listener {
 		}
 		if (mailService != null) {
 			mailService.notify(event.getPlayer());
+		}
+		if (vaultService != null) {
+			// 离线期间攒下的回收箱结算信息，一上线就告诉他，别等下个周期
+			vaultService.flushReports();
 		}
 	}
 

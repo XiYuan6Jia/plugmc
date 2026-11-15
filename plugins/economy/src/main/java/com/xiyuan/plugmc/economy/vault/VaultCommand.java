@@ -110,6 +110,8 @@ public final class VaultCommand implements CommandExecutor, TabCompleter {
 			return;
 		}
 		vault.settle(block);
+		// 手动结算就是玩家想立刻看到结果，不等定时任务
+		vault.flushReports();
 		sender.sendMessage("已结算一次。");
 	}
 

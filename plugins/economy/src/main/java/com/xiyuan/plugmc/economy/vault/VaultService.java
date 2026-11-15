@@ -15,9 +15,13 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scheduler.BukkitTask;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -33,6 +37,10 @@ import java.util.UUID;
  * <p>结算顺序是「先进建材银行、再卖官方商店」：建材银行是给建材准备的专用通道，
  * 存进去换的是可直接在商店抵扣的额度；先卖商店的话材料就变成普通金币，
  * 银行这条设计意图就落空了。两道都不收的物品原样留在箱子里，不会被吞掉。</p>
+ *
+ * <p><b>结算信息不逐次发送。</b>漏斗灌料时一串物品会连着触发好几次结算，
+ * 每来一次就发一条消息等于刷屏。所以每次结算只往待发记录里累加，
+ * 由定时任务每隔一段时间把这段时间的账合并成一条消息发出去。</p>
  */
 public final class VaultService {
 	private final JavaPlugin plugin;
@@ -43,8 +51,12 @@ public final class VaultService {
 	private final NamespacedKey nameKey;
 	/** 已经排在下一 tick 要结算的方块，避免同一批投递被拆成十几次结算。 */
 	private final java.util.Set<String> pending = java.util.concurrent.ConcurrentHashMap.newKeySet();
+	/** 还没发出去的结算信息，按绑定玩家归并；人不在线就先攒着。 */
+	private final Map<UUID, Pending> reports = new HashMap<>();
+	private BukkitTask reportTask;
 	/** 结算延后 2 tick，给漏斗这一轮的搬运留出收尾时间。 */
 	private static final long SETTLE_DELAY_TICKS = 2L;
+	private static final int DEFAULT_REPORT_INTERVAL_SECONDS = 15;
 
 	public VaultService(
 		JavaPlugin plugin,
@@ -58,6 +70,69 @@ public final class VaultService {
 		this.economy = economy;
 		this.ownerKey = new NamespacedKey(plugin, "vault-owner");
 		this.nameKey = new NamespacedKey(plugin, "vault-owner-name");
+	}
+
+	/**
+	 * 起一个定时任务，每隔一段时间把攒下来的结算信息合并成一条发给玩家。
+	 *
+	 * <p>间隔可配（{@code vault.report-interval-seconds}）：既有够长到不刷屏，
+	 * 又不至于让玩家等半天看不到钱到账。</p>
+	 */
+	public void startReportTask(int intervalSeconds) {
+		int seconds = Math.max(3, Math.min(600, intervalSeconds));
+		if (reportTask != null) {
+			reportTask.cancel();
+		}
+		reportTask = Bukkit.getScheduler().runTaskTimer(plugin, this::flushReports, seconds * 20L, seconds * 20L);
+	}
+
+	/** 停服时把没发出去的账结算掉，免得玩家白攒一轮。 */
+	public void stopReportTask() {
+		if (reportTask != null) {
+			reportTask.cancel();
+			reportTask = null;
+		}
+		flushReports();
+	}
+
+	/** 把待发信息全部发出去；发不出去的（人不在线）留下来等下一轮。 */
+	public void flushReports() {
+		if (reports.isEmpty()) {
+			return;
+		}
+		for (Map.Entry<UUID, Pending> entry : new ArrayList<>(reports.entrySet())) {
+			Player online = Bukkit.getPlayer(entry.getKey());
+			if (online == null || !online.isOnline()) {
+				// 人不在线就留着，等他上线的那一轮再发 —— 丢掉等于玩家永远不知道钱进了多少
+				continue;
+			}
+			Pending pendingReport = entry.getValue();
+			reports.remove(entry.getKey());
+			online.sendMessage(describe(pendingReport));
+		}
+	}
+
+	/**
+	 * 记一笔待发信息。按玩家归并，多次结算只攒数字，不逐条发。
+	 */
+	private void record(UUID owner, BankService.DepositResult bankResult, ShopService.SellResult shopResult) {
+		Pending entry = reports.computeIfAbsent(owner, key -> new Pending());
+		entry.bankCount += bankResult.count();
+		entry.bankPoints += bankResult.points();
+		entry.soldCount += shopResult.soldCount();
+		entry.earned = entry.earned.add(shopResult.earned());
+		entry.tax = entry.tax.add(shopResult.tax());
+		entry.rounds++;
+	}
+
+	/** 一段时间的累计账目。 */
+	private static final class Pending {
+		private int bankCount;
+		private long bankPoints;
+		private int soldCount;
+		private BigDecimal earned = BigDecimal.ZERO;
+		private BigDecimal tax = BigDecimal.ZERO;
+		private int rounds;
 	}
 
 	/** 方块是不是回收箱（带绑定标记的容器）。 */
@@ -234,29 +309,31 @@ public final class VaultService {
 		if (nothing) {
 			return;
 		}
-		String summary = describe(bankResult, shopResult);
-		Player online = Bukkit.getPlayer(owner);
-		if (online != null && online.isOnline()) {
-			online.sendMessage(summary);
-		}
+		// 不在这里直接发消息：漏斗灌料时这里会连着走很多次，逐条发就是刷屏。
+		// 攒进待发记录，由 startReportTask 起的定时任务合并成一条。
+		record(owner, bankResult, shopResult);
 	}
 
-	private String describe(BankService.DepositResult bankResult, ShopService.SellResult shopResult) {
-		StringBuilder builder = new StringBuilder("回收箱结算：");
+	private String describe(Pending pending) {
+		StringBuilder builder = new StringBuilder("回收箱结算");
+		if (pending.rounds > 1) {
+			builder.append("（").append(pending.rounds).append(" 批）");
+		}
+		builder.append("：");
 		boolean first = true;
-		if (bankResult.count() > 0) {
-			builder.append("建材 ").append(bankResult.count()).append(" 个 → 额度 ")
-				.append(bank.format(bankResult.points()));
+		if (pending.bankCount > 0) {
+			builder.append("建材 ").append(pending.bankCount).append(" 个 → 额度 ")
+				.append(bank.format(pending.bankPoints));
 			first = false;
 		}
-		if (shopResult.soldCount() > 0) {
+		if (pending.soldCount > 0) {
 			if (!first) {
 				builder.append("；");
 			}
-			builder.append("卖出 ").append(shopResult.soldCount()).append(" 个 → ")
-				.append(economy.format(shopResult.earned()));
-			if (shopResult.tax().signum() > 0) {
-				builder.append("（税 ").append(economy.format(shopResult.tax())).append("）");
+			builder.append("卖出 ").append(pending.soldCount).append(" 个 → ")
+				.append(economy.format(pending.earned));
+			if (pending.tax.signum() > 0) {
+				builder.append("（税 ").append(economy.format(pending.tax)).append("）");
 			}
 		}
 		return builder.toString();

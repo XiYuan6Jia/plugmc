@@ -66,3 +66,8 @@ bank:
   max-per-operation: 2304
   # 是否允许用银行额度抵扣系统商店消费（仅限上面 categories 里的商品）
   pay-shop: true
+vault:
+  # 回收箱结算信息多久合并发一次（秒）
+  # 漏斗灌料时每次投入都会结算一次，逐条发会刷屏，所以攒起来统一报；
+  # 玩家离线期间的账会一直留着，等他上线时立刻补发
+  report-interval-seconds: 15
