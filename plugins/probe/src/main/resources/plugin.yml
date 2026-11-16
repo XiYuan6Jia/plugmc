@@ -40,6 +40,18 @@ commands:
     description: 以指定玩家身份合成一次敲钟
     usage: /asbell <玩家> <世界> <x> <y> <z>
     permission: probe.admin
+  assneak:
+    description: 让玩家进入/退出潜行（连接列车要 shift 右键）
+    usage: /assneak <玩家> <true|false>
+    permission: probe.admin
+  traincarts:
+    description: 列出附近矿车的 UUID 与坐标
+    usage: /traincarts <玩家> [半径]
+    permission: probe.admin
+  ashand:
+    description: 看玩家主手/副手物品，可顺便把指定物品摆到主手
+    usage: /ashand <玩家> [物品] [数量]
+    permission: probe.admin
 permissions:
   probe.admin:
     description: 允许使用探针命令

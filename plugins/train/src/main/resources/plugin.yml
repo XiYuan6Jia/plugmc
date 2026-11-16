@@ -1,0 +1,18 @@
+name: train
+main: com.xiyuan.plugmc.train.TrainPlugin
+version: '${version}'
+api-version: '26.3'
+description: "铁道列车：用拴绳把矿车连成列车，车头沿设定路线自动逐站停靠"
+authors: [XiYuan6Jia]
+commands:
+  train:
+    description: "铁道列车：站点、路线与自动驾驶"
+    usage: /train station|route|start|stop|link|unlink|info
+    permission: train.use
+permissions:
+  train.use:
+    description: "使用列车的基本命令（看站点、路线、启停）"
+    default: true
+  train.admin:
+    description: "设置站点与路线"
+    default: op

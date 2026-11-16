@@ -26,7 +26,8 @@ import java.util.Locale;
  */
 public final class ProbePlugin extends JavaPlugin implements CommandExecutor {
 	private static final String[] COMMANDS =
-		{"asplayer", "probeblock", "asclick", "openinv", "invitems", "astp", "asheal", "invclick", "asbell"};
+		{"asplayer", "probeblock", "asclick", "openinv", "invitems", "astp", "asheal", "invclick", "asbell",
+			"assneak", "traincarts", "ashand"};
 
 	@Override
 	public void onEnable() {
@@ -50,8 +51,98 @@ public final class ProbePlugin extends JavaPlugin implements CommandExecutor {
 			case "asheal" -> asHeal(sender, args);
 			case "invclick" -> invClick(sender, args);
 			case "asbell" -> asBell(sender, args);
+			case "assneak" -> asSneak(sender, args);
+			case "traincarts" -> trainCarts(sender, args);
+			case "ashand" -> asHand(sender, args);
 			default -> asPlayer(sender, args);
 		};
+	}
+
+	/**
+	 * 打印玩家主手和副手的物品；给第三、四个参数时顺便把主手换成那个物品。
+	 *
+	 * <p>{@code /give} 是把东西塞进第一个空格子，不一定落在当前选中的快捷栏格里，
+	 * 而插件读的是 {@link Player#getInventory()#getItemInMainHand()}，
+	 * 所以「给了拴绳却读不到」时要用它直接摆到手上。</p>
+	 */
+	private boolean asHand(CommandSender sender, String[] args) {
+		if (args.length < 1) {
+			sender.sendMessage("用法：/ashand <玩家> [物品] [数量]");
+			return true;
+		}
+		Player target = Bukkit.getPlayerExact(args[0]);
+		if (target == null) {
+			sender.sendMessage("玩家不在线：" + args[0]);
+			return true;
+		}
+		if (args.length >= 2) {
+			// 允许写 minecraft:lead 这种带命名空间的形式 —— matchMaterial 不认前缀
+			String name = args[1].toUpperCase(Locale.ROOT);
+			int colon = name.indexOf(':');
+			if (colon >= 0) {
+				name = name.substring(colon + 1);
+			}
+			org.bukkit.Material material = org.bukkit.Material.matchMaterial(name);
+			if (material == null) {
+				sender.sendMessage("没有这个物品：" + args[1]);
+				return true;
+			}
+			int amount = args.length >= 3 ? Integer.parseInt(args[2]) : 1;
+			target.getInventory().setItemInMainHand(new org.bukkit.inventory.ItemStack(material, amount));
+		}
+		sender.sendMessage(args[0] + " 主手=" + target.getInventory().getItemInMainHand().getType()
+			+ " x" + target.getInventory().getItemInMainHand().getAmount()
+			+ " 副手=" + target.getInventory().getItemInOffHand().getType()
+			+ " 潜行=" + target.isSneaking());
+		return true;
+	}
+
+	/**
+	 * 让玩家进入/退出潜行状态。
+	 *
+	 * <p>连接列车要求 shift 右键，而合成事件读的是 {@link Player#isSneaking()} 这个真实状态，
+	 * 光造一个事件没用 —— 得先把人真的按下去。</p>
+	 */
+	private boolean asSneak(CommandSender sender, String[] args) {
+		if (args.length < 2) {
+			sender.sendMessage("用法：/assneak <玩家> <true|false>");
+			return true;
+		}
+		Player target = Bukkit.getPlayerExact(args[0]);
+		if (target == null) {
+			sender.sendMessage("玩家不在线：" + args[0]);
+			return true;
+		}
+		boolean sneak = Boolean.parseBoolean(args[1]);
+		target.setSneaking(sneak);
+		sender.sendMessage(args[0] + " 潜行 = " + target.isSneaking());
+		return true;
+	}
+
+	/**
+	 * 列出附近的矿车：UUID、类型、坐标，方便对着 UUID 调试列车连接。
+	 */
+	private boolean trainCarts(CommandSender sender, String[] args) {
+		if (args.length < 1) {
+			sender.sendMessage("用法：/traincarts <玩家> [半径]");
+			return true;
+		}
+		Player target = Bukkit.getPlayerExact(args[0]);
+		if (target == null) {
+			sender.sendMessage("玩家不在线：" + args[0]);
+			return true;
+		}
+		double radius = args.length >= 2 ? Double.parseDouble(args[1]) : 24.0;
+		sender.sendMessage("附近矿车（半径 " + radius + "）：");
+		for (Entity entity : target.getWorld().getNearbyEntities(target.getLocation(), radius, radius, radius)) {
+			if (!(entity instanceof org.bukkit.entity.Minecart cart)) {
+				continue;
+			}
+			sender.sendMessage(" " + cart.getUniqueId() + " " + cart.getType().getKey().getKey()
+				+ String.format(" @ %.2f %.2f %.2f", cart.getLocation().getX(),
+				cart.getLocation().getY(), cart.getLocation().getZ()));
+		}
+		return true;
 	}
 
 	private boolean asPlayer(CommandSender sender, String[] args) {
@@ -116,17 +207,33 @@ public final class ProbePlugin extends JavaPlugin implements CommandExecutor {
 		}
 		Entity nearest = null;
 		double best = Double.MAX_VALUE;
-		for (Entity entity : target.getWorld().getNearbyEntities(target.getLocation(), 16, 16, 16)) {
-			if (entity instanceof Player) {
-				continue;
+		java.util.UUID wanted = null;
+		if (args.length >= 2) {
+			try {
+				wanted = java.util.UUID.fromString(args[1]);
+			} catch (IllegalArgumentException ignored) {
+				// 不是 UUID，按实体类型名过滤
 			}
-			if (args.length >= 2 && !entity.getType().getKey().getKey().equalsIgnoreCase(args[1])) {
-				continue;
+		}
+		if (wanted != null) {
+			nearest = Bukkit.getEntity(wanted);
+			if (nearest == null) {
+				sender.sendMessage("找不到这个 UUID 的实体：" + args[1]);
+				return true;
 			}
-			double distance = entity.getLocation().distanceSquared(target.getLocation());
-			if (distance < best) {
-				best = distance;
-				nearest = entity;
+		} else {
+			for (Entity entity : target.getWorld().getNearbyEntities(target.getLocation(), 16, 16, 16)) {
+				if (entity instanceof Player) {
+					continue;
+				}
+				if (args.length >= 2 && !entity.getType().getKey().getKey().equalsIgnoreCase(args[1])) {
+					continue;
+				}
+				double distance = entity.getLocation().distanceSquared(target.getLocation());
+				if (distance < best) {
+					best = distance;
+					nearest = entity;
+				}
 			}
 		}
 		if (nearest == null) {
@@ -135,10 +242,16 @@ public final class ProbePlugin extends JavaPlugin implements CommandExecutor {
 		}
 		PlayerInteractEntityEvent event =
 			new PlayerInteractEntityEvent(target, nearest, EquipmentSlot.HAND);
+		// 潜行状态会被客户端每 tick 上报覆盖，所以要在发事件前一刻设，不能提前一条命令设
+		boolean sneak = args.length >= 3 && args[2].equalsIgnoreCase("sneak");
+		if (sneak) {
+			target.setSneaking(true);
+		}
 		Bukkit.getPluginManager().callEvent(event);
 		sender.sendMessage("已合成右键 " + nearest.getType().getKey().getKey()
 			+ " @ " + String.format("%.1f %.1f %.1f",
 				nearest.getLocation().getX(), nearest.getLocation().getY(), nearest.getLocation().getZ())
+			+ " 潜行=" + sneak
 			+ (event.isCancelled() ? "（已被取消）" : "（未被取消）"));
 		return true;
 	}
