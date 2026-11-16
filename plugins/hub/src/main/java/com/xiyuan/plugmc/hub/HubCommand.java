@@ -16,7 +16,8 @@ public final class HubCommand implements CommandExecutor, TabCompleter {
 		"back", "info", "check", "parkour", "bell", "setspawn", "build", "save", "blueprint", "reload"
 	);
 	private static final List<String> PARKOUR_SUBCOMMANDS = List.of("quit", "top", "best", "board");
-	private static final List<String> BELL_SUBCOMMANDS = List.of("top", "board", "reset");
+	private static final List<String> BELL_SUBCOMMANDS =
+		List.of("top", "week", "month", "settle", "board", "reset");
 	private static final List<String> BLUEPRINT_SUBCOMMANDS = List.of("info", "delete");
 
 	private final HubPlugin plugin;
@@ -190,18 +191,46 @@ public final class HubCommand implements CommandExecutor, TabCompleter {
 					sender.sendMessage(HubText.component("&7还没有人敲过钟。"));
 					return;
 				}
-				sender.sendMessage(HubText.component("&6敲钟排行榜"));
+				sender.sendMessage(HubText.component("&6敲钟总数排名"));
 				for (String line : lines) {
 					sender.sendMessage(HubText.component(line));
 				}
+			}
+			case "week" -> {
+				sender.sendMessage(HubText.component("&6每周敲钟排名"));
+				for (String line : bell.weekLines(10)) {
+					sender.sendMessage(HubText.component(line));
+				}
+			}
+			case "month" -> {
+				sender.sendMessage(HubText.component("&6每月敲钟排名"));
+				for (String line : bell.monthLines(10)) {
+					sender.sendMessage(HubText.component(line));
+				}
+			}
+			case "settle" -> {
+				if (!sender.hasPermission("hub.admin")) {
+					sender.sendMessage(HubText.component("&c你没有权限手动结算敲钟奖励。"));
+					return;
+				}
+				String period = args.length > 2 ? args[2].toLowerCase(Locale.ROOT) : "week";
+				switch (period) {
+					case "week" -> bell.settleWeeklyNow();
+					case "month" -> bell.settleMonthlyNow();
+					default -> {
+						sender.sendMessage(HubText.component("&e用法：/hub bell settle <week|month>"));
+						return;
+					}
+				}
+				sender.sendMessage(HubText.component("&a已执行 " + period + " 结算（重置对应周期计数）。"));
 			}
 			case "board" -> {
 				if (!sender.hasPermission("hub.admin")) {
 					sender.sendMessage(HubText.component("&c你没有权限重建敲钟榜牌。"));
 					return;
 				}
-				bell.rebuildBoard();
-				sender.sendMessage(HubText.component("&a敲钟榜牌已重建。"));
+				bell.rebuildBoards();
+				sender.sendMessage(HubText.component("&a敲钟三块榜牌已重建。"));
 			}
 			case "reset" -> {
 				if (!sender.hasPermission("hub.admin")) {
@@ -216,7 +245,8 @@ public final class HubCommand implements CommandExecutor, TabCompleter {
 					? HubText.component("&a已清空 &f" + args[2] + " &a的敲钟记录。")
 					: HubText.component("&7没有找到 &f" + args[2] + " &7的敲钟记录。"));
 			}
-			default -> sender.sendMessage(HubText.component("&e用法：/hub bell [top|board|reset <玩家名>]"));
+			default -> sender.sendMessage(HubText.component(
+				"&e用法：/hub bell [top|week|month|settle <week|month>|board|reset <玩家名>]"));
 		}
 	}
 
@@ -350,6 +380,10 @@ public final class HubCommand implements CommandExecutor, TabCompleter {
 		if (args.length == 2 && args[0].equalsIgnoreCase("bell")) {
 			String prefix = args[1].toLowerCase(Locale.ROOT);
 			return BELL_SUBCOMMANDS.stream().filter(option -> option.startsWith(prefix)).toList();
+		}
+		if (args.length == 3 && args[0].equalsIgnoreCase("bell") && args[1].equalsIgnoreCase("settle")) {
+			String prefix = args[2].toLowerCase(Locale.ROOT);
+			return List.of("week", "month").stream().filter(option -> option.startsWith(prefix)).toList();
 		}
 		if (args.length == 2 && args[0].equalsIgnoreCase("blueprint")) {
 			String prefix = args[1].toLowerCase(Locale.ROOT);

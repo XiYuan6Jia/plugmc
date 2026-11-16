@@ -67,6 +67,8 @@ public final class HubPlugin extends JavaPlugin {
 			bell.tick();
 			parkourBoard.tick();
 		}, 100L, 100L);
+		// 周期结算：每秒查一次水位，跨过周日/月初就发奖金并清对应周期的计数
+		bell.startSettleTask();
 
 		PluginCommand command = getCommand("hub");
 		if (command != null) {

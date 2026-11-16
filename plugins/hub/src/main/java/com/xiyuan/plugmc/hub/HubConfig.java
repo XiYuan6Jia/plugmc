@@ -1,6 +1,10 @@
 package com.xiyuan.plugmc.hub;
 
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * 主城大厅配置。数值都钳制到安全范围，避免手改配置把大厅造到世界外。
@@ -39,6 +43,15 @@ public record HubConfig(
 	double bellBoardY,
 	double bellBoardZ,
 	int bellBoardRows,
+	double bellWeeklyBoardX,
+	double bellWeeklyBoardY,
+	double bellWeeklyBoardZ,
+	double bellMonthlyBoardX,
+	double bellMonthlyBoardY,
+	double bellMonthlyBoardZ,
+	double bellEventChance,
+	List<Integer> bellRewardsWeekly,
+	List<Integer> bellRewardsMonthly,
 	double parkourBoardX,
 	double parkourBoardY,
 	double parkourBoardZ,
@@ -57,6 +70,10 @@ public record HubConfig(
 		teleportWarmupSeconds = clamp(teleportWarmupSeconds, 0, 60);
 		bellBoardRows = clamp(bellBoardRows, 1, 20);
 		parkourBoardRows = clamp(parkourBoardRows, 1, 20);
+		// 敲钟事件的触发概率：0 = 关闭，1 = 每次必中（测试用）；线上保持"极低"
+		bellEventChance = Math.max(0.0, Math.min(1.0, bellEventChance));
+		bellRewardsWeekly = bellRewardsWeekly == null ? List.of() : List.copyOf(bellRewardsWeekly);
+		bellRewardsMonthly = bellRewardsMonthly == null ? List.of() : List.copyOf(bellRewardsMonthly);
 	}
 
 	public static HubConfig load(FileConfiguration config) {
@@ -94,6 +111,16 @@ public record HubConfig(
 			config.getDouble("bell.board.y", 66.0),
 			config.getDouble("bell.board.z", 61.5),
 			config.getInt("bell.board.rows", 10),
+			// 周榜：钟的左边（面朝钟时）；月榜：钟的右边。坐标由用户指定
+			config.getDouble("bell.weekly-board.x", 3.5),
+			config.getDouble("bell.weekly-board.y", 66.0),
+			config.getDouble("bell.weekly-board.z", 58.5),
+			config.getDouble("bell.monthly-board.x", -2.5),
+			config.getDouble("bell.monthly-board.y", 66.0),
+			config.getDouble("bell.monthly-board.z", 58.5),
+			config.getDouble("bell.event-chance", 0.02),
+			readIntList(config, "bell.rewards.weekly", List.of(1000, 800, 500)),
+			readIntList(config, "bell.rewards.monthly", List.of(10000, 8000, 5000, 3000, 1000)),
 			config.getDouble("parkour.board.x", 34.5),
 			config.getDouble("parkour.board.y", 65.0),
 			config.getDouble("parkour.board.z", 5.5),
@@ -106,6 +133,29 @@ public record HubConfig(
 			config.isSet("blueprint.max-y") ? config.getInt("blueprint.max-y") : null,
 			config.isSet("blueprint.max-z") ? config.getInt("blueprint.max-z") : null
 		);
+	}
+
+	/** 读一个整数列表；键不存在或写法不对就用默认值。奖金表这类配置用。 */
+	private static List<Integer> readIntList(FileConfiguration config, String path, List<Integer> fallback) {
+		ConfigurationSection section = config.getConfigurationSection(path);
+		if (section != null) {
+			// 支持 "1: 1000" 的名次键写法，按名次排序后取值
+			List<Integer> values = new ArrayList<>();
+			section.getKeys(false).stream()
+				.sorted((a, b) -> {
+					try {
+						return Integer.compare(Integer.parseInt(a), Integer.parseInt(b));
+					} catch (NumberFormatException exception) {
+						return a.compareTo(b);
+					}
+				})
+				.forEach(key -> values.add(section.getInt(key)));
+			return values;
+		}
+		if (config.isList(path)) {
+			return config.getIntegerList(path);
+		}
+		return fallback;
 	}
 
 	private static int clamp(int value, int min, int max) {
