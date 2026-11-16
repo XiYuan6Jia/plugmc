@@ -1,0 +1,24 @@
+name: megastructures
+version: '${version}'
+main: com.xiyuan.plugmc.megastructures.MegaPlugin
+api-version: '${api_version}'
+authors: [XiYuan6Jia]
+description: "星际巨构：独立虚空维度里的轨道环、核心尖塔、戴森球、太空电梯与星际之门"
+commands:
+  mega:
+    description: "进入星际巨构维度或在巨构之间传送"
+    usage: /mega [list|tp <id>|back|info|check|reload]
+    aliases: [megastructure, structures]
+permissions:
+  mega.use:
+    description: "进入星际巨构维度并使用观景点传送"
+    default: true
+  mega.fly:
+    description: "在星际巨构维度里飞行"
+    default: true
+  mega.build:
+    description: "在星际巨构维度里放置/破坏方块"
+    default: op
+  mega.admin:
+    description: "结构自检与重载配置"
+    default: op
