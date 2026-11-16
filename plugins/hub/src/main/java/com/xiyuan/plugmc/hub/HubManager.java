@@ -4,9 +4,10 @@ import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.event.HoverEvent;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.NamespacedKey;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
-import org.bukkit.metadata.FixedMetadataValue;
+import org.bukkit.persistence.PersistentDataType;
 
 import java.util.UUID;
 
@@ -16,9 +17,10 @@ import java.util.UUID;
 public final class HubManager {
 	/**
 	 * 返回传送期间打在玩家身上的临时标记：目标端（megastructures）看到它就不会
-	 * 再把这次传送当作一次“新进入”而覆盖自己的返回点。
+	 * 再把这次传送当作一次“新进入”而覆盖自己的返回点。用 PDC 而不是已废弃的
+	 * metadata API；标记只在 teleport() 调用期间存在。
 	 */
-	static final String RETURN_METADATA_KEY = "plugmc_return_teleport";
+	static final NamespacedKey RETURN_KEY = NamespacedKey.fromString("plugmc:return_teleport");
 
 	private final HubPlugin plugin;
 	private final HubReturns returns;
@@ -79,14 +81,17 @@ public final class HubManager {
 			player.sendMessage(HubText.component("&c找不到可返回的世界。"));
 			return false;
 		}
-		player.setMetadata(RETURN_METADATA_KEY, new FixedMetadataValue(plugin, true));
-		boolean teleported = player.teleport(target);
-		plugin.getServer().getScheduler().runTaskLater(
-			plugin,
-			() -> player.removeMetadata(RETURN_METADATA_KEY, plugin),
-			20L
-		);
-		return teleported;
+		player.getPersistentDataContainer().set(RETURN_KEY, PersistentDataType.BYTE, (byte) 1);
+		try {
+			return player.teleport(target);
+		} finally {
+			player.getPersistentDataContainer().remove(RETURN_KEY);
+		}
+	}
+
+	/** 这次传送是否由本插件或其它插件的“返回原位置”发起。 */
+	public static boolean isReturnTeleport(Player player) {
+		return player.getPersistentDataContainer().has(RETURN_KEY, PersistentDataType.BYTE);
 	}
 
 	public void forget(UUID playerId) {

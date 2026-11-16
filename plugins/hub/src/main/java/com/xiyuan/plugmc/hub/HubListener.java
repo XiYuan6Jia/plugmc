@@ -214,7 +214,7 @@ public final class HubListener implements Listener {
 		}
 		if (plugin.hubWorld().isHub(event.getTo()) && !plugin.hubWorld().isHub(event.getFrom())) {
 			// /mega back 这类跨插件返回传送不覆盖主城自己的返回点
-			if (!event.getPlayer().hasMetadata(HubManager.RETURN_METADATA_KEY)) {
+			if (!HubManager.isReturnTeleport(event.getPlayer())) {
 				plugin.hubManager().rememberOnEnter(event.getPlayer(), event.getFrom());
 			}
 			// 传送事件在位置变更前触发，此时记录的是真正的进入前状态

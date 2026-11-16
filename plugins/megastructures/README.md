@@ -42,7 +42,7 @@
 | `/mega menu` | 打开观景传送列表界面 | `mega.use` |
 | `/mega list` | 聊天栏列出全部观景点（可点击传送） | `mega.use` |
 | `/mega tp <id>` | 传送到指定观景点，也可直接 `/mega <id>` | `mega.use` |
-| `/mega back` | 回到进入巨构前的位置（记录在 `returns.yml`，重启后仍有效；从主城返回时不会覆盖主城的返回点） | `mega.use` |
+| `/mega back` | 回到进入巨构前的位置（记录在 `returns.yml`，重启后仍有效；从主城返回时通过临时 PDC 标记 `plugmc:return_teleport` 避免覆盖主城的返回点） | `mega.use` |
 | `/mega info` | 查看维度、高度范围、出生点、在线人数与巨构规模 | `mega.use` |
 | `/mega check` | 结构自检（逐点采样实际方块，首次读取会生成对应区块） | `mega.admin` |
 | `/mega reload` | 重载配置并重新应用世界规则 | `mega.admin` |
