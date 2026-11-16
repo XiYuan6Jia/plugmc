@@ -1,10 +1,10 @@
 # 星际巨构（独立虚空维度 + 程序生成的超级巨构）
-config-version: 2
+config-version: 3
 world:
   # datapacks/plugmc-mega 定义的维度键；高度 2048 格（Y -512 ~ 1535）
   key: "plugmc:mega"
-  # 世界边界（方块直径），避免玩家飞出巨构区域
-  border-size: 3000
+  # 世界边界（方块直径）；必须包住戴森球(-1780)与星际之门/太空电梯(±1640)
+  border-size: 5000
   spawn:
     x: 0.5
     y: 420.0

@@ -61,7 +61,7 @@
 | 键 | 说明 |
 | --- | --- |
 | `world.key` | 数据包维度键，默认 `plugmc:mega` |
-| `world.border-size` | 世界边界直径，默认 `3000` |
+| `world.border-size` | 世界边界直径，默认 `5000`（需大于 ±1780，避免边界挡住戴森球/星际之门/太空电梯） |
 | `world.spawn.*` | 出生点坐标与朝向 |
 | `teleport.join-auto` | 进服时自动送进巨构，默认 `false` |
 | `protect.deny-build` | 禁止非 `mega.build` 玩家建造，默认 `true` |

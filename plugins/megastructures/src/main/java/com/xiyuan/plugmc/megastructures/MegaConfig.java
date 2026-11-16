@@ -36,7 +36,7 @@ public record MegaConfig(
 	public static MegaConfig load(FileConfiguration config) {
 		return new MegaConfig(
 			config.getString("world.key", "plugmc:mega"),
-			config.getInt("world.border-size", 3000),
+			config.getInt("world.border-size", 5000),
 			config.getDouble("world.spawn.x", 0.5),
 			config.getDouble("world.spawn.y", 420.0),
 			config.getDouble("world.spawn.z", 380.5),
