@@ -68,6 +68,23 @@ final class CosmeticDisplays {
 	}
 
 	/**
+	 * 玩家当前的体型系数（1.0 = 标准体型）。
+	 *
+	 * <p>装饰品可以携带 SCALE 属性修饰符（{@link CosmeticAttributes} 会把它透传到玩家身上），
+	 * 玩家的渲染模型会随之变大变小。装饰实体的锚点与缩放如果不跟着变，
+	 * 玩家被放大后装饰会陷进模型/悬在半空，被缩小后装饰反而显得过大。</p>
+	 *
+	 * <p>Attribute.SCALE 没有独立的变化事件，就在每次同步时现读一次——
+	 * 读属性很便宜，而且 tick 级跟手。</p>
+	 */
+	private float playerScale(Player player) {
+		org.bukkit.attribute.AttributeInstance scale = player.getAttribute(org.bukkit.attribute.Attribute.SCALE);
+		double value = scale == null ? 1.0 : scale.getValue();
+		// 极小体型会让装饰小到看不见，钳一个下限
+		return (float) Math.max(0.0625, value);
+	}
+
+	/**
 	 * 同步一名玩家的全部装饰实体。每 tick（或按配置降频）调用。
 	 *
 	 * @param tick 自插件启动以来的 tick 序号，用于自转与环绕的相位
@@ -86,6 +103,8 @@ final class CosmeticDisplays {
 			removeAll(id, false);
 			return;
 		}
+		// 体型每拍读一次，锚点与缩放共用同一个系数，避免半拍变大半拍变小
+		float bodyScale = playerScale(player);
 		Map<String, ItemDisplay> existing = active.computeIfAbsent(id, key -> new LinkedHashMap<>());
 
 		// 槽位被移除或物品被取走 -> 销毁多余实体
@@ -119,8 +138,8 @@ final class CosmeticDisplays {
 				}
 				existing.put(slotId, display);
 			}
-			applyItem(display, stack, slot);
-			moveTo(player, display, slot, tick);
+			applyItem(display, stack, slot, bodyScale);
+			moveTo(player, display, slot, tick, bodyScale);
 		}
 	}
 
@@ -157,7 +176,7 @@ final class CosmeticDisplays {
 		}
 	}
 
-	private void applyItem(ItemDisplay display, ItemStack stack, CosmeticConfig.Slot slot) {
+	private void applyItem(ItemDisplay display, ItemStack stack, CosmeticConfig.Slot slot, float bodyScale) {
 		ItemStack render = CosmeticItems.renderCopy(stack);
 		ItemStack current = display.getItemStack();
 		if (current == null || !current.isSimilar(render)) {
@@ -166,7 +185,9 @@ final class CosmeticDisplays {
 		if (display.getItemDisplayTransform() != slot.transform()) {
 			display.setItemDisplayTransform(slot.transform());
 		}
-		float scale = slot.scale();
+		// 缩放 = 配置尺寸 × 玩家体型。玩家变大装饰跟着变大，变小跟着变小，
+		// 才能一直「装备」在模型上而不是飘在旁边或陷进去。
+		float scale = slot.scale() * bodyScale;
 		Transformation wanted = new Transformation(
 			new Vector3f(0.0f, 0.0f, 0.0f),
 			euler(slot.rotX(), slot.rotY(), slot.rotZ()),
@@ -196,8 +217,11 @@ final class CosmeticDisplays {
 	 *
 	 * <p>坐标系：forward = (-sin yaw, 0, cos yaw)，right = (-forward.z, 0, forward.x)。
 	 * 这与 Minecraft 的 yaw 定义一致（yaw 0 面向 +Z 即南）。</p>
+	 *
+	 * <p>所有锚点偏移都乘玩家体型系数 {@code bodyScale}：玩家被 SCALE 属性放大后，
+	 * 肩、背、腰、头顶的锚点也要按同样比例外推，否则大体型玩家的装饰会陷进模型里。</p>
 	 */
-	private void moveTo(Player player, ItemDisplay display, CosmeticConfig.Slot slot, long tick) {
+	private void moveTo(Player player, ItemDisplay display, CosmeticConfig.Slot slot, long tick, float bodyScale) {
 		Location base = player.getLocation();
 		float yaw = player.getBodyYaw();
 		double rad = Math.toRadians(yaw);
@@ -206,17 +230,17 @@ final class CosmeticDisplays {
 		double rx = -fz;
 		double rz = fx;
 
-		double forward = slot.forward();
-		double right = slot.right();
-		double up = slot.up();
+		double forward = slot.forward() * bodyScale;
+		double right = slot.right() * bodyScale;
+		double up = slot.up() * bodyScale;
 
 		if (slot.orbit()) {
-			// 环绕：把 (forward, right) 这个偏移整体绕玩家旋转
+			// 环绕：把 (forward, right) 这个偏移整体绕玩家旋转，半径同样随体型缩放
 			double phase = Math.toRadians((tick * slot.spinDegrees() * 0.05) % 360.0);
-			double radius = slot.orbitRadius();
+			double radius = slot.orbitRadius() * bodyScale;
 			forward = Math.cos(phase) * radius;
 			right = Math.sin(phase) * radius;
-			up = slot.up();
+			up = slot.up() * bodyScale;
 		}
 
 		double dx = fx * forward + rx * right;
@@ -224,11 +248,13 @@ final class CosmeticDisplays {
 		double dy = up;
 
 		if (slot.pitchFollow()) {
-			// 头顶槽：抬头时物品稍微后移、低头时稍微前移，避免穿模
+			// 头顶槽：抬头时物品稍微后移、低头时稍微前移，避免穿模。
+			// 补偿量也随体型缩放——大体型玩家的模型更高，同样的弧度补偿要放大
 			double pitchRad = Math.toRadians(player.getPitch());
-			dx += fx * (-pitchRad * 0.18);
-			dz += fz * (-pitchRad * 0.18);
-			dy -= Math.abs(pitchRad) * 0.04;
+			double pitchComp = 1.0 + (bodyScale - 1.0);
+			dx += fx * (-pitchRad * 0.18 * pitchComp);
+			dz += fz * (-pitchRad * 0.18 * pitchComp);
+			dy -= Math.abs(pitchRad) * 0.04 * pitchComp;
 		}
 
 		Location target = new Location(base.getWorld(), base.getX() + dx, base.getY() + dy, base.getZ() + dz);
