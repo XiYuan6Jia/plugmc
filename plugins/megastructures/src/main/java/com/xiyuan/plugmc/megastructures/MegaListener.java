@@ -183,7 +183,10 @@ public final class MegaListener implements Listener {
 	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	public void onTeleport(PlayerTeleportEvent event) {
 		if (plugin.megaWorld().isMega(event.getTo()) && !plugin.megaWorld().isMega(event.getFrom())) {
-			plugin.manager().rememberOnEnter(event.getPlayer(), event.getFrom());
+			// /hub back 这类跨插件返回传送不覆盖巨构自己的返回点
+			if (!event.getPlayer().hasMetadata(MegaManager.RETURN_METADATA_KEY)) {
+				plugin.manager().rememberOnEnter(event.getPlayer(), event.getFrom());
+			}
 		}
 	}
 

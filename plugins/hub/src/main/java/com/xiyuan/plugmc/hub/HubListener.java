@@ -213,7 +213,10 @@ public final class HubListener implements Listener {
 			plugin.vitals().release(event.getPlayer().getUniqueId());
 		}
 		if (plugin.hubWorld().isHub(event.getTo()) && !plugin.hubWorld().isHub(event.getFrom())) {
-			plugin.hubManager().rememberOnEnter(event.getPlayer(), event.getFrom());
+			// /mega back 这类跨插件返回传送不覆盖主城自己的返回点
+			if (!event.getPlayer().hasMetadata(HubManager.RETURN_METADATA_KEY)) {
+				plugin.hubManager().rememberOnEnter(event.getPlayer(), event.getFrom());
+			}
 			// 传送事件在位置变更前触发，此时记录的是真正的进入前状态
 			plugin.vitals().capture(event.getPlayer());
 		}

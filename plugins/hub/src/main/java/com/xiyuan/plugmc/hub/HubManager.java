@@ -6,6 +6,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
+import org.bukkit.metadata.FixedMetadataValue;
 
 import java.util.UUID;
 
@@ -13,6 +14,12 @@ import java.util.UUID;
  * 进主城 / 返回原位置。返回点写入 returns.yml，重启后依然可用。
  */
 public final class HubManager {
+	/**
+	 * 返回传送期间打在玩家身上的临时标记：目标端（megastructures）看到它就不会
+	 * 再把这次传送当作一次“新进入”而覆盖自己的返回点。
+	 */
+	static final String RETURN_METADATA_KEY = "plugmc_return_teleport";
+
 	private final HubPlugin plugin;
 	private final HubReturns returns;
 
@@ -72,7 +79,14 @@ public final class HubManager {
 			player.sendMessage(HubText.component("&c找不到可返回的世界。"));
 			return false;
 		}
-		return player.teleport(target);
+		player.setMetadata(RETURN_METADATA_KEY, new FixedMetadataValue(plugin, true));
+		boolean teleported = player.teleport(target);
+		plugin.getServer().getScheduler().runTaskLater(
+			plugin,
+			() -> player.removeMetadata(RETURN_METADATA_KEY, plugin),
+			20L
+		);
+		return teleported;
 	}
 
 	public void forget(UUID playerId) {
