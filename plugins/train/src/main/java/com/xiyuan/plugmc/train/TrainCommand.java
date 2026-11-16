@@ -26,9 +26,11 @@ import java.util.UUID;
  */
 public final class TrainCommand implements CommandExecutor, TabCompleter {
 	private static final List<String> SUBCOMMANDS = List.of(
-		"station", "route", "start", "stop", "link", "unlink", "info", "reload");
+		"station", "route", "line", "start", "stop", "link", "unlink", "info", "reload");
 	private static final List<String> STATION_SUBCOMMANDS = List.of("create", "remove", "list", "dwell", "here");
 	private static final List<String> ROUTE_SUBCOMMANDS = List.of("create", "remove", "list", "add", "info", "loop");
+	private static final List<String> LINE_SUBCOMMANDS = List.of(
+		"create", "rename", "remove", "list", "route", "spacing", "start", "stop", "info");
 	private static final int REACH = 8;
 
 	private final TrainPlugin plugin;
@@ -47,6 +49,7 @@ public final class TrainCommand implements CommandExecutor, TabCompleter {
 		switch (args[0].toLowerCase(Locale.ROOT)) {
 			case "station" -> station(sender, args);
 			case "route" -> route(sender, args);
+			case "line" -> line(sender, args);
 			case "start" -> start(sender, args);
 			case "stop" -> stop(sender, args);
 			case "link" -> link(sender, args);
@@ -56,6 +59,266 @@ public final class TrainCommand implements CommandExecutor, TabCompleter {
 			default -> sender.sendMessage(TrainText.component("&c没有这个子命令。"));
 		}
 		return true;
+	}
+
+	/**
+	 * {@code /train line ...}：给自己的列车起名、绑定路线、调间距、开关。
+	 *
+	 * <p>只有登记的人能改自己的车；管理员权限可以动别人的（运维需要），
+	 * 但菜单里只列本人的，避免看到一屏别人的车。</p>
+	 */
+	private void line(CommandSender sender, String[] args) {
+		if (args.length < 2) {
+			sender.sendMessage(TrainText.component("&7用法：/train line create|rename|remove|list|route|spacing|start|stop|info"));
+			return;
+		}
+		switch (args[1].toLowerCase(Locale.ROOT)) {
+			case "create" -> createLine(sender, args);
+			case "rename" -> renameLine(sender, args);
+			case "remove" -> removeLine(sender, args);
+			case "list" -> listLines(sender);
+			case "route" -> setLineRoute(sender, args);
+			case "spacing" -> setLineSpacing(sender, args);
+			case "start" -> startLine(sender, args);
+			case "stop" -> stopLine(sender, args);
+			case "info" -> lineInfo(sender, args);
+			default -> sender.sendMessage(TrainText.component("&7用法：/train line create|rename|remove|list|route|spacing|start|stop|info"));
+		}
+	}
+
+	private void createLine(CommandSender sender, String[] args) {
+		if (!(sender instanceof Player player)) {
+			sender.sendMessage(TrainText.component("&c请玩家站在列车旁边执行。"));
+			return;
+		}
+		if (args.length < 3) {
+			player.sendMessage(TrainText.component("&7用法：/train line create <列车名>（先站到列车的某节车厢旁边）"));
+			return;
+		}
+		String name = args[2];
+		if (name.length() > 16) {
+			player.sendMessage(TrainText.component("&c列车名最多 16 个字。"));
+			return;
+		}
+		if (plugin.lines().exists(name)) {
+			player.sendMessage(TrainText.component("&c已经有一条叫「" + name + "」的列车了，换个名字。"));
+			return;
+		}
+		Minecart cart = nearestCart(player);
+		if (cart == null) {
+			player.sendMessage(TrainText.component("&c附近没有矿车。"));
+			return;
+		}
+		List<UUID> consist = plugin.trains().consistOf(cart.getUniqueId());
+		if (consist.size() < 2) {
+			player.sendMessage(TrainText.component("&c这节车厢还没连成列车 —— 先用拴绳把几台矿车连起来。"));
+			return;
+		}
+		Entity headEntity = Bukkit.getEntity(plugin.trains().headOf(cart.getUniqueId()));
+		if (!(headEntity instanceof org.bukkit.entity.minecart.PoweredMinecart)) {
+			player.sendMessage(TrainText.component("&c这列车两端的动力矿车不对 —— 车头必须是动力矿车，请把动力矿车连在一端。"));
+			return;
+		}
+		plugin.lines().put(new TrainLines.TrainLine(name, player.getUniqueId(), player.getName(),
+			cart.getUniqueId(), "", 0.0));
+		plugin.lines().save();
+		player.sendMessage(TrainText.component("&a已创建列车 &f" + name + " &7（" + consist.size()
+			+ " 节车厢）。用 &f/train line route " + name + " <路线名> &7绑定路线。"));
+	}
+
+	private void renameLine(CommandSender sender, String[] args) {
+		if (args.length < 4) {
+			sender.sendMessage(TrainText.component("&7用法：/train line rename <旧名> <新名>"));
+			return;
+		}
+		TrainLines.TrainLine line = ownedLine(sender, args[2]);
+		if (line == null) {
+			return;
+		}
+		String name = args[3];
+		if (name.length() > 16) {
+			sender.sendMessage(TrainText.component("&c列车名最多 16 个字。"));
+			return;
+		}
+		if (plugin.lines().exists(name)) {
+			sender.sendMessage(TrainText.component("&c已经有一条叫「" + name + "」的列车了。"));
+			return;
+		}
+		plugin.lines().rename(line, new TrainLines.TrainLine(name, line.ownerId(), line.ownerName(),
+			line.cart(), line.routeName(), line.spacing()));
+		plugin.lines().save();
+		sender.sendMessage(TrainText.component("&a列车已改名为 &f" + name));
+	}
+
+	private void removeLine(CommandSender sender, String[] args) {
+		if (args.length < 3) {
+			sender.sendMessage(TrainText.component("&7用法：/train line remove <列车名>"));
+			return;
+		}
+		TrainLines.TrainLine line = ownedLine(sender, args[2]);
+		if (line == null) {
+			return;
+		}
+		plugin.driver().stopLine(line.name());
+		plugin.lines().remove(line.name());
+		plugin.lines().save();
+		sender.sendMessage(TrainText.component("&7已删除列车 &f" + line.name() + " &7（矿车本身没动）"));
+	}
+
+	private void listLines(CommandSender sender) {
+		if (!(sender instanceof Player player)) {
+			List<TrainLines.TrainLine> all = plugin.lines().all();
+			sender.sendMessage(TrainText.component("&6全部列车（" + all.size() + "）"));
+			for (TrainLines.TrainLine line : all) {
+				sender.sendMessage(TrainText.component(" &f" + line.name() + " &7— " + line.ownerName()
+					+ "，" + (line.routeName().isBlank() ? "&8未绑路线" : "&7" + line.routeName())));
+			}
+			return;
+		}
+		List<TrainLines.TrainLine> mine = plugin.lines().of(player.getUniqueId());
+		if (mine.isEmpty()) {
+			player.sendMessage(TrainText.component("&7你还没有命名过列车。站到列车旁边用 &f/train line create <名字>"));
+			return;
+		}
+		player.sendMessage(TrainText.component("&6我的列车（" + mine.size() + "）"));
+		for (TrainLines.TrainLine line : mine) {
+			player.sendMessage(TrainText.component(" &f" + line.name()
+				+ " &7" + (line.routeName().isBlank() ? "&8未绑路线" : "路线 " + line.routeName())
+				+ " &7间距 " + (line.spacing() > 0 ? String.format(Locale.ROOT, "%.2f", line.spacing()) : "默认")
+				+ (plugin.driver().isRunning(line.name()) ? " &a行驶中" : " &8已停")));
+		}
+	}
+
+	private void setLineRoute(CommandSender sender, String[] args) {
+		if (args.length < 3) {
+			sender.sendMessage(TrainText.component("&7用法：/train line route <列车名> [路线名]（不给路线名就是解绑）"));
+			return;
+		}
+		TrainLines.TrainLine line = ownedLine(sender, args[2]);
+		if (line == null) {
+			return;
+		}
+		if (args.length < 4) {
+			plugin.lines().put(line.withRoute(""));
+			plugin.lines().save();
+			sender.sendMessage(TrainText.component("&7已解除 &f" + line.name() + " &7的路线绑定。"));
+			return;
+		}
+		if (plugin.routes().get(args[3]) == null) {
+			sender.sendMessage(TrainText.component("&c没有叫「" + args[3] + "」的路线。"));
+			return;
+		}
+		plugin.lines().put(line.withRoute(args[3]));
+		plugin.lines().save();
+		sender.sendMessage(TrainText.component("&a列车 &f" + line.name() + " &a已绑定路线 &f" + args[3]));
+	}
+
+	private void setLineSpacing(CommandSender sender, String[] args) {
+		if (args.length < 4) {
+			sender.sendMessage(TrainText.component("&7用法：/train line spacing <列车名> <0.5~1.0>"));
+			return;
+		}
+		TrainLines.TrainLine line = ownedLine(sender, args[2]);
+		if (line == null) {
+			return;
+		}
+		double value;
+		try {
+			value = Double.parseDouble(args[3]);
+		} catch (NumberFormatException bad) {
+			sender.sendMessage(TrainText.component("&c间距要写成小数，比如 0.9"));
+			return;
+		}
+		if (value < 0.5 || value > 1.0) {
+			sender.sendMessage(TrainText.component("&c间距只能在 0.5 到 1.0 格之间 —— 太挤会叠在一起，太松就不像编组了。"));
+			return;
+		}
+		plugin.lines().put(line.withSpacing(value));
+		plugin.lines().save();
+		sender.sendMessage(TrainText.component("&a列车 &f" + line.name() + " &a的车厢间距设为 &f"
+			+ String.format(Locale.ROOT, "%.2f", value) + " &a格"));
+	}
+
+	private void startLine(CommandSender sender, String[] args) {
+		if (args.length < 3) {
+			sender.sendMessage(TrainText.component("&7用法：/train line start <列车名> [路线名]"));
+			return;
+		}
+		TrainLines.TrainLine line = ownedLine(sender, args[2]);
+		if (line == null) {
+			return;
+		}
+		String route = args.length >= 4 ? args[3] : line.routeName();
+		if (route == null || route.isBlank()) {
+			sender.sendMessage(TrainText.component("&c这条列车还没绑路线。先 &f/train line route " + line.name() + " <路线名>"));
+			return;
+		}
+		if (plugin.routes().get(route) == null) {
+			sender.sendMessage(TrainText.component("&c没有叫「" + route + "」的路线。"));
+			return;
+		}
+		String error = plugin.driver().start(line.cart(), route, sender instanceof Player p ? p : null, line);
+		if (error != null) {
+			sender.sendMessage(TrainText.component("&c" + error));
+		}
+	}
+
+	private void stopLine(CommandSender sender, String[] args) {
+		if (args.length < 3) {
+			sender.sendMessage(TrainText.component("&7用法：/train line stop <列车名>"));
+			return;
+		}
+		TrainLines.TrainLine line = ownedLine(sender, args[2]);
+		if (line == null) {
+			return;
+		}
+		sender.sendMessage(plugin.driver().stopLine(line.name())
+			? TrainText.component("&7列车 &f" + line.name() + " &7已停止。")
+			: TrainText.component("&7这条列车本来就没在跑。"));
+	}
+
+	private void lineInfo(CommandSender sender, String[] args) {
+		if (args.length < 3) {
+			sender.sendMessage(TrainText.component("&7用法：/train line info <列车名>"));
+			return;
+		}
+		TrainLines.TrainLine line = ownedLine(sender, args[2]);
+		if (line == null) {
+			return;
+		}
+		List<UUID> consist = plugin.trains().consistOf(line.cart());
+		sender.sendMessage(TrainText.component("&6列车 &f" + line.name()));
+		sender.sendMessage(TrainText.component(" &7车主 &f" + line.ownerName()
+			+ " &7车厢 &f" + consist.size()));
+		sender.sendMessage(TrainText.component(" &7路线 &f"
+			+ (line.routeName().isBlank() ? "&8未绑" : line.routeName())
+			+ " &7间距 &f" + (line.spacing() > 0 ? String.format(Locale.ROOT, "%.2f", line.spacing()) : "默认")
+			+ " &7状态 &f" + (plugin.driver().isRunning(line.name()) ? "&a行驶中" : "已停")));
+	}
+
+	/**
+	 * 取出这条列车并确认这个人有权动它。
+	 *
+	 * <p>「只能改自己的车」是需求里明确写的。管理员（{@code train.admin}）例外 ——
+	 * 运维要能清理玩家留下的车，但不能靠这个去看别人的配置，所以菜单里也只列本人的。</p>
+	 *
+	 * @return 有权操作时返回那条列车，否则返回 null 并已发好提示
+	 */
+	private TrainLines.TrainLine ownedLine(CommandSender sender, String name) {
+		TrainLines.TrainLine line = plugin.lines().get(name);
+		if (line == null) {
+			sender.sendMessage(TrainText.component("&c没有叫「" + name + "」的列车。"));
+			return null;
+		}
+		if (sender instanceof Player player) {
+			if (!line.ownerId().equals(player.getUniqueId()) && !player.hasPermission("train.admin")) {
+				sender.sendMessage(TrainText.component("&c这不是你的列车。"));
+				return null;
+			}
+			return line;
+		}
+		sender.sendMessage(TrainText.component("&7控制台可以操作任意列车。"));
+		return line;
 	}
 
 	private void station(CommandSender sender, String[] args) {
@@ -370,7 +633,8 @@ public final class TrainCommand implements CommandExecutor, TabCompleter {
 	private void info(CommandSender sender) {
 		sender.sendMessage(TrainText.component("&6铁道列车"));
 		sender.sendMessage(TrainText.component(" &7站点 &f" + plugin.stations().size()
-			+ " &7路线 &f" + plugin.routes().size() + " &7行驶中 &f" + plugin.driver().count()));
+			+ " &7路线 &f" + plugin.routes().size() + " &7列车 &f" + plugin.lines().size()
+			+ " &7行驶中 &f" + plugin.driver().count()));
 		sender.sendMessage(TrainText.component(" &7车厢上限 &f" + plugin.settings().maxCars()
 			+ " &7巡航速度 &f" + plugin.settings().travelSpeed()
 			+ " &7进站速度 &f" + plugin.settings().approachSpeed()));
@@ -380,7 +644,8 @@ public final class TrainCommand implements CommandExecutor, TabCompleter {
 		plugin.reloadSettings();
 		plugin.stations().load();
 		plugin.routes().load();
-		sender.sendMessage(TrainText.component("&a配置与站点、路线已重新载入。"));
+		plugin.lines().load();
+		sender.sendMessage(TrainText.component("&a配置与站点、路线、列车已重新载入。"));
 	}
 
 	private static Minecart nearestCart(Player player) {
@@ -409,6 +674,7 @@ public final class TrainCommand implements CommandExecutor, TabCompleter {
 			return switch (args[0].toLowerCase(Locale.ROOT)) {
 				case "station" -> filter(STATION_SUBCOMMANDS, args[1]);
 				case "route" -> filter(ROUTE_SUBCOMMANDS, args[1]);
+				case "line" -> filter(LINE_SUBCOMMANDS, args[1]);
 				case "start" -> filter(plugin.routes().names(), args[1]);
 				default -> List.of();
 			};
@@ -417,10 +683,30 @@ public final class TrainCommand implements CommandExecutor, TabCompleter {
 			return switch (args[0].toLowerCase(Locale.ROOT)) {
 				case "station" -> filter(plugin.stations().names(), args[2]);
 				case "route" -> args[1].equalsIgnoreCase("create") ? List.of() : filter(plugin.routes().names(), args[2]);
+				case "line" -> filter(lineNames(sender), args[2]);
+				default -> List.of();
+			};
+		}
+		if (args.length == 4 && args[0].equalsIgnoreCase("line")) {
+			return switch (args[1].toLowerCase(Locale.ROOT)) {
+				case "route", "start" -> filter(plugin.routes().names(), args[3]);
+				case "spacing" -> List.of("0.5", "0.7", "0.9", "1.0");
 				default -> List.of();
 			};
 		}
 		return List.of();
+	}
+
+	/** 补全时只列本人的列车（管理员多列全部，便于运维）。 */
+	private List<String> lineNames(CommandSender sender) {
+		List<TrainLines.TrainLine> pool = sender instanceof Player player && !player.hasPermission("train.admin")
+			? plugin.lines().of(player.getUniqueId())
+			: plugin.lines().all();
+		List<String> names = new ArrayList<>();
+		for (TrainLines.TrainLine line : pool) {
+			names.add(line.name());
+		}
+		return names;
 	}
 
 	private static List<String> filter(List<String> options, String prefix) {

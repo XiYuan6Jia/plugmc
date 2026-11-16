@@ -7,7 +7,7 @@ authors: [XiYuan6Jia]
 commands:
   train:
     description: "铁道列车：站点、路线与自动驾驶"
-    usage: /train station|route|start|stop|link|unlink|info
+    usage: /train station|route|line|start|stop|link|unlink|info
     permission: train.use
 permissions:
   train.use:

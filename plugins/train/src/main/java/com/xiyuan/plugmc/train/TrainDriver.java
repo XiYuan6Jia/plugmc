@@ -36,6 +36,8 @@ public final class TrainDriver {
 	public static final class Drive {
 		public UUID head;
 		public String routeName;
+		/** 这列车在 {@link TrainLines} 里登记的名字；空串表示没命名（直接 /train start 起的）。 */
+		public String lineName = "";
 		public int index;
 		public int direction = 1;
 		public List<Vector> path = new ArrayList<>();
@@ -93,9 +95,23 @@ public final class TrainDriver {
 	 * @return 失败原因；成功返回 null
 	 */
 	public String start(UUID any, String routeName, Player starter) {
-		TrainRoutes.TrainRoute route = plugin.routes().get(routeName);
+		return start(any, routeName, starter, null);
+	}
+
+	/**
+	 * 让某节车厢所在的列车按「命名列车」的设定开始跑。
+	 *
+	 * <p>与上面那个重载的差别只有两点：把这列记在 {@code Drive.lineName} 上（停站消息、
+	 * 菜单里都要显示它），以及沿用这条列车自己配的路线 —— 菜单里点「出发」时不必再传路线。</p>
+	 *
+	 * @param line 命名列车；传 null 就是一次性的临时列车
+	 * @return 失败原因；成功返回 null
+	 */
+	public String start(UUID any, String routeName, Player starter, TrainLines.TrainLine line) {
+		String wanted = line != null && !line.routeName().isBlank() ? line.routeName() : routeName;
+		TrainRoutes.TrainRoute route = plugin.routes().get(wanted);
 		if (route == null) {
-			return "没有叫「" + routeName + "」的路线。";
+			return "没有叫「" + wanted + "」的路线。";
 		}
 		if (route.stations().size() < 2) {
 			return "这条路线至少要两个站点才能跑。";
@@ -106,6 +122,7 @@ public final class TrainDriver {
 			return "车头必须是动力矿车 —— 请把动力矿车连在列车的一端。";
 		}
 		Drive drive = new Drive(head, route.name());
+		drive.lineName = line == null ? "" : line.name();
 		drive.index = 0;
 		drive.direction = 1;
 		if (!rebuildPath(drive)) {
@@ -113,7 +130,8 @@ public final class TrainDriver {
 		}
 		drives.put(head, drive);
 		if (starter != null) {
-			starter.sendMessage(TrainText.component("&a列车已出发，路线：&f" + route.name()));
+			starter.sendMessage(TrainText.component("&a列车已出发，路线：&f" + route.name()
+				+ (drive.lineName.isBlank() ? "" : " &7（" + drive.lineName + "）")));
 		}
 		return null;
 	}
@@ -180,6 +198,49 @@ public final class TrainDriver {
 	/** 正在自动行驶的列车数量。 */
 	public int runningCount() {
 		return drives.size();
+	}
+
+	/**
+	 * 这条命名列车现在是不是在跑。
+	 *
+	 * <p>按名字找而不是按 UUID：双向列车掉头会把 Drive 记在另一端的动力矿车上，
+	 * 用「哪节车厢」去找会漏。</p>
+	 */
+	public boolean isRunning(String lineName) {
+		if (lineName == null || lineName.isBlank()) {
+			return false;
+		}
+		for (Drive drive : drives.values()) {
+			if (lineName.equalsIgnoreCase(drive.lineName)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * 让一条命名列车停下来。
+	 *
+	 * @return 是否真的停了一列
+	 */
+	public boolean stopLine(String lineName) {
+		if (lineName == null || lineName.isBlank()) {
+			return false;
+		}
+		for (Map.Entry<UUID, Drive> entry : new HashMap<>(drives).entrySet()) {
+			if (!lineName.equalsIgnoreCase(entry.getValue().lineName)) {
+				continue;
+			}
+			if (drives.remove(entry.getKey()) == null) {
+				continue;
+			}
+			Entity entity = Bukkit.getEntity(entry.getKey());
+			if (entity instanceof Minecart cart) {
+				cart.setVelocity(new Vector());
+			}
+			return true;
+		}
+		return false;
 	}
 
 	/** 主循环：由插件按配置间隔调用。 */
@@ -284,8 +345,28 @@ public final class TrainDriver {
 		if (target == null) {
 			return;
 		}
-		moveCart(headCart, target);
-		placeCarsBehind(drive, headCart, target, config.carSpacing());
+		// 车头朝向也跟轨道走：过弯时车体跟着转，看起来才是「沿轨道行进」而不是平移。
+		moveCart(headCart, target, yawAt(drive.path, drive.progress));
+		placeCarsBehind(drive, headCart, target, spacingOf(drive));
+	}
+
+	/**
+	 * 这列车该用多大间距。
+	 *
+	 * <p>优先用这列车自己在 {@code trains.yml} 里配的值（菜单里可以单独调），
+	 * 没配（0）或没命名就退回配置文件的默认值。上限一律 1.0 格 ——
+	 * 再宽就不像一列编组而像一队各自跑的车了。</p>
+	 */
+	private double spacingOf(Drive drive) {
+		double fallback = plugin.settings().carSpacing();
+		if (drive.lineName == null || drive.lineName.isBlank() || plugin.lines() == null) {
+			return fallback;
+		}
+		TrainLines.TrainLine line = plugin.lines().get(drive.lineName);
+		if (line == null || line.spacing() <= 0) {
+			return fallback;
+		}
+		return Math.min(Math.max(line.spacing(), 0.5), 1.0);
 	}
 
 	/**
@@ -299,11 +380,10 @@ public final class TrainDriver {
 	 *
 	 * <p>每 tick 摆一次意味着转向时不会切角，坡道上也不会被插值卡在半空。</p>
 	 */
-	private static void moveCart(Minecart cart, Vector point) {
+	private static void moveCart(Minecart cart, Vector point, float yaw) {
 		Location at = cart.getLocation();
-		Location to = new Location(at.getWorld(), point.getX(), point.getY(), point.getZ(),
-			at.getYaw(), at.getPitch());
-		if (at.distanceSquared(to) < 1.0e-8) {
+		Location to = new Location(at.getWorld(), point.getX(), point.getY(), point.getZ(), yaw, at.getPitch());
+		if (at.distanceSquared(to) < 1.0e-8 && Math.abs(at.getYaw() - yaw) < 0.5f) {
 			return;
 		}
 		cart.teleport(to);
@@ -339,8 +419,24 @@ public final class TrainDriver {
 		RailPath.BlockKey here = RailPath.BlockKey.of(now);
 		RailPath.BlockKey onward = aheadTarget == null ? null : RailPath.BlockKey.of(
 			new Location(world, aheadTarget.getX(), aheadTarget.getY(), aheadTarget.getZ()));
-		int needed = (int) Math.ceil(spacing * (line.size() - 1)) + 2;
-		List<Vector> chain = RailPath.behindChain(world, here, onward, Math.max(2, needed));
+		int needed = (int) Math.ceil(spacing * (line.size() - 1)) + 3;
+		List<Vector> chain = RailPath.behindChain(world, here, onward, Math.max(3, needed));
+		if (chain.size() < 2) {
+			return;
+		}
+
+		// 车头在自己那一格里并不是永远停在正中心：它是按弧长插值移动的，可能已经走到格子前沿。
+		// 早先直接从「车头方块中心」往后量间距，结果车头一走到格子边上，第一节车厢就贴上来，
+		// 走回格子中间又拉开 —— 表现就是间距忽大忽小、过弯时像被甩了一下。
+		// 这里先把「车头实际位置相对本格中心、沿向后方向的偏移」算出来，再统一加进每节的弧长里，
+		// 于是不管车头在格子里哪儿，它与第一节的直线距离都恒等于 spacing。
+		Vector center = chain.get(0);
+		Vector back = chain.get(1).clone().subtract(center);
+		if (back.lengthSquared() < 1.0e-9) {
+			return;
+		}
+		back.normalize();
+		double headOffset = now.toVector().subtract(center).dot(back);
 
 		boolean headIsFirst = line.get(0).equals(headCart.getUniqueId());
 		for (int i = 1; i < line.size(); i++) {
@@ -349,14 +445,42 @@ public final class TrainDriver {
 			if (!(entity instanceof Minecart cart)) {
 				continue;
 			}
-			Vector target = pointAt(chain, spacing * i);
+			double distance = Math.max(0.0, headOffset + spacing * i);
+			Vector target = pointAt(chain, distance);
 			if (target == null) {
 				continue;
 			}
-			Location location = new Location(world, target.getX(), target.getY(), target.getZ());
+			// 朝向跟着轨道走：过弯时车厢本体也一起转过去，不然会看到一排方块车横着滑过拐角。
+			Location location = new Location(world, target.getX(), target.getY(), target.getZ(),
+				yawAt(chain, distance), 0f);
 			cart.teleport(location);
 			cart.setVelocity(new Vector());
 		}
+	}
+
+	/**
+	 * 折线上某处的朝向（Minecraft 的 yaw：0 为 +Z，顺时针）。
+	 *
+	 * <p>取该点所在那一段的方向：段内方向就是这两格铁轨之间的走向，过弯时自然跟着拐。
+	 * 用 {@code atan2(-dx, dz)} 是因为 MC 的 yaw 以 -Z 为 90°、+X 为 -90°。</p>
+	 */
+	private static float yawAt(List<Vector> points, double distance) {
+		double walked = 0;
+		for (int i = 1; i < points.size(); i++) {
+			Vector a = points.get(i - 1);
+			Vector b = points.get(i);
+			double length = a.distance(b);
+			if (walked + length >= distance || i == points.size() - 1) {
+				double dx = b.getX() - a.getX();
+				double dz = b.getZ() - a.getZ();
+				if (Math.abs(dx) < 1.0e-9 && Math.abs(dz) < 1.0e-9) {
+					break;
+				}
+				return (float) Math.toDegrees(Math.atan2(-dx, dz));
+			}
+			walked += length;
+		}
+		return 0f;
 	}
 
 	/** 折线上从起点算起 distance 格处的点；distance 超出两端时贴到端点。 */

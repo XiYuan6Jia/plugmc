@@ -189,6 +189,15 @@ menu:
       value: "&e/money &7余额  &e/shop &7商店  &e/market &7市场  &e/auction &7拍卖  &e/order &7收购  &e/mail &7邮箱  &e/daily &7签到"
 
     # 底部：管理与关闭
+    "46":
+      material: MINECART
+      name: "&6我的列车"
+      lore:
+        - "&7用拴绳把矿车连成列车，按站点自动跑"
+        - "&7这里列出你自己创建的列车"
+        - "&8点击配置路线、间距与开关"
+      action: train_panel
+      permission: train.use
     "48":
       material: COMPARATOR
       name: "&c经济管理"

@@ -33,7 +33,9 @@ public record TrainConfig(
 			clamp(config.getDouble("speed.stop-radius", 1.1), 0.6, 3.0),
 			clamp(config.getInt("station.default-dwell-seconds", 8), 1, 600),
 			clamp(config.getInt("route.max-search-blocks", 96), 16, 512),
-			clamp(config.getDouble("limits.car-spacing", 1.05), 0.8, 2.0),
+			// 车厢间距按需求收在 0.5~1.0 格：现实里的列车就是这么贴着的。
+			// 上限卡 1.0 是有意的 —— 再宽就不像编组而像一队各自跑的车了。
+			clamp(config.getDouble("limits.car-spacing", 0.9), 0.5, 1.0),
 			config.getBoolean("effects.link-particles", true),
 			config.getBoolean("limits.free-in-creative", true),
 			clamp(config.getInt("limits.max-fuel-per-cart", 12000), 0, 200000)

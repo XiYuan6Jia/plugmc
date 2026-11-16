@@ -1,5 +1,6 @@
 package com.xiyuan.plugmc.train;
 
+import com.xiyuan.plugmc.train.api.TrainService;
 import org.bukkit.Bukkit;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -15,8 +16,10 @@ public final class TrainPlugin extends JavaPlugin {
 	private TrainManager trains;
 	private TrainStations stations;
 	private TrainRoutes routes;
+	private TrainLines lines;
 	private TrainDriver driver;
 	private TrainListener listener;
+	private TrainServiceImpl trainService;
 	private int driverTask = -1;
 
 	@Override
@@ -30,6 +33,8 @@ public final class TrainPlugin extends JavaPlugin {
 		stations.load();
 		routes = new TrainRoutes(getDataFolder());
 		routes.load();
+		lines = new TrainLines(getDataFolder());
+		lines.load();
 		driver = new TrainDriver(this);
 		listener = new TrainListener(this);
 		getServer().getPluginManager().registerEvents(listener, this);
@@ -41,14 +46,23 @@ public final class TrainPlugin extends JavaPlugin {
 			command.setTabCompleter(executor);
 		}
 
+		// 菜单要读「我有哪些列车」，只给它一个只读+本人操作的接口
+		trainService = new TrainServiceImpl(this);
+		getServer().getServicesManager().register(TrainService.class, trainService, this,
+			org.bukkit.plugin.ServicePriority.Normal);
+
 		startTasks();
 		getLogger().info("铁道列车 已启用（站点 " + stations.size() + "，路线 " + routes.size()
-			+ "，车厢上限 " + settings.maxCars() + "）");
+			+ "，列车 " + lines.size() + "，车厢上限 " + settings.maxCars() + "）");
 	}
 
 	@Override
 	public void onDisable() {
 		stopTasks();
+		if (trainService != null) {
+			getServer().getServicesManager().unregister(TrainService.class, trainService);
+			trainService = null;
+		}
 		if (driver != null) {
 			driver.clear();
 		}
@@ -57,6 +71,7 @@ public final class TrainPlugin extends JavaPlugin {
 		}
 		stations = null;
 		routes = null;
+		lines = null;
 		driver = null;
 		listener = null;
 		getLogger().info("铁道列车 已停用");
@@ -110,6 +125,10 @@ public final class TrainPlugin extends JavaPlugin {
 
 	public TrainRoutes routes() {
 		return routes;
+	}
+
+	public TrainLines lines() {
+		return lines;
 	}
 
 	public TrainDriver driver() {

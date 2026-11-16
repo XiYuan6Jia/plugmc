@@ -5,6 +5,7 @@ api-version: '${api_version}'
 authors: [XiYuan6Jia]
 description: "测试服功能菜单与金币 HUD"
 depend: [economy]
+softdepend: [train]
 commands:
   menu:
     description: "打开服务器功能菜单"

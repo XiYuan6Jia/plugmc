@@ -27,7 +27,8 @@ import java.util.Set;
 public final class MenuManager {
 	private static final Set<String> ACTIONS = Set.of(
 		"balance", "toggle_hud", "message", "player_command", "console_command", "plugin_list",
-		"economy_admin", "hub_panel", "cosmetic_panel", "prompt_command", "daily", "vault_panel", "none", "close"
+		"economy_admin", "hub_panel", "cosmetic_panel", "prompt_command", "daily", "vault_panel",
+		"train_panel", "none", "close"
 	);
 	private static final int PLUGIN_PAGE_CAPACITY = 45;
 	private static final int CONFIG_VERSION = 15;
@@ -137,6 +138,7 @@ public final class MenuManager {
 		ensurePluginListButton(defaults);
 		ensureCosmeticButton(defaults);
 		ensureVaultButton(defaults);
+		ensureTrainButton(defaults);
 		migrateConfigVersion(defaults);
 		plugin.saveConfig();
 	}
@@ -240,6 +242,57 @@ public final class MenuManager {
 		plugin.getConfig().set("menu.items." + slot, defaultEntry.getValue().getValues(false));
 		plugin.getLogger().info("已将「回收箱」按钮合并到菜单位置 " + slot);
 	}
+	/**
+	 * 把「我的列车」按钮增量合并进已有配置。
+	 *
+	 * <p>和另外两个 ensure* 一样的保守策略：先在默认槽位试，被占就找第一个空格，
+	 * 排满才 WARN。绝不整体重置 —— 服主自己排的位子必须留着。</p>
+	 */
+	private void ensureTrainButton(YamlConfiguration defaults) {
+		ConfigurationSection configuredButtons = plugin.getConfig().getConfigurationSection("menu.items");
+		if (configuredButtons == null) {
+			return;
+		}
+		boolean hasTrain = configuredButtons.getKeys(false).stream()
+			.anyMatch(key -> "train_panel".equalsIgnoreCase(
+				plugin.getConfig().getString("menu.items." + key + ".action", "")
+			));
+		if (hasTrain) {
+			return;
+		}
+		ConfigurationSection defaultButtons = defaults.getConfigurationSection("menu.items");
+		if (defaultButtons == null) {
+			return;
+		}
+		Map.Entry<String, ConfigurationSection> defaultEntry = defaultButtons.getKeys(false).stream()
+			.map(key -> Map.entry(key, defaultButtons.getConfigurationSection(key)))
+			.filter(entry -> entry.getValue() != null
+				&& "train_panel".equalsIgnoreCase(entry.getValue().getString("action", "")))
+			.findFirst()
+			.orElse(null);
+		if (defaultEntry == null) {
+			return;
+		}
+
+		int rows = plugin.getConfig().getInt("menu.rows", 3);
+		int slot = -1;
+		int defaultSlot = Integer.parseInt(defaultEntry.getKey());
+		if (!configuredButtons.getKeys(false).contains(Integer.toString(defaultSlot)) && defaultSlot < rows * 9) {
+			slot = defaultSlot;
+		}
+		for (int candidate = 0; candidate < rows * 9 && slot < 0; candidate++) {
+			if (configuredButtons.getConfigurationSection(Integer.toString(candidate)) == null) {
+				slot = candidate;
+			}
+		}
+		if (slot < 0) {
+			plugin.getLogger().warning("菜单已满，未能自动加入「我的列车」按钮；请手动在 menu.items 留出空位");
+			return;
+		}
+		plugin.getConfig().set("menu.items." + slot, defaultEntry.getValue().getValues(false));
+		plugin.getLogger().info("已将「我的列车」按钮合并到菜单位置 " + slot);
+	}
+
 	private void ensureCosmeticButton(YamlConfiguration defaults) {
 		ConfigurationSection configuredButtons = plugin.getConfig().getConfigurationSection("menu.items");
 		if (configuredButtons == null) {
@@ -612,6 +665,14 @@ public final class MenuManager {
 			}
 			return;
 		}
+		if (holder.getPage() == MenuHolder.Page.TRAIN) {
+			handleTrainClick(player, holder, slot);
+			return;
+		}
+		if (holder.getPage() == MenuHolder.Page.TRAIN_ROUTE) {
+			handleTrainRouteClick(player, holder, slot);
+			return;
+		}
 		if (holder.getPage() == MenuHolder.Page.ADMIN) {
 			switch (slot) {
 				case 13 -> promptTreasuryFund(player);
@@ -671,6 +732,7 @@ public final class MenuManager {
 			case "hub_panel" -> openHubPanel(player);
 			case "cosmetic_panel" -> openCosmeticPanel(player);
 			case "vault_panel" -> openVaultPanel(player);
+			case "train_panel" -> openTrainPanel(player);
 			case "daily" -> {
 				player.performCommand("daily");
 				open(player);
@@ -842,6 +904,280 @@ public final class MenuManager {
 				player.performCommand("cosmetic");
 			}
 		});
+	}
+
+	/**
+	 * 列车分类：列出「我」的列车，点进去配置某一条。
+	 *
+	 * <p>只列本人的车 —— 需求里写明了「有且只能操作和修改本人的列车」。
+	 * 数据从 train 插件通过 {@code TrainService} 拿，菜单不直接碰它的内部结构。</p>
+	 */
+	public void openTrainPanel(Player player) {
+		TrainBridge bridge = trainBridge();
+		if (bridge == null) {
+			openTrainUnavailable(player);
+			return;
+		}
+		List<com.xiyuan.plugmc.train.api.TrainService.LineView> mine = bridge.linesOf(player.getUniqueId());
+		int rows = 6;
+		MenuHolder holder = new MenuHolder(rows * 9, "&8我的列车", Map.of(), MenuHolder.Page.TRAIN, 0);
+		fillBackground(holder, rows * 9);
+
+		holder.setButtonItem(4, navigationItem(Material.MINECART, "&6我的列车",
+			"&7一共 " + mine.size() + " 条",
+			"&7点一条列车进去配置它"
+		));
+
+		if (mine.isEmpty()) {
+			holder.setButtonItem(22, navigationItem(Material.HOPPER,
+				"&7还没有列车",
+				"&7把几台矿车用拴绳连起来，",
+				"&7然后执行 &f/train line create <名字>",
+				"&7它就会出现在这里"
+			));
+		}
+		int slot = 9;
+		for (com.xiyuan.plugmc.train.api.TrainService.LineView line : mine) {
+			if (slot >= 45) {
+				break;
+			}
+			holder.setButtonItem(slot++, trainLineItem(bridge, line));
+		}
+
+		holder.setButtonItem(45, navigationItem(Material.ARROW, "&e返回菜单"));
+		holder.setButtonItem(49, navigationItem(Material.BARRIER, "&c关闭"));
+		player.openInventory(holder.getInventory());
+	}
+
+	/** 单条列车的配置页：出发 / 停止 / 换路线 / 调间距 / 删除。 */
+	public void openTrainLine(Player player, String lineName) {
+		TrainBridge bridge = trainBridge();
+		if (bridge == null) {
+			openTrainUnavailable(player);
+			return;
+		}
+		com.xiyuan.plugmc.train.api.TrainService.LineView line = bridge.lineOf(player.getUniqueId(), lineName);
+		if (line == null) {
+			player.sendMessage(MenuText.component("&c这条列车已经不在了。"));
+			openTrainPanel(player);
+			return;
+		}
+		MenuHolder holder = new MenuHolder(54, "&8列车：" + line.name(), Map.of(),
+			MenuHolder.Page.TRAIN, 0, line.name());
+		fillBackground(holder, 54);
+
+		holder.setButtonItem(4, navigationItem(Material.MINECART, "&6" + line.name(),
+			"&7车厢 " + line.cars() + " 节",
+			"&7路线 " + (line.routeName().isBlank() ? "未绑" : line.routeName()),
+			"&7间距 " + (line.spacing() > 0
+				? String.format(Locale.ROOT, "%.2f", line.spacing()) : "默认"),
+			"&7状态 " + (line.running() ? "行驶中" : "已停")
+		));
+		holder.setButtonItem(20, line.running()
+			? navigationItem(Material.REDSTONE_TORCH, "&c停止",
+				"&7让它停在当前位置")
+			: navigationItem(Material.LEVER, "&a出发",
+				"&7按这条列车的路线逐站跑",
+				line.routeName().isBlank() ? "&c还没绑路线，先点「换路线」" : "&7路线：" + line.routeName()));
+		holder.setButtonItem(22, navigationItem(Material.COMPASS,
+			"&e换路线",
+			"&7当前：" + (line.routeName().isBlank() ? "未绑" : line.routeName()),
+			"&7点一下挑一条路线"
+		));
+		holder.setButtonItem(24, navigationItem(Material.RAIL,
+			"&e车厢间距",
+			"&7当前：" + (line.spacing() > 0
+				? String.format(Locale.ROOT, "%.2f", line.spacing()) + " 格" : "跟随全局默认"),
+			"&7点一下在 0.5 / 0.7 / 0.9 / 1.0 之间切换"
+		));
+		holder.setButtonItem(40, navigationItem(Material.BARRIER,
+			"&c删除这条列车",
+			"&7只删登记，矿车本身不动",
+			"&7再点一次确认"
+		));
+		holder.setButtonItem(45, navigationItem(Material.ARROW, "&e返回列车列表"));
+		holder.setButtonItem(49, navigationItem(Material.BARRIER, "&c关闭"));
+		player.openInventory(holder.getInventory());
+	}
+
+	private void handleTrainClick(Player player, MenuHolder holder, int slot) {
+		TrainBridge bridge = trainBridge();
+		if (bridge == null) {
+			player.closeInventory();
+			openTrainUnavailable(player);
+			return;
+		}
+		String subject = holder.getSubject();
+		if (subject.isBlank()) {
+			if (slot == 45) {
+				open(player);
+				return;
+			}
+			if (slot == 49) {
+				player.closeInventory();
+				return;
+			}
+			List<com.xiyuan.plugmc.train.api.TrainService.LineView> mine = bridge.linesOf(player.getUniqueId());
+			int index = slot - 9;
+			if (index >= 0 && index < mine.size()) {
+				openTrainLine(player, mine.get(index).name());
+			}
+			return;
+		}
+		com.xiyuan.plugmc.train.api.TrainService.LineView line = bridge.lineOf(player.getUniqueId(), subject);
+		if (line == null) {
+			player.sendMessage(MenuText.component("&c这条列车已经不在了。"));
+			openTrainPanel(player);
+			return;
+		}
+		switch (slot) {
+			case 20 -> {
+				if (line.running()) {
+					report(player, bridge.stop(player, subject));
+				} else {
+					report(player, bridge.start(player, subject));
+				}
+				openTrainLine(player, subject);
+			}
+			case 22 -> openTrainRoutePicker(player, subject);
+			case 24 -> {
+				double next = nextSpacing(line.spacing());
+				report(player, bridge.setSpacing(player, subject, next));
+				openTrainLine(player, subject);
+			}
+			case 40 -> {
+				report(player, bridge.delete(player, subject));
+				openTrainPanel(player);
+			}
+			case 45 -> openTrainPanel(player);
+			case 49 -> player.closeInventory();
+			default -> {
+			}
+		}
+	}
+
+	/** 挑路线：把所有路线列出来，另给一个「解绑」。 */
+	private void openTrainRoutePicker(Player player, String lineName) {
+		TrainBridge bridge = trainBridge();
+		if (bridge == null) {
+			openTrainUnavailable(player);
+			return;
+		}
+		List<String> routes = bridge.routeNames();
+		int rows = Math.max(3, Math.min(6, (routes.size() + 9) / 9 + 1));
+		MenuHolder holder = new MenuHolder(rows * 9, "&8选路线：" + lineName, Map.of(),
+			MenuHolder.Page.TRAIN_ROUTE, 0, lineName);
+		fillBackground(holder, rows * 9);
+		holder.setButtonItem(4, navigationItem(Material.COMPASS, "&6挑一条路线",
+			"&7列车会按站点的顺序逐站停靠"));
+
+		if (routes.isEmpty()) {
+			holder.setButtonItem(rows * 9 / 2, navigationItem(Material.HOPPER,
+				"&7还没有任何路线",
+				"&7先用 &f/train route create &7建一条"));
+		}
+		int slot = 9;
+		for (String route : routes) {
+			if (slot >= rows * 9 - 4) {
+				break;
+			}
+			holder.setButtonItem(slot++, navigationItem(Material.MAP, "&e" + route,
+				"&7点一下把这列车绑到这条路线"));
+		}
+		holder.setButtonItem(rows * 9 - 2, navigationItem(Material.BARRIER,
+			"&c解绑路线",
+			"&7不绑路线时列车只能手动开"));
+
+		player.openInventory(holder.getInventory());
+	}
+
+	private void handleTrainRouteClick(Player player, MenuHolder holder, int slot) {
+		TrainBridge bridge = trainBridge();
+		if (bridge == null) {
+			player.closeInventory();
+			openTrainUnavailable(player);
+			return;
+		}
+		String lineName = holder.getSubject();
+		if (lineName.isBlank()) {
+			openTrainPanel(player);
+			return;
+		}
+		int rows = holder.getInventory().getSize() / 9;
+		if (slot == rows * 9 - 2) {
+			report(player, bridge.setRoute(player, lineName, ""));
+			openTrainLine(player, lineName);
+			return;
+		}
+		List<String> routes = bridge.routeNames();
+		int index = slot - 9;
+		if (index >= 0 && index < routes.size()) {
+			report(player, bridge.setRoute(player, lineName, routes.get(index)));
+			openTrainLine(player, lineName);
+		}
+	}
+
+	private void openTrainUnavailable(Player player) {
+		MenuHolder holder = new MenuHolder(54, "&8我的列车", Map.of(), MenuHolder.Page.TRAIN, 0);
+		fillBackground(holder, 54);
+		holder.setButtonItem(22, navigationItem(Material.BARRIER, "&c这个功能暂时不可用",
+			"&7列车插件没在运行"));
+		holder.setButtonItem(45, navigationItem(Material.ARROW, "&e返回菜单"));
+		holder.setButtonItem(49, navigationItem(Material.BARRIER, "&c关闭"));
+		player.openInventory(holder.getInventory());
+	}
+
+	/** 列表里的一条列车。 */
+	private ItemStack trainLineItem(TrainBridge bridge,
+									com.xiyuan.plugmc.train.api.TrainService.LineView line) {
+		List<String> lore = new ArrayList<>();
+		lore.add("&7车厢 " + line.cars() + " 节");
+		lore.add("&7路线 " + (line.routeName().isBlank() ? "未绑" : line.routeName()));
+		lore.add("&7间距 " + (line.spacing() > 0
+			? String.format(Locale.ROOT, "%.2f", line.spacing()) + " 格" : "默认"));
+		lore.add(line.running() ? "&a行驶中" : "&8已停");
+		lore.add("&8点一下配置这列车");
+		return navigationItem(line.running() ? Material.MINECART : Material.CHEST_MINECART,
+			"&6" + line.name(), lore.toArray(new String[0]));
+	}
+
+	private static double nextSpacing(double current) {
+		double[] steps = {0.5, 0.7, 0.9, 1.0};
+		for (double step : steps) {
+			if (current < step - 1.0e-6) {
+				return step;
+			}
+		}
+		return steps[0];
+	}
+
+	private void report(Player player, com.xiyuan.plugmc.train.api.TrainService.Result result) {
+		player.sendMessage(MenuText.component((result.ok() ? "&a" : "&c") + result.message()));
+	}
+
+	private void fillBackground(MenuHolder holder, int size) {
+		if (filler == null) {
+			return;
+		}
+		for (int slot = 0; slot < size; slot++) {
+			holder.setButtonItem(slot, filler.clone());
+		}
+	}
+
+	/**
+	 * 取 {@code TrainService}，拿不到就返回 null。
+	 *
+	 * <p>用反射式的服务查找而不是编译期依赖 train 插件：菜单要能在没有列车插件时照常工作
+	 * （只显示「暂时不可用」），而不是整个起不来。train 是 softdepend。</p>
+	 */
+	private TrainBridge trainBridge() {
+		org.bukkit.plugin.RegisteredServiceProvider<com.xiyuan.plugmc.train.api.TrainService> registration =
+			Bukkit.getServicesManager().getRegistration(com.xiyuan.plugmc.train.api.TrainService.class);
+		if (registration == null) {
+			return null;
+		}
+		com.xiyuan.plugmc.train.api.TrainService service = registration.getProvider();
+		return service == null ? null : new TrainBridge(service);
 	}
 
 	private ItemStack createItem(Player player, MenuButton button) {
