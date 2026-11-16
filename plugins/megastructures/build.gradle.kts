@@ -2,7 +2,7 @@ plugins {
 	java
 }
 
-version = "0.1.0"
+version = "0.2.0"
 
 dependencies {
 	val paperApiVersion = providers.gradleProperty("paper_api_version").get()

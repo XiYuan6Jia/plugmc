@@ -6,17 +6,17 @@ import org.bukkit.generator.ChunkGenerator;
 import java.util.List;
 
 /**
- * 核心尖塔：轨道环圆心的巨塔，半径 18、从 Y=54 一直升到 Y=299，
+ * 核心尖塔：轨道环圆心的巨塔，半径 24、从 Y=0 一直升到 Y=1200，
  * 外壳是带深板岩肋条与铜环带的染色玻璃，内部贯穿发光能量核心；
- * Y=286 有一圈观景台，塔顶是发光尖冠与钻石晶体。
+ * Y=1150 有一圈观景台，塔顶是发光尖冠与钻石晶体。
  */
 public final class CoreSpire implements MegaStructure {
-	static final int RADIUS = 18;
-	static final int CORE_RADIUS = 5;
-	static final int Y_MIN = 54;
-	static final int Y_MAX = 299;
-	static final int BALCONY_Y = 286;
-	static final int BALCONY_OUTER = 30;
+	static final int RADIUS = 24;
+	static final int CORE_RADIUS = 6;
+	static final int Y_MIN = 0;
+	static final int Y_MAX = 1200;
+	static final int BALCONY_Y = 1150;
+	static final int BALCONY_OUTER = 40;
 
 	@Override
 	public String id() {
@@ -87,7 +87,7 @@ public final class CoreSpire implements MegaStructure {
 				MegaBlocks.set(data, baseX, baseZ, x, y, z, core);
 				continue;
 			}
-			if (radius > 16.0 && radius <= RADIUS) {
+			if (radius > RADIUS - 2.0 && radius <= RADIUS) {
 				boolean band = Math.floorMod(y - Y_MIN, 24) < 2;
 				Material shell = rib
 					? Material.DEEPSLATE_TILES
@@ -96,7 +96,7 @@ public final class CoreSpire implements MegaStructure {
 			}
 		}
 		// 塔基四条巨大的扶壁
-		if (radius > RADIUS && radius <= 34.0 && MegaBlocks.nearMultiple(
+		if (radius > RADIUS && radius <= BALCONY_OUTER + 4.0 && MegaBlocks.nearMultiple(
 			Math.toDegrees(Math.atan2(z, x)), 90.0, 3.0
 		)) {
 			for (int y = Y_MIN; y <= Y_MIN + 36; y++) {
@@ -143,8 +143,8 @@ public final class CoreSpire implements MegaStructure {
 	@Override
 	public List<MegaCheck> checks() {
 		return List.of(
-			new MegaCheck("尖塔外壳", RADIUS, 203, 0, Material.DEEPSLATE_TILES),
-			new MegaCheck("尖塔能量核心", 0, 203, 0, Material.SEA_LANTERN),
+			new MegaCheck("尖塔外壳", RADIUS, 1000, 0, Material.DEEPSLATE_TILES),
+			new MegaCheck("尖塔能量核心", 0, 1003, 0, Material.SEA_LANTERN),
 			new MegaCheck("尖塔观景台", 0, BALCONY_Y, 25, Material.POLISHED_DEEPSLATE),
 			new MegaCheck("尖塔顶冠", 0, Y_MAX + 13, 0, Material.DIAMOND_BLOCK)
 		);

@@ -6,17 +6,19 @@ import org.bukkit.generator.ChunkGenerator;
 import java.util.List;
 
 /**
- * 星际之门：立在 (0, 175, -800) 的巨大圆环，环半径 100、管径 14，
+ * 星际之门：立在 (0, 800, -1600) 的巨大圆环，环半径 220、管径 24，
  * 外层是带灯带的抛光黑石，中层是铜，内层是发光核心；
- * 环内还有两道细能量环，正下方是一座 61×61 的启航平台。
+ * 环内还有两道细能量环，正下方是一座 81×81 的启航平台。
  */
 public final class StarGate implements MegaStructure {
 	static final int CENTER_X = 0;
-	static final int CENTER_Y = 175;
-	static final int CENTER_Z = -800;
-	static final int RADIUS = 100;
-	private static final int TUBE_RADIUS = 7;
-	private static final int PLATFORM_HALF = 30;
+	static final int CENTER_Y = 800;
+	static final int CENTER_Z = -1600;
+	static final int RADIUS = 220;
+	private static final int TUBE_RADIUS = 12;
+	private static final double OUTER_SHELL = (TUBE_RADIUS - 2.0) * (TUBE_RADIUS - 2.0);
+	private static final double MIDDLE_SHELL = (TUBE_RADIUS - 4.0) * (TUBE_RADIUS - 4.0);
+	private static final int PLATFORM_HALF = 40;
 	private static final int PLATFORM_Y = 60;
 
 	@Override
@@ -81,13 +83,13 @@ public final class StarGate implements MegaStructure {
 			double radial = Math.hypot(x, dy);
 			double delta = radial - RADIUS;
 			double distanceSquared = delta * delta + dz * dz;
-			if (distanceSquared <= TUBE_RADIUS * TUBE_RADIUS) {
+			if (distanceSquared <= (double) TUBE_RADIUS * TUBE_RADIUS) {
 				Material material;
-				if (distanceSquared >= 40.0) {
+				if (distanceSquared >= OUTER_SHELL) {
 					material = MegaBlocks.nearMultiple(Math.toDegrees(Math.atan2(dy, x)), 10.0, 1.3)
 						? Material.SEA_LANTERN
 						: Material.POLISHED_BLACKSTONE;
-				} else if (distanceSquared >= 24.0) {
+				} else if (distanceSquared >= MIDDLE_SHELL) {
 					material = Material.WAXED_COPPER_BLOCK;
 				} else {
 					material = Material.GLOWSTONE;
@@ -95,9 +97,9 @@ public final class StarGate implements MegaStructure {
 				MegaBlocks.set(data, baseX, baseZ, x, y, z, material);
 				continue;
 			}
-			if (plane && Math.abs(radial - 60.0) <= 0.7) {
+			if (plane && Math.abs(radial - 130.0) <= 0.7) {
 				MegaBlocks.set(data, baseX, baseZ, x, y, z, Material.SEA_LANTERN);
-			} else if (plane && Math.abs(radial - 80.0) <= 0.7) {
+			} else if (plane && Math.abs(radial - 175.0) <= 0.7) {
 				MegaBlocks.set(data, baseX, baseZ, x, y, z, Material.AMETHYST_BLOCK);
 			}
 		}
@@ -106,9 +108,9 @@ public final class StarGate implements MegaStructure {
 	@Override
 	public List<MegaCheck> checks() {
 		return List.of(
-			new MegaCheck("星际之门能量环", 0, 275, CENTER_Z, Material.GLOWSTONE),
-			new MegaCheck("星际之门外壳", 100, 175, CENTER_Z - 6, Material.WAXED_COPPER_BLOCK),
-			new MegaCheck("星际之门内环", 0, 235, CENTER_Z, Material.SEA_LANTERN),
+			new MegaCheck("星际之门能量环", 0, CENTER_Y + RADIUS, CENTER_Z, Material.GLOWSTONE),
+			new MegaCheck("星际之门外壳", RADIUS, CENTER_Y, CENTER_Z - 9, Material.WAXED_COPPER_BLOCK),
+			new MegaCheck("星际之门内环", 0, CENTER_Y - 130, CENTER_Z, Material.SEA_LANTERN),
 			new MegaCheck("星际之门平台", 10, PLATFORM_Y, CENTER_Z - 10, Material.SMOOTH_STONE)
 		);
 	}

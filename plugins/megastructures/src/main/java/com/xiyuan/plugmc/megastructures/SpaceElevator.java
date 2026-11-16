@@ -6,20 +6,20 @@ import org.bukkit.generator.ChunkGenerator;
 import java.util.List;
 
 /**
- * 太空电梯：位于 (800, 0) 的 11×11 玻璃井道，从 Y=61 一直升到 Y=299，
- * 内部是发光能量柱，每 48 格一层悬挑平台；底部是 41×41 基座，
+ * 太空电梯：位于 (1600, 0) 的 11×11 玻璃井道，从 Y=61 一直升到 Y=1400，
+ * 内部是发光能量柱，每 160 格一层悬挑平台；底部是 41×41 基座，
  * 顶端是 31×31 平台与钻石晶体。
  */
 public final class SpaceElevator implements MegaStructure {
-	static final int CENTER_X = 800;
+	static final int CENTER_X = 1600;
 	static final int CENTER_Z = 0;
 	static final int BASE_Y = 60;
-	static final int SHAFT_TOP = 299;
+	static final int SHAFT_TOP = 1400;
 	private static final int BASE_HALF = 20;
 	private static final int SHAFT_HALF = 5;
 	private static final int DECK_HALF = 8;
 	private static final int TOP_HALF = 15;
-	private static final int[] DECK_LEVELS = {108, 156, 204, 252};
+	private static final int[] DECK_LEVELS = {220, 380, 540, 700, 860, 1020, 1180, 1340};
 
 	@Override
 	public String id() {
@@ -145,10 +145,10 @@ public final class SpaceElevator implements MegaStructure {
 	@Override
 	public List<MegaCheck> checks() {
 		return List.of(
-			new MegaCheck("太空电梯基座", 818, BASE_Y, 18, Material.SMOOTH_STONE),
-			new MegaCheck("太空电梯井壁", 805, 100, 0, Material.GLASS),
-			new MegaCheck("太空电梯顶端平台", 800, SHAFT_TOP + 1, 12, Material.POLISHED_BLACKSTONE),
-			new MegaCheck("太空电梯晶体", 800, SHAFT_TOP + 6, 0, Material.DIAMOND_BLOCK)
+			new MegaCheck("太空电梯基座", 1618, BASE_Y, 18, Material.SMOOTH_STONE),
+			new MegaCheck("太空电梯井壁", 1605, 100, 0, Material.GLASS),
+			new MegaCheck("太空电梯顶端平台", 1600, SHAFT_TOP + 1, 12, Material.POLISHED_BLACKSTONE),
+			new MegaCheck("太空电梯晶体", 1600, SHAFT_TOP + 6, 0, Material.DIAMOND_BLOCK)
 		);
 	}
 }

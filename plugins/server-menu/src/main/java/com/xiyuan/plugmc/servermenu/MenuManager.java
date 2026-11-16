@@ -27,8 +27,8 @@ import java.util.Set;
 public final class MenuManager {
 	private static final Set<String> ACTIONS = Set.of(
 		"balance", "toggle_hud", "message", "player_command", "console_command", "plugin_list",
-		"economy_admin", "hub_panel", "cosmetic_panel", "prompt_command", "daily", "vault_panel",
-		"train_panel", "none", "close"
+		"economy_admin", "hub_panel", "mega_panel", "cosmetic_panel", "prompt_command", "daily",
+		"vault_panel", "train_panel", "none", "close"
 	);
 	private static final int PLUGIN_PAGE_CAPACITY = 45;
 	private static final int CONFIG_VERSION = 15;
@@ -139,6 +139,7 @@ public final class MenuManager {
 		ensureCosmeticButton(defaults);
 		ensureVaultButton(defaults);
 		ensureTrainButton(defaults);
+		ensureMegaButton(defaults);
 		migrateConfigVersion(defaults);
 		plugin.saveConfig();
 	}
@@ -291,6 +292,63 @@ public final class MenuManager {
 		}
 		plugin.getConfig().set("menu.items." + slot, defaultEntry.getValue().getValues(false));
 		plugin.getLogger().info("已将「我的列车」按钮合并到菜单位置 " + slot);
+	}
+
+	/**
+	 * 把「星际巨构」按钮增量合并进已有配置；策略与另外几个 ensure* 相同，绝不重置 menu.items。
+	 */
+	private void ensureMegaButton(YamlConfiguration defaults) {
+		ConfigurationSection configuredButtons = plugin.getConfig().getConfigurationSection("menu.items");
+		if (configuredButtons == null) {
+			return;
+		}
+		boolean hasMega = configuredButtons.getKeys(false).stream()
+			.anyMatch(key -> "mega_panel".equalsIgnoreCase(
+				plugin.getConfig().getString("menu.items." + key + ".action", "")
+			));
+		if (hasMega) {
+			return;
+		}
+		ConfigurationSection defaultButtons = defaults.getConfigurationSection("menu.items");
+		if (defaultButtons == null) {
+			return;
+		}
+		Map.Entry<String, ConfigurationSection> defaultEntry = defaultButtons.getKeys(false).stream()
+			.map(key -> Map.entry(key, defaultButtons.getConfigurationSection(key)))
+			.filter(entry -> entry.getValue() != null
+				&& "mega_panel".equalsIgnoreCase(entry.getValue().getString("action", "")))
+			.findFirst()
+			.orElse(null);
+		if (defaultEntry == null) {
+			return;
+		}
+
+		int rows = plugin.getConfig().getInt("menu.rows", 3);
+		int slot = -1;
+		int defaultSlot = Integer.parseInt(defaultEntry.getKey());
+		if (!configuredButtons.getKeys(false).contains(Integer.toString(defaultSlot)) && defaultSlot < rows * 9) {
+			slot = defaultSlot;
+		}
+		for (int candidate = 0; candidate < rows * 9; candidate++) {
+			if (slot >= 0) {
+				break;
+			}
+			if (configuredButtons.getConfigurationSection(Integer.toString(candidate)) == null) {
+				slot = candidate;
+				break;
+			}
+		}
+		if (slot < 0 && rows < 6) {
+			slot = rows * 9;
+			plugin.getConfig().set("menu.rows", rows + 1);
+		}
+		if (slot < 0) {
+			plugin.getLogger().warning("菜单已满，未能自动加入「星际巨构」按钮；请手动在 menu.items 留出空位");
+			return;
+		}
+
+		plugin.getConfig().set("menu.items." + slot, defaultEntry.getValue().getValues(false));
+		plugin.getLogger().info("已将「星际巨构」按钮合并到菜单位置 " + slot);
 	}
 
 	private void ensureCosmeticButton(YamlConfiguration defaults) {
@@ -639,6 +697,21 @@ public final class MenuManager {
 			}
 			return;
 		}
+		if (holder.getPage() == MenuHolder.Page.MEGA) {
+			switch (slot) {
+				case 20 -> runMegaCommand(player, "mega tp ring");
+				case 22 -> runMegaCommand(player, "mega tp spire");
+				case 24 -> runMegaCommand(player, "mega tp dyson");
+				case 29 -> runMegaCommand(player, "mega tp elevator");
+				case 31 -> runMegaCommand(player, "mega tp top");
+				case 33 -> runMegaCommand(player, "mega tp gate");
+				case 45 -> open(player);
+				case 49 -> player.closeInventory();
+				default -> {
+				}
+			}
+			return;
+		}
 		if (holder.getPage() == MenuHolder.Page.COSMETIC) {
 			switch (slot) {
 				case 45 -> open(player);
@@ -730,6 +803,7 @@ public final class MenuManager {
 			case "plugin_list" -> openPluginList(player, 0);
 			case "economy_admin" -> openAdminPanel(player);
 			case "hub_panel" -> openHubPanel(player);
+			case "mega_panel" -> openMegaPanel(player);
 			case "cosmetic_panel" -> openCosmeticPanel(player);
 			case "vault_panel" -> openVaultPanel(player);
 			case "train_panel" -> openTrainPanel(player);
@@ -830,6 +904,70 @@ public final class MenuManager {
 		} else {
 			holder.setButtonItem(31, navigationItem(Material.GRAY_DYE, "&8管理员工具已隐藏"));
 		}
+		holder.setButtonItem(45, navigationItem(Material.ARROW, "&e返回菜单"));
+		holder.setButtonItem(49, navigationItem(Material.BARRIER, "&c关闭"));
+		player.openInventory(holder.getInventory());
+	}
+
+	private void runMegaCommand(Player player, String command) {
+		player.closeInventory();
+		player.performCommand(command);
+	}
+
+	/**
+	 * 星际巨构子页：六个观景传送点与景观介绍，点击后执行 /mega tp。
+	 */
+	public void openMegaPanel(Player player) {
+		MenuHolder holder = new MenuHolder(54, "&8星际巨构", Map.of(), MenuHolder.Page.MEGA, 0);
+		if (filler != null) {
+			for (int slot = 0; slot < 54; slot++) {
+				holder.setButtonItem(slot, filler.clone());
+			}
+		}
+		boolean installed = plugin.getServer().getPluginManager().isPluginEnabled("megastructures");
+		if (!installed) {
+			holder.setButtonItem(22, navigationItem(Material.BARRIER, "&c星际巨构暂时不可用"));
+			holder.setButtonItem(45, navigationItem(Material.ARROW, "&e返回菜单"));
+			holder.setButtonItem(49, navigationItem(Material.BARRIER, "&c关闭"));
+			player.openInventory(holder.getInventory());
+			return;
+		}
+
+		holder.setButtonItem(4, adminItem(Material.NETHER_STAR, "&6星际巨构", List.of(
+			"&7独立 mega 维度，2048 格高度",
+			"&7轨道环 / 核心尖塔 / 戴森球 / 太空电梯 / 星际之门",
+			"&8右键观景台旁的悬浮图标也可以打开传送列表"
+		)));
+		holder.setButtonItem(20, adminItem(Material.END_CRYSTAL, "&6轨道环（出生点）", List.of(
+			"&7半径 380 的环形天桥",
+			"&7出生点就在环上，抬头能看到核心尖塔",
+			"&e点击传送"
+		)));
+		holder.setButtonItem(22, adminItem(Material.AMETHYST_BLOCK, "&d核心尖塔观景台", List.of(
+			"&7Y=1150 的悬空观景台",
+			"&7玻璃塔身里贯穿发光能量核心",
+			"&e点击传送"
+		)));
+		holder.setButtonItem(24, adminItem(Material.GLOWSTONE, "&e戴森球观景台", List.of(
+			"&7半径 180 的空心戴森球",
+			"&7栈桥穿过入口直达内部悬浮恒星",
+			"&e点击传送"
+		)));
+		holder.setButtonItem(29, adminItem(Material.IRON_BLOCK, "&f太空电梯基座", List.of(
+			"&741×41 的启航平台",
+			"&7玻璃井道一路升到 Y=1400",
+			"&e点击传送"
+		)));
+		holder.setButtonItem(31, adminItem(Material.DIAMOND_BLOCK, "&b太空电梯顶端", List.of(
+			"&7Y=1402 的云端平台",
+			"&7脚下的巨构群一览无余",
+			"&e点击传送"
+		)));
+		holder.setButtonItem(33, adminItem(Material.NETHER_STAR, "&5星际之门", List.of(
+			"&7半径 220 的竖立巨环",
+			"&7环内有两道能量环与 81×81 启航平台",
+			"&e点击传送"
+		)));
 		holder.setButtonItem(45, navigationItem(Material.ARROW, "&e返回菜单"));
 		holder.setButtonItem(49, navigationItem(Material.BARRIER, "&c关闭"));
 		player.openInventory(holder.getInventory());

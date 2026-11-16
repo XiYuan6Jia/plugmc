@@ -135,6 +135,14 @@ menu:
       action: player_command
       value: "ride"
       permission: ride.use
+    "45":
+      material: END_CRYSTAL
+      name: "&6星际巨构"
+      lore:
+        - "&7独立 mega 维度里的超级巨构"
+        - "&7轨道环 / 核心尖塔 / 戴森球 / 太空电梯 / 星际之门"
+        - "&8点击打开观景传送列表"
+      action: mega_panel
 
     # 第三区：社交与信息
     "36":

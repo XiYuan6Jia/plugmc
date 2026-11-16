@@ -6,17 +6,17 @@ import org.bukkit.generator.ChunkGenerator;
 import java.util.List;
 
 /**
- * 轨道环：半径 240 的环形天桥，宽 15 格，四层结构，外圈/内圈有玻璃栏杆，
- * 底部每隔 45° 有一根 9×9 的支撑柱垂向虚空。
+ * 轨道环：半径 380 的环形天桥，宽 19 格，四层结构，外圈/内圈有玻璃栏杆，
+ * 底部每隔 45° 有一根 9×9 的支撑柱一直垂到 Y=-400 的虚空。
  */
 public final class OrbitalRing implements MegaStructure {
-	static final int RADIUS = 240;
-	static final int HALF_WIDTH = 7;
-	static final int BOTTOM_Y = 168;
-	static final int TOP_Y = 171;
-	static final int RAIL_Y = 172;
+	static final int RADIUS = 380;
+	static final int HALF_WIDTH = 9;
+	static final int BOTTOM_Y = 416;
+	static final int TOP_Y = 419;
+	static final int RAIL_Y = 420;
 	private static final int PYLON_HALF = 4;
-	private static final int PYLON_MIN_Y = 60;
+	private static final int PYLON_MIN_Y = -400;
 
 	@Override
 	public String id() {

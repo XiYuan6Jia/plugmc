@@ -7,7 +7,7 @@ description: "星际巨构：独立虚空维度里的轨道环、核心尖塔、
 commands:
   mega:
     description: "进入星际巨构维度或在巨构之间传送"
-    usage: /mega [list|tp <id>|back|info|check|reload]
+    usage: /mega [menu|list|tp <id>|back|info|check|reload]
     aliases: [megastructure, structures]
 permissions:
   mega.use:

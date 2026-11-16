@@ -45,6 +45,19 @@ final class MegaGeneratorTest {
 	}
 
 	@Test
+	void viewpointInteractionsStandOnSolidGround() {
+		for (MegaViewpoint viewpoint : MegaStructures.viewpoints()) {
+			int x = (int) Math.floor(viewpoint.interactX());
+			int y = (int) Math.floor(viewpoint.interactY());
+			int z = (int) Math.floor(viewpoint.interactZ());
+			RecordingChunkData data = generate(x, z);
+			assertNotEquals(Material.AIR, data.typeAt(x, y - 1, z), viewpoint.label() + " 交互实体脚下是空气");
+			assertEquals(Material.AIR, data.typeAt(x, y, z), viewpoint.label() + " 交互实体被方块占用");
+			assertEquals(Material.AIR, data.typeAt(x, y + 1, z), viewpoint.label() + " 交互实体头顶被方块占用");
+		}
+	}
+
+	@Test
 	void emptyVoidFarAwayFromStructures() {
 		RecordingChunkData data = generate(1600, 1600);
 		assertTrue(data.isEmpty(), "远处的区块不应该有任何方块");
@@ -82,12 +95,12 @@ final class MegaGeneratorTest {
 
 		@Override
 		public int getMinHeight() {
-			return -64;
+			return -512;
 		}
 
 		@Override
 		public int getMaxHeight() {
-			return 320;
+			return 1536;
 		}
 
 		@Override

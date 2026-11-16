@@ -15,15 +15,18 @@ public final class MegaPlugin extends JavaPlugin {
 	private MegaReturns returns;
 	private MegaManager manager;
 	private MegaComfort comfort;
+	private MegaInteractions interactions;
 
 	@Override
 	public void onEnable() {
 		saveDefaultConfig();
+		migrateConfig();
 		reloadSettings();
 
 		megaWorld = new MegaWorld(this);
 		if (!megaWorld.load(settings)) {
-			getLogger().log(Level.SEVERE, "巨构维度 " + settings.worldName() + " 创建失败，插件将被禁用");
+			getLogger().log(Level.SEVERE, "巨构维度 " + settings.worldKey()
+				+ " 不可用；请确认 datapacks/plugmc-mega 已安装并启用，插件将被禁用");
 			getServer().getPluginManager().disablePlugin(this);
 			return;
 		}
@@ -32,7 +35,9 @@ public final class MegaPlugin extends JavaPlugin {
 		returns.load();
 		manager = new MegaManager(this, returns);
 		comfort = new MegaComfort(this);
+		interactions = new MegaInteractions(this);
 		getServer().getPluginManager().registerEvents(new MegaListener(this), this);
+		getServer().getScheduler().runTask(this, interactions::ensureAllLoaded);
 
 		PluginCommand command = getCommand("mega");
 		if (command != null) {
@@ -43,7 +48,7 @@ public final class MegaPlugin extends JavaPlugin {
 			getLogger().warning("命令 mega 未在 plugin.yml 中注册");
 		}
 
-		getLogger().info("星际巨构 已启用（维度 " + settings.worldName()
+		getLogger().info("星际巨构 已启用（维度 " + settings.worldKey()
 			+ "，观景点 " + MegaStructures.viewpoints().size() + " 个）");
 	}
 
@@ -57,6 +62,27 @@ public final class MegaPlugin extends JavaPlugin {
 
 	public void reloadSettings() {
 		this.settings = MegaConfig.load(getConfig());
+	}
+
+	/**
+	 * 旧版配置只有 world.name，没有数据包维度键；出生点也是 384 格版本的位置。
+	 * 发现旧配置时把维度键、出生点与边界迁到新高度版本，其他保护设置原样保留。
+	 */
+	private void migrateConfig() {
+		if (getConfig().getInt("config-version", 1) >= 2) {
+			return;
+		}
+		getConfig().set("world.key", MegaConfig.DEFAULT_WORLD_KEY);
+		getConfig().set("world.border-size", 3000);
+		getConfig().set("world.spawn.x", 0.5);
+		getConfig().set("world.spawn.y", 420.0);
+		getConfig().set("world.spawn.z", 380.5);
+		getConfig().set("world.spawn.yaw", 180.0);
+		getConfig().set("world.spawn.pitch", -8.0);
+		getConfig().set("protect.void-y", -460);
+		getConfig().set("config-version", 2);
+		saveConfig();
+		getLogger().info("已把旧版巨构配置迁移到 2048 格高度版本");
 	}
 
 	public MegaConfig settings() {
@@ -73,5 +99,9 @@ public final class MegaPlugin extends JavaPlugin {
 
 	public MegaComfort comfort() {
 		return comfort;
+	}
+
+	public MegaInteractions interactions() {
+		return interactions;
 	}
 }

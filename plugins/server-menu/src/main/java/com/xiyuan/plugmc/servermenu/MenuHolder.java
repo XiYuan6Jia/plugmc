@@ -13,6 +13,7 @@ public final class MenuHolder implements InventoryHolder {
 		PLUGINS,
 		ADMIN,
 		HUB,
+		MEGA,
 		COSMETIC,
 		VAULT,
 		/** 列车列表（{@code subject} 为空）与单条列车配置（{@code subject} 为列车名）。 */

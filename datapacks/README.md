@@ -20,6 +20,11 @@ python scripts/run_paper.py           # Paper 开发服：启动前自动把数�
 .\gradlew :dev:runServer              # Fabric 开发服，启动前自动执行 syncToRun
 ```
 
+## 内置数据包
+
+- `plugmc-mega`：定义 `plugmc:mega` 自定义维度类型（`min_y=-512`、`height=2048`）与空层
+  `minecraft:flat` 维度，供 `plugins/megastructures` 的星际巨构使用；修改后需部署并重启服务端。
+
 ## 约定
 
 - 目录名即命名空间（`data/<id>/...`），只能包含小写字母、数字、`-`、`_`、`.`。

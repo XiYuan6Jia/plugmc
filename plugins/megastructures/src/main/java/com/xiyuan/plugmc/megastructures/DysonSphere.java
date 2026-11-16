@@ -6,25 +6,25 @@ import org.bukkit.generator.ChunkGenerator;
 import java.util.List;
 
 /**
- * 戴森球：位于 (-800, 180, 0) 的半径 80 格空心球壳，铜制肋条 + 染色玻璃，
- * 内部悬浮一颗发光恒星与一圈能量环；东侧开有半径 19 的入口，
+ * 戴森球：位于 (-1600, 700, 0) 的半径 180 格空心球壳，铜制肋条 + 染色玻璃，
+ * 内部悬浮一颗发光恒星与一圈能量环；东侧开有半径 40 的入口，
  * 外接一条栈桥与观景平台。
  */
 public final class DysonSphere implements MegaStructure {
-	static final int CENTER_X = -800;
-	static final int CENTER_Y = 180;
+	static final int CENTER_X = -1600;
+	static final int CENTER_Y = 700;
 	static final int CENTER_Z = 0;
-	static final int RADIUS = 80;
-	private static final double INNER = 78.0;
-	private static final double OUTER = 81.0;
-	private static final double OPENING = 19.0;
-	private static final double RIM = 22.0;
-	private static final int STAR_RADIUS = 12;
-	private static final int DECK_Y = 179;
-	private static final int DECK_MIN_X = -681;
-	private static final int DECK_MAX_X = -661;
+	static final int RADIUS = 180;
+	private static final double INNER = 178.0;
+	private static final double OUTER = 181.0;
+	private static final double OPENING = 40.0;
+	private static final double RIM = 48.0;
+	private static final int STAR_RADIUS = 24;
+	private static final int DECK_Y = 699;
+	private static final int DECK_MIN_X = -1381;
+	private static final int DECK_MAX_X = -1361;
 	private static final int DECK_Z = 10;
-	private static final int BRIDGE_END_X = -720;
+	private static final int BRIDGE_END_X = -1420;
 	private static final int BRIDGE_HALF_Z = 6;
 
 	@Override
@@ -90,8 +90,8 @@ public final class DysonSphere implements MegaStructure {
 			if (Math.abs(z) == BRIDGE_HALF_Z) {
 				MegaBlocks.set(data, baseX, baseZ, x, DECK_Y + 1, z, Material.TINTED_GLASS);
 			}
-			if ((x == -716 || x == -704 || x == -692) && Math.abs(z) == BRIDGE_HALF_Z) {
-				for (int y = DECK_Y - 20; y < DECK_Y; y++) {
+			if ((x == -1416 || x == -1404 || x == -1392) && Math.abs(z) == BRIDGE_HALF_Z) {
+				for (int y = DECK_Y - 30; y < DECK_Y; y++) {
 					MegaBlocks.set(data, baseX, baseZ, x, y, z, Material.WAXED_COPPER_BLOCK);
 				}
 			}
@@ -108,11 +108,11 @@ public final class DysonSphere implements MegaStructure {
 			if (distanceSquared >= INNER * INNER && distanceSquared <= OUTER * OUTER) {
 				buildShellBlock(data, baseX, baseZ, x, y, z, dx, dy, dz, distanceSquared);
 			} else if (distanceSquared <= (double) STAR_RADIUS * STAR_RADIUS) {
-				Material star = Math.floorMod(x + y + z, 9) == 0
+				Material star = Math.floorMod(x + y + z, 7) == 0
 					? Material.MAGMA_BLOCK
 					: Material.GLOWSTONE;
 				MegaBlocks.set(data, baseX, baseZ, x, y, z, star);
-			} else if (Math.abs(dy) <= 1.0 && Math.abs(planar - 34.0) <= 1.0) {
+			} else if (Math.abs(dy) <= 1.0 && Math.abs(planar - 70.0) <= 1.0) {
 				MegaBlocks.set(data, baseX, baseZ, x, y, z, Material.SEA_LANTERN);
 			}
 		}
@@ -153,8 +153,8 @@ public final class DysonSphere implements MegaStructure {
 			new MegaCheck("戴森球能量核心", CENTER_X, CENTER_Y, CENTER_Z, Material.GLOWSTONE),
 			new MegaCheck("戴森球外壳", CENTER_X, CENTER_Y, CENTER_Z + RADIUS, Material.WAXED_COPPER_BLOCK),
 			new MegaCheck("戴森球入口", CENTER_X + RADIUS, CENTER_Y, CENTER_Z, Material.AIR),
-			new MegaCheck("戴森球栈桥", -700, DECK_Y, 0, Material.SMOOTH_QUARTZ),
-			new MegaCheck("戴森球观景台", -671, DECK_Y, 0, Material.SMOOTH_QUARTZ)
+			new MegaCheck("戴森球栈桥", -1400, DECK_Y, 0, Material.SMOOTH_QUARTZ),
+			new MegaCheck("戴森球观景台", -1371, DECK_Y, 0, Material.SMOOTH_QUARTZ)
 		);
 	}
 }

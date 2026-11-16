@@ -3,6 +3,7 @@ package com.xiyuan.plugmc.megastructures;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.event.HoverEvent;
+import net.kyori.adventure.title.Title;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -46,8 +47,13 @@ public final class MegaManager {
 		plugin.getServer().getScheduler().runTask(plugin, () -> {
 			if (player.isOnline()) {
 				plugin.comfort().sync(player);
+				plugin.interactions().ensureViewpoint(viewpoint);
 			}
 		});
+		player.showTitle(Title.title(
+			MegaText.component("&6" + viewpoint.label()),
+			MegaText.component("&7" + viewpoint.description())
+		));
 		player.sendMessage(MegaText.component("&a已抵达 &6" + viewpoint.label() + "&a。")
 			.append(Component.text(" "))
 			.append(MegaText.component("&e[返回原位置]")

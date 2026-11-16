@@ -21,6 +21,9 @@
   大厅北侧三个实体摊位右键柜台即可开局，详见 [minigames/README.md](minigames/README.md)。
 - `economy/`：复式记账经济系统，支持余额查询、转账、管理员管理、系统商店 GUI、建材银行、玩家市场、收购订单、邮箱、商品每日限额、账本自检与备份，并保留可供其他插件调用的 `EconomyService` API，详见 [economy/README.md](economy/README.md)。
 - `server-menu/`：测试服功能菜单，支持 `Shift+F` 打开、右侧金币 HUD、已启用插件目录及可配置菜单操作，详见 [server-menu/README.md](server-menu/README.md)。
+- `megastructures/`：星际巨构，数据包 `plugmc:mega` 提供 2048 格高度（Y -512 ~ 1535）的虚空维度，
+  程序生成轨道环、核心尖塔、戴森球、太空电梯与星际之门；观景台有实体交互点，右键打开带景观名称的
+  传送列表，`/mega` 进入、`/mega menu` 列表，详见 [megastructures/README.md](megastructures/README.md)。
 - `llm-chat/`：聊天栏常驻大模型 NPC，`@npc <内容>` 触发对话、进服欢迎、按概率吐槽；
   由 `hotplugins/llm-chat` 移植，配置字段兼容，详见 [llm-chat/README.md](llm-chat/README.md)。
 

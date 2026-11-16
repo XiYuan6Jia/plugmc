@@ -17,7 +17,7 @@ import java.util.Locale;
 /** /mega [list|tp <id>|back|info|check|reload] */
 public final class MegaCommand implements CommandExecutor, TabCompleter {
 	private static final List<String> SUBCOMMANDS = List.of(
-		"list", "tp", "back", "info", "check", "reload"
+		"menu", "list", "tp", "back", "info", "check", "reload"
 	);
 
 	private final MegaPlugin plugin;
@@ -38,6 +38,12 @@ public final class MegaCommand implements CommandExecutor, TabCompleter {
 
 		String action = args[0].toLowerCase(Locale.ROOT);
 		switch (action) {
+			case "menu" -> {
+				Player player = requirePlayer(sender);
+				if (player != null) {
+					MegaTeleportMenu.open(player);
+				}
+			}
 			case "list" -> list(sender);
 			case "tp" -> {
 				if (args.length < 2) {
@@ -81,7 +87,8 @@ public final class MegaCommand implements CommandExecutor, TabCompleter {
 				+ " &7(" + (int) viewpoint.x() + ", " + (int) viewpoint.y() + ", " + (int) viewpoint.z() + ") ")
 				.append(MegaText.component("&e[传送]")
 					.clickEvent(click)
-					.hoverEvent(HoverEvent.showText(MegaText.component("&7/mega tp " + viewpoint.id())))));
+					.hoverEvent(HoverEvent.showText(MegaText.component("&7" + viewpoint.description())))));
+			sender.sendMessage(MegaText.component("  &8" + viewpoint.description()));
 		}
 		sender.sendMessage(MegaText.component("&7巨构：轨道环、核心尖塔、戴森球、太空电梯、星际之门"));
 	}
@@ -99,6 +106,9 @@ public final class MegaCommand implements CommandExecutor, TabCompleter {
 			+ String.format("%.1f, %.1f, %.1f", config.spawnX(), config.spawnY(), config.spawnZ())
 			+ " &7在线玩家：&f" + world.getPlayers().size()
 			+ " &7世界边界：&f" + (int) world.getWorldBorder().getSize()));
+		sender.sendMessage(MegaText.component("&7高度范围：&f" + world.getMinHeight()
+			+ " ~ " + (world.getMaxHeight() - 1)
+			+ " &7（数据包维度，共 " + world.getLogicalHeight() + " 格）"));
 		sender.sendMessage(MegaText.component("&7巨构：&f轨道环（半径 " + OrbitalRing.RADIUS
 			+ "）、核心尖塔（高 " + (CoreSpire.Y_MAX - CoreSpire.Y_MIN)
 			+ "）、戴森球（半径 " + DysonSphere.RADIUS
@@ -139,7 +149,7 @@ public final class MegaCommand implements CommandExecutor, TabCompleter {
 
 	private void usage(CommandSender sender, String label) {
 		sender.sendMessage(MegaText.component("&e用法：/" + label
-			+ " [list|tp <" + viewpointIds() + ">|back|info|check|reload]"));
+			+ " [menu|list|tp <" + viewpointIds() + ">|back|info|check|reload]"));
 	}
 
 	private String viewpointIds() {

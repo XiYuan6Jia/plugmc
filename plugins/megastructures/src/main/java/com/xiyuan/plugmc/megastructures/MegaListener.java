@@ -1,5 +1,6 @@
 package com.xiyuan.plugmc.megastructures;
 
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -9,13 +10,17 @@ import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerGameModeChangeEvent;
+import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
+import org.bukkit.event.world.ChunkLoadEvent;
 
 /** 巨构维度保护：禁建造、禁 PvP、禁刷怪、掉虚空拉回、死亡原地重生、飞行/夜视状态维护。 */
 public final class MegaListener implements Listener {
@@ -68,6 +73,10 @@ public final class MegaListener implements Listener {
 		if (!config.denyMobSpawn() || !plugin.megaWorld().isMega(event.getLocation())) {
 			return;
 		}
+		// 观景传送实体由插件以 CUSTOM 原因生成，不受禁刷怪影响
+		if (event.getSpawnReason() == CreatureSpawnEvent.SpawnReason.CUSTOM) {
+			return;
+		}
 		event.setCancelled(true);
 	}
 
@@ -81,6 +90,62 @@ public final class MegaListener implements Listener {
 			return;
 		}
 		if (plugin.megaWorld().isMega(event.getEntity().getLocation())) {
+			event.setCancelled(true);
+		}
+	}
+
+	@EventHandler
+	public void onChunkLoad(ChunkLoadEvent event) {
+		plugin.interactions().ensureChunk(event.getChunk());
+	}
+
+	@EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+	public void onInteractEntity(PlayerInteractEntityEvent event) {
+		Entity clicked = event.getRightClicked();
+		if (!plugin.interactions().isInteraction(clicked)) {
+			return;
+		}
+		event.setCancelled(true);
+		Player player = event.getPlayer();
+		if (!player.hasPermission("mega.use")) {
+			player.sendMessage(MegaText.component("&c你没有权限使用巨构传送。"));
+			return;
+		}
+		MegaTeleportMenu.open(player);
+	}
+
+	@EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+	public void onEntityDamage(EntityDamageEvent event) {
+		if (plugin.interactions().isTagged(event.getEntity())) {
+			event.setCancelled(true);
+		}
+	}
+
+	@EventHandler
+	public void onInventoryClick(InventoryClickEvent event) {
+		if (!(event.getView().getTopInventory().getHolder(false) instanceof MegaTeleportMenu menu)) {
+			return;
+		}
+		event.setCancelled(true);
+		if (!(event.getWhoClicked() instanceof Player player)
+			|| event.getRawSlot() < 0
+			|| event.getRawSlot() >= menu.getInventory().getSize()) {
+			return;
+		}
+		if (event.getRawSlot() == MegaTeleportMenu.CLOSE_SLOT) {
+			player.closeInventory();
+			return;
+		}
+		MegaViewpoint viewpoint = menu.viewpointAt(event.getRawSlot());
+		if (viewpoint != null) {
+			player.closeInventory();
+			plugin.manager().enter(player, viewpoint);
+		}
+	}
+
+	@EventHandler
+	public void onInventoryDrag(InventoryDragEvent event) {
+		if (event.getView().getTopInventory().getHolder(false) instanceof MegaTeleportMenu) {
 			event.setCancelled(true);
 		}
 	}
@@ -128,6 +193,7 @@ public final class MegaListener implements Listener {
 		plugin.getServer().getScheduler().runTask(plugin, () -> {
 			if (player.isOnline()) {
 				plugin.comfort().sync(player);
+				plugin.interactions().ensureAllLoaded();
 			}
 		});
 	}
@@ -157,6 +223,7 @@ public final class MegaListener implements Listener {
 			}
 			if (plugin.megaWorld().isMega(player.getLocation())) {
 				plugin.comfort().sync(player);
+				plugin.interactions().ensureAllLoaded();
 			} else if (plugin.settings().joinAuto()) {
 				plugin.manager().enter(player, "ring");
 			}

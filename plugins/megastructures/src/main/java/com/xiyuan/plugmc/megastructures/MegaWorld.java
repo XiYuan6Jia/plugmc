@@ -1,16 +1,17 @@
 package com.xiyuan.plugmc.megastructures;
 
 import org.bukkit.Bukkit;
+import org.bukkit.Chunk;
 import org.bukkit.Difficulty;
 import org.bukkit.GameRules;
 import org.bukkit.Location;
+import org.bukkit.NamespacedKey;
 import org.bukkit.World;
 import org.bukkit.WorldBorder;
-import org.bukkit.WorldCreator;
-import org.bukkit.WorldType;
 
 /**
- * 巨构维度的加载与规则：虚空生成、固定午夜、无怪物、无天气、无摔落伤害。
+ * 巨构维度：由 datapacks/plugmc-mega 定义的 2048 格高度虚空维度。
+ * 数据包负责“有这个世界”，插件负责世界规则、巨构补绘与观景辅助。
  */
 public final class MegaWorld {
 	private final MegaPlugin plugin;
@@ -21,20 +22,28 @@ public final class MegaWorld {
 	}
 
 	public boolean load(MegaConfig config) {
-		World existing = Bukkit.getWorld(config.worldName());
-		if (existing == null) {
-			existing = new WorldCreator(config.worldName())
-				.generator(new MegaGenerator())
-				.environment(World.Environment.NORMAL)
-				.type(WorldType.FLAT)
-				.generateStructures(false)
-				.createWorld();
+		NamespacedKey key = NamespacedKey.fromString(config.worldKey());
+		if (key == null) {
+			plugin.getLogger().severe("无效的维度键：" + config.worldKey());
+			return false;
 		}
+		World existing = Bukkit.getWorld(key);
 		if (existing == null) {
+			plugin.getLogger().severe("找不到数据包维度 " + key
+				+ "；请先部署 datapacks/plugmc-mega 并重启服务端。");
 			return false;
 		}
 		this.world = existing;
+		if (world.getPopulators().stream().noneMatch(populator -> populator instanceof MegaPopulator)) {
+			world.getPopulators().add(0, new MegaPopulator(MegaStructures.all()));
+		}
+		// 数据包世界在插件启用前就准备好了出生区区块，这些区块没有经过 populator。
+		// 先记下当时的出生点，再把出生区完整补绘一遍。
+		Location originalSpawn = world.getSpawnLocation();
 		applyRules(config);
+		plugin.getLogger().info("已接入数据包维度 " + key + "（高度 " + world.getMinHeight()
+			+ " ~ " + (world.getMaxHeight() - 1) + "）");
+		patchSpawnArea(originalSpawn, 5);
 		return true;
 	}
 
@@ -104,5 +113,36 @@ public final class MegaWorld {
 			+ "，禁建造 " + config.denyBuild()
 			+ "，允许飞行 " + config.flight()
 			+ "，夜视 " + config.nightVision());
+	}
+
+	/**
+	 * 补绘出生区（Paper 启动时会在插件之前生成 11×11 区块）。
+	 * 这些区块可能已经从磁盘读入且没有巨构方块，强制加载后按区块重写一遍。
+	 */
+	private void patchSpawnArea(Location center, int radiusChunks) {
+		int centerX = center.getBlockX() >> 4;
+		int centerZ = center.getBlockZ() >> 4;
+		long start = System.currentTimeMillis();
+		int count = 0;
+		for (int x = centerX - radiusChunks; x <= centerX + radiusChunks; x++) {
+			for (int z = centerZ - radiusChunks; z <= centerZ + radiusChunks; z++) {
+				Chunk chunk = world.getChunkAt(x, z);
+				patchChunk(chunk);
+				count++;
+			}
+		}
+		plugin.getLogger().info("出生区巨构补绘完成：" + count + " 个区块，用时 "
+			+ (System.currentTimeMillis() - start) + " ms");
+	}
+
+	void patchChunk(Chunk chunk) {
+		int baseX = chunk.getX() << 4;
+		int baseZ = chunk.getZ() << 4;
+		WorldChunkWriter writer = new WorldChunkWriter(world, baseX, baseZ);
+		for (MegaStructure structure : MegaStructures.all()) {
+			if (structure.intersects(baseX, baseZ, baseX + 15, baseZ + 15)) {
+				structure.fill(writer, baseX, baseZ);
+			}
+		}
 	}
 }
