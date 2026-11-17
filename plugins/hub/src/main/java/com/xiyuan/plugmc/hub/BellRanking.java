@@ -51,7 +51,8 @@ import java.util.logging.Level;
  * 右边挂「每月敲钟排名」。</p>
  *
  * <p>敲钟有极低概率触发事件（概率 {@code bell.event-chance}）：
- * 总数 +5%、总数 -10%、或限时倍率加成（等级越高持续时间越短）。
+ * 计数 +1%~15%、计数 -1%~15%（幅度随机，每次三榜按各自的计数分别计算），
+ * 或限时倍率加成（等级越高持续时间越短）。
  * 倍率等级与时长从 {@code bell.multipliers} 读（倍率 → 秒）。</p>
  *
  * <p>周期结算：每周日发周榜奖金（前三名），每月 1 号发月榜奖金（前五名）。
@@ -213,13 +214,13 @@ public final class BellRanking implements Listener {
 		lastRing.put(player.getUniqueId(), now);
 		int total = increment(player);
 		int gained = 1;
-		// 倍率加成：还在生效期内就按等级加成
+		// 倍率加成：还在生效期内就按等级加成（额外次数同时计入三榜）
 		Long until = multiplierUntil.get(player.getUniqueId());
 		int level = multiplierLevel.getOrDefault(player.getUniqueId(), 1);
 		if (until != null && until > now && level > 1) {
 			gained = level;
 			for (int i = 1; i < level; i++) {
-				total = incrementTotal(player);
+				total = incrementBonus(player);
 			}
 		}
 		player.sendActionBar(HubText.component("&6敲钟 &f+" + gained + " &7（累计 &f" + total + "&7）"));
@@ -241,15 +242,38 @@ public final class BellRanking implements Listener {
 		return count;
 	}
 
-	/** 只加总数（倍率加成把额外次数补进来用）。 */
-	private int incrementTotal(Player player) {
+	/** 只额外加一次计数（倍率加成与事件用）：总/周/月三榜同时 +1。 */
+	private int incrementBonus(Player player) {
 		UUID id = player.getUniqueId();
 		Score previous = scores.get(id);
 		int count = (previous == null ? 0 : previous.count()) + 1;
 		scores.put(id, new Score(player.getName(), count));
+		weekly.merge(id, 1, Integer::sum);
+		monthly.merge(id, 1, Integer::sum);
 		saveDirty = true;
 		boardDirty = true;
+		weeklyBoardDirty = true;
+		monthlyBoardDirty = true;
 		return count;
+	}
+
+	/** 只额外减一次计数（事件用）：总/周/月三榜同时 -1。 */
+	private void decrementBonus(UUID id, String name) {
+		Score previous = scores.get(id);
+		int count = previous == null ? 0 : previous.count();
+		if (count <= 0) {
+			scores.remove(id);
+		} else if (count == 1) {
+			scores.remove(id);
+		} else {
+			scores.put(id, new Score(name, count - 1));
+		}
+		weekly.computeIfPresent(id, (key, value) -> value <= 1 ? null : value - 1);
+		monthly.computeIfPresent(id, (key, value) -> value <= 1 ? null : value - 1);
+		saveDirty = true;
+		boardDirty = true;
+		weeklyBoardDirty = true;
+		monthlyBoardDirty = true;
 	}
 
 	private boolean isWatchedBell(Block block) {
@@ -269,7 +293,8 @@ public final class BellRanking implements Listener {
 
 	/**
 	 * 敲钟后的随机事件。触发概率 {@code bell.event-chance}（0~1）。
-	 * 事件：总数 +5%、总数 -10%、限时倍率加成（等级越高持续时间越短）。
+	 * 事件：计数 +1%~15%、计数 -1%~15%（幅度随机），或限时倍率加成（等级越高持续时间越短）。
+	 * 加减的百分比对三榜各自的计数分别计算 —— 周榜多的玩家在周榜上获得的奖励也多。
 	 */
 	private void maybeFireEvent(Player player, long now) {
 		HubConfig config = plugin.settings();
@@ -280,54 +305,88 @@ public final class BellRanking implements Listener {
 		if (ThreadLocalRandom.current().nextDouble() >= chance) {
 			return;
 		}
-		// 三类事件等权：0=总数+5%，1=总数-10%，2+=倍率加成
+		// 三类事件等权：0=计数+1%~15%，1=计数-1%~15%，2+=倍率加成
 		int roll = ThreadLocalRandom.current().nextInt(3);
 		switch (roll) {
-			case 0 -> addFivePercent(player);
-			case 1 -> loseTenPercent(player);
+			case 0 -> addPercentBonus(player);
+			case 1 -> losePercentBonus(player);
 			default -> grantMultiplier(player, now);
 		}
 	}
 
-	/** 事件：敲钟总数 +5%（向上取整，至少 +1）。 */
-	private void addFivePercent(Player player) {
-		UUID id = player.getUniqueId();
-		Score current = scores.get(id);
-		int base = current == null ? 0 : current.count();
-		if (base <= 0) {
-			// 第一次敲钟就 +5% 没有意义，直接给一次保底
-			incrementTotal(player);
-			broadcastEvent(player, "&a运气不错！敲钟总数 +1");
-			return;
-		}
-		int bonus = Math.max(1, (int) Math.ceil(base * 0.05));
-		for (int i = 0; i < bonus; i++) {
-			incrementTotal(player);
-		}
-		broadcastEvent(player, "&a运气不错！" + player.getName() + " 的敲钟总数 +" + bonus
-			+ "（+5%）");
+	/** 事件幅度：1%~15% 之间的随机整数。 */
+	private static int randomPercent() {
+		return ThreadLocalRandom.current().nextInt(1, 16);
 	}
 
-	/** 事件：敲钟总数 -10%（向下取整，至少 -1，不会减成负数）。 */
-	private void loseTenPercent(Player player) {
+	/** 按百分比计算数量，至少 1。 */
+	private static int amountByPercent(int base, int percent) {
+		return Math.max(1, (int) Math.round(base * percent / 100.0));
+	}
+
+	/** 事件：计数 +1%~15%（三榜按各自计数分别计算，至少各 +1）。 */
+	private void addPercentBonus(Player player) {
 		UUID id = player.getUniqueId();
-		Score current = scores.get(id);
-		int base = current == null ? 0 : current.count();
-		if (base <= 0) {
+		int percent = randomPercent();
+		int totalBase = totalOf(id);
+		int weeklyBase = weekly.getOrDefault(id, 0);
+		int monthlyBase = monthly.getOrDefault(id, 0);
+		int totalBonus = amountByPercent(totalBase, percent);
+		int weeklyBonus = amountByPercent(weeklyBase, percent);
+		int monthlyBonus = amountByPercent(monthlyBase, percent);
+		for (int i = 0; i < totalBonus; i++) {
+			incrementBonus(player);
+		}
+		// 周/月各自按自己的基数补足到目标值（incrementBonus 已经给它们各加了 totalBonus）
+		adjustPeriod(id, weekly, weeklyBonus - totalBonus);
+		adjustPeriod(id, monthly, monthlyBonus - totalBonus);
+		broadcastEvent(player, "&a运气不错！" + player.getName() + " 的敲钟计数 +" + percent
+			+ "%（总数 +" + totalBonus + "，本周 +" + weeklyBonus + "，本月 +" + monthlyBonus + "）");
+	}
+
+	/** 事件：计数 -1%~15%（三榜按各自计数分别计算，减不到负数）。 */
+	private void losePercentBonus(Player player) {
+		UUID id = player.getUniqueId();
+		String name = nameOf(id);
+		int percent = randomPercent();
+		int totalBase = totalOf(id);
+		int weeklyBase = weekly.getOrDefault(id, 0);
+		int monthlyBase = monthly.getOrDefault(id, 0);
+		if (totalBase <= 0) {
 			return;
 		}
-		int loss = Math.max(1, (int) Math.floor(base * 0.10));
-		int removed = Math.min(loss, base);
-		int remaining = base - removed;
-		if (remaining <= 0) {
-			scores.remove(id);
+		int totalLoss = Math.min(totalBase, amountByPercent(totalBase, percent));
+		int weeklyLoss = Math.min(weeklyBase, amountByPercent(weeklyBase, percent));
+		int monthlyLoss = Math.min(monthlyBase, amountByPercent(monthlyBase, percent));
+		for (int i = 0; i < totalLoss; i++) {
+			decrementBonus(id, name);
+		}
+		adjustPeriod(id, weekly, -(weeklyLoss - totalLoss));
+		adjustPeriod(id, monthly, -(monthlyLoss - totalLoss));
+		broadcastEvent(player, "&c手滑了！" + player.getName() + " 的敲钟计数 -" + percent
+			+ "%（总数 -" + totalLoss + "，本周 -" + weeklyLoss + "，本月 -" + monthlyLoss + "）");
+	}
+
+	/** 周期计数增减指定数量（可为负），减到 0 就移除条目。 */
+	private void adjustPeriod(UUID id, Map<UUID, Integer> period, int delta) {
+		if (delta == 0) {
+			return;
+		}
+		int value = period.getOrDefault(id, 0) + delta;
+		if (value <= 0) {
+			period.remove(id);
 		} else {
-			scores.put(id, new Score(player.getName(), remaining));
+			period.put(id, value);
 		}
 		saveDirty = true;
-		boardDirty = true;
-		broadcastEvent(player, "&c手滑了！" + player.getName() + " 的敲钟总数 -" + removed
-			+ "（-10%）");
+		weeklyBoardDirty = true;
+		monthlyBoardDirty = true;
+	}
+
+	/** 该玩家在总数榜上的当前计数。 */
+	private int totalOf(UUID id) {
+		Score score = scores.get(id);
+		return score == null ? 0 : score.count();
 	}
 
 	/**
