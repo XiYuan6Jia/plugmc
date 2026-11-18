@@ -1,0 +1,10 @@
+# 山羊角宠物哨
+goathorn:
+  # 吹奏冷却（秒）：防止连点右键把动物一波波拉过来
+  cooldown-seconds: 5
+  # 单只羊角最多绑多少只动物（0 = 不限）
+  max-animals-per-horn: 0
+  # 吹奏时播放音效（原版山羊角吹奏音效之外补一声等级提升的钟声，方便确认）
+  play-sound: true
+  # 吹奏传送的粒子特效
+  particles: true

@@ -1,0 +1,18 @@
+name: goathorn
+main: com.xiyuan.plugmc.goathorn.GoatHornPlugin
+version: '${version}'
+api-version: '${api_version}'
+description: 山羊角宠物哨：把驯服的动物绑到山羊角上，吹奏就把它们传送到身边
+commands:
+  goathorn:
+    description: 山羊角宠物哨
+    usage: /goathorn [list|info|reload]
+    aliases: [yangjiao, horn]
+    permission: goathorn.use
+permissions:
+  goathorn.use:
+    description: 使用山羊角绑定与吹奏
+    default: true
+  goathorn.admin:
+    description: 管理命令（reload）
+    default: op

@@ -257,6 +257,12 @@ final class CosmeticDisplays {
 			dy -= Math.abs(pitchRad) * 0.04 * pitchComp;
 		}
 
+		// 潜行时整体下沉 0.6 格：第一人称视角里装饰模型会挡住视野（尤其头顶/肩侧），
+		// 蹲下挂机或对准方块时最明显。所有部位统一处理，绕开逐槽位调参。
+		if (player.isSneaking()) {
+			dy -= 0.6;
+		}
+
 		Location target = new Location(base.getWorld(), base.getX() + dx, base.getY() + dy, base.getZ() + dz);
 		float displayYaw = slot.orbit()
 			? (float) ((tick * slot.spinDegrees() * 0.05) % 360.0)

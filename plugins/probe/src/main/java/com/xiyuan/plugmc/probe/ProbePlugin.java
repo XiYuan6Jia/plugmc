@@ -27,7 +27,7 @@ import java.util.Locale;
 public final class ProbePlugin extends JavaPlugin implements CommandExecutor {
 	private static final String[] COMMANDS =
 		{"asplayer", "probeblock", "asclick", "openinv", "invitems", "astp", "asheal", "invclick", "asbell",
-			"assneak", "traincarts", "ashand"};
+			"assneak", "traincarts", "ashand", "asrc"};
 
 	@Override
 	public void onEnable() {
@@ -54,6 +54,7 @@ public final class ProbePlugin extends JavaPlugin implements CommandExecutor {
 			case "assneak" -> asSneak(sender, args);
 			case "traincarts" -> trainCarts(sender, args);
 			case "ashand" -> asHand(sender, args);
+			case "asrc" -> asRightClickAir(sender, args);
 			default -> asPlayer(sender, args);
 		};
 	}
@@ -449,6 +450,37 @@ public final class ProbePlugin extends JavaPlugin implements CommandExecutor {
 			+ world.getName() + " " + block.getX() + " " + block.getY() + " " + block.getZ()
 			+ "（" + block.getType().name() + "）"
 			+ (event.isCancelled() ? "（已被取消）" : "（未被取消）"));
+		return true;
+	}
+
+	/**
+	 * 合成一次「手持物品右键空气」（吹奏羊角就走这条路）。
+	 *
+	 * <p>goathorn 的吹奏监听挂在 {@code PlayerInteractEvent} 的 RIGHT_CLICK_AIR 上；
+	 * 从 RCON 没法真做右键动作，这里直接合成事件，走和真人右键一样的监听链。</p>
+	 */
+	private boolean asRightClickAir(CommandSender sender, String[] args) {
+		if (args.length < 1) {
+			sender.sendMessage("用法：/asrc <玩家>");
+			return true;
+		}
+		Player target = Bukkit.getPlayerExact(args[0]);
+		if (target == null) {
+			sender.sendMessage("玩家不在线：" + args[0]);
+			return true;
+		}
+		org.bukkit.event.player.PlayerInteractEvent event =
+			new org.bukkit.event.player.PlayerInteractEvent(
+				target,
+				org.bukkit.event.block.Action.RIGHT_CLICK_AIR,
+				target.getInventory().getItemInMainHand(),
+				null,
+				org.bukkit.block.BlockFace.SELF,
+				org.bukkit.inventory.EquipmentSlot.HAND);
+		Bukkit.getPluginManager().callEvent(event);
+		sender.sendMessage("已合成右键空气：" + target.getName()
+			+ " 主手=" + (target.getInventory().getItemInMainHand().getType().getKey().getKey())
+			+ (event.useItemInHand() == org.bukkit.event.Event.Result.DENY ? "（已被取消）" : ""));
 		return true;
 	}
 }

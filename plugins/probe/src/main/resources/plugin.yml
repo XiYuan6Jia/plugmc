@@ -52,6 +52,10 @@ commands:
     description: 看玩家主手/副手物品，可顺便把指定物品摆到主手
     usage: /ashand <玩家> [物品] [数量]
     permission: probe.admin
+  asrc:
+    description: 合成一次手持物品右键空气（验证羊角吹奏）
+    usage: /asrc <玩家>
+    permission: probe.admin
 permissions:
   probe.admin:
     description: 允许使用探针命令

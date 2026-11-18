@@ -46,9 +46,11 @@ def main() -> int:
     ap.add_argument("--port", type=int, default=25576)
     ap.add_argument("--password", default="probe123")
     ap.add_argument("--timeout", type=float, default=15.0)
+    ap.add_argument("--out", default=None, help="把完整回显写到这个文件（多页回显会被截断，用这个拿全文）")
     args = ap.parse_args()
 
     command = " ".join(args.command)
+    text = ""
     with socket.create_connection((args.host, args.port), timeout=args.timeout) as sock:
         sock.settimeout(args.timeout)
         sock.sendall(pack(1, TYPE_AUTH, args.password))
@@ -57,7 +59,11 @@ def main() -> int:
             print("RCON 鉴权失败：密码错误", file=sys.stderr)
             return 2
         sock.sendall(pack(2, TYPE_COMMAND, command))
-        print(recv_packet(sock)[2])
+        text = recv_packet(sock)[2]
+        print(text[:3000])
+    if args.out:
+        with open(args.out, "w", encoding="utf-8") as handle:
+            handle.write(text)
     return 0
 
 
