@@ -27,7 +27,7 @@ import java.util.Locale;
 public final class ProbePlugin extends JavaPlugin implements CommandExecutor {
 	private static final String[] COMMANDS =
 		{"asplayer", "probeblock", "asclick", "openinv", "invitems", "astp", "asheal", "invclick", "asbell",
-			"assneak", "traincarts", "ashand", "asrc"};
+			"assneak", "traincarts", "ashand", "asrc", "vischeck"};
 
 	@Override
 	public void onEnable() {
@@ -55,6 +55,7 @@ public final class ProbePlugin extends JavaPlugin implements CommandExecutor {
 			case "traincarts" -> trainCarts(sender, args);
 			case "ashand" -> asHand(sender, args);
 			case "asrc" -> asRightClickAir(sender, args);
+			case "vischeck" -> visCheck(sender, args);
 			default -> asPlayer(sender, args);
 		};
 	}
@@ -450,6 +451,40 @@ public final class ProbePlugin extends JavaPlugin implements CommandExecutor {
 			+ world.getName() + " " + block.getX() + " " + block.getY() + " " + block.getZ()
 			+ "（" + block.getType().name() + "）"
 			+ (event.isCancelled() ? "（已被取消）" : "（未被取消）"));
+		return true;
+	}
+
+	/**
+	 * 查看某玩家能否看到带上 plugmc_cosmetic 标签的装饰实体（验证可见性模式）。
+	 * 用法：/vischeck <穿戴者> [观察者]，观察者省略时就是穿戴者自己。
+	 */
+	private boolean visCheck(CommandSender sender, String[] args) {
+		if (args.length < 1) {
+			sender.sendMessage("用法：/vischeck <穿戴者> [观察者]");
+			return true;
+		}
+		Player owner = Bukkit.getPlayerExact(args[0]);
+		if (owner == null) {
+			sender.sendMessage("穿戴者不在线：" + args[0]);
+			return true;
+		}
+		Player viewer = args.length >= 2 ? Bukkit.getPlayerExact(args[1]) : owner;
+		if (viewer == null) {
+			sender.sendMessage("观察者不在线：" + args[1]);
+			return true;
+		}
+		String tag = "plugmc_cosmetic";
+		int total = 0, visible = 0;
+		for (org.bukkit.entity.Entity e : owner.getWorld().getEntities()) {
+			if (e.getScoreboardTags().contains(tag)) {
+				total++;
+				if (viewer.canSee(e)) {
+					visible++;
+				}
+			}
+		}
+		sender.sendMessage(viewer.getName() + " 看 " + owner.getName() + " 的装饰：" + visible + "/" + total + " 可见"
+			+ "（穿戴者=" + owner.getUniqueId() + " 观察者=" + viewer.getUniqueId() + "）");
 		return true;
 	}
 

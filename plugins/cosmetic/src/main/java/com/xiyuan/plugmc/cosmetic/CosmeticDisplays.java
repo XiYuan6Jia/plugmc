@@ -152,7 +152,9 @@ final class CosmeticDisplays {
 				entity.setInvulnerable(true);
 				entity.setSilent(true);
 				entity.setGravity(false);
-				entity.setVisibleByDefault(!config.selfOnly);
+				// ALL / HIDE_SELF 默认对所有玩家可见；SELF_ONLY 默认不可见。
+				// 穿戴者自己的例外在 applyVisibility() 里做 per-player 覆盖。
+				entity.setVisibleByDefault(config.visibility != CosmeticConfig.VisibilityMode.SELF_ONLY);
 				entity.setViewRange(config.viewRange);
 				entity.setTeleportDuration(config.teleportDuration);
 				entity.setInterpolationDuration(config.teleportDuration);
@@ -162,17 +164,36 @@ final class CosmeticDisplays {
 				entity.addScoreboardTag(TAG);
 				entity.addScoreboardTag(TAG + "_" + slot.id());
 			});
-			if (config.selfOnly) {
-				for (Player viewer : Bukkit.getOnlinePlayers()) {
-					if (!viewer.equals(player)) {
-						viewer.hideEntity(plugin, display);
-					}
-				}
-			}
+			// 只需覆盖「穿戴者 vs 自己的装饰」这一组关系；
+			// 其他玩家 vs 别人的装饰由 setVisibleByDefault 的全默认值搞定。
+			applyOwnerVisibility(player, display);
 			return display;
 		} catch (RuntimeException exception) {
 			plugin.getLogger().warning("生成装饰实体失败（部位 " + slot.id() + "）：" + exception.getMessage());
 			return null;
+		}
+	}
+
+	/**
+	 * 只对「穿戴者自己 vs 自己的装饰」做可见性覆盖。
+	 *
+	 * <p>其他玩家对这些装饰的可见性交给 {@code setVisibleByDefault} 的全默认值，
+	 * 不去逐个 hideEntity，省掉每帧遍历所有玩家的开销。三种模式：</p>
+	 * <ul>
+	 *   <li>ALL ——  everyone：自己可见（无需覆盖，撤掉可能的旧隐藏）</li>
+	 *   <li>HIDE_SELF —— 自己 hideEntity，别人看默认（解决第一人称挡视野）</li>
+	 *   <li>SELF_ONLY —— 别人全默认不可见（spawn 就设了），自己 showEntity 覆盖回来</li>
+	 * </ul>
+	 */
+	private void applyOwnerVisibility(Player owner, ItemDisplay display) {
+		CosmeticConfig.VisibilityMode mode = config.visibility;
+		if (mode == CosmeticConfig.VisibilityMode.HIDE_SELF) {
+			owner.hideEntity(plugin, display);
+		} else if (mode == CosmeticConfig.VisibilityMode.SELF_ONLY) {
+			owner.showEntity(plugin, display);
+		} else {
+			// ALL：确保自己没有被之前的模式隐藏过
+			owner.showEntity(plugin, display);
 		}
 	}
 
@@ -255,12 +276,6 @@ final class CosmeticDisplays {
 			dx += fx * (-pitchRad * 0.18 * pitchComp);
 			dz += fz * (-pitchRad * 0.18 * pitchComp);
 			dy -= Math.abs(pitchRad) * 0.04 * pitchComp;
-		}
-
-		// 潜行时整体下沉 0.6 格：第一人称视角里装饰模型会挡住视野（尤其头顶/肩侧），
-		// 蹲下挂机或对准方块时最明显。所有部位统一处理，绕开逐槽位调参。
-		if (player.isSneaking()) {
-			dy -= 0.6;
 		}
 
 		Location target = new Location(base.getWorld(), base.getX() + dx, base.getY() + dy, base.getZ() + dz);

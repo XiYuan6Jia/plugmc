@@ -16,6 +16,16 @@ import java.util.Map;
  */
 final class CosmeticConfig {
 
+	/** 装饰对谁可见。 */
+	enum VisibilityMode {
+		/** 所有人可见（第一人称会挡住穿戴者自己的视野）。 */
+		ALL,
+		/** 穿戴者自己看不到，其他玩家看得到（默认，解决第一人称挡视野）。 */
+		HIDE_SELF,
+		/** 只有穿戴者自己看得到（与原 self-only 相同）。 */
+		SELF_ONLY
+	}
+
 	/** 一个装饰槽的静态定义。 */
 	record Slot(
 		String id,
@@ -46,7 +56,7 @@ final class CosmeticConfig {
 	final int teleportDuration;
 	final double nearPlayersRadius;
 	final float viewRange;
-	final boolean selfOnly;
+	final VisibilityMode visibility;
 
 	final List<Slot> slots;
 	final Map<String, Slot> slotsById;
@@ -68,7 +78,7 @@ final class CosmeticConfig {
 		int teleportDuration,
 		double nearPlayersRadius,
 		float viewRange,
-		boolean selfOnly,
+		VisibilityMode visibility,
 		List<Slot> slots,
 		boolean attributesEnabled,
 		List<String> attributeWhitelist,
@@ -85,7 +95,7 @@ final class CosmeticConfig {
 		this.teleportDuration = teleportDuration;
 		this.nearPlayersRadius = nearPlayersRadius;
 		this.viewRange = viewRange;
-		this.selfOnly = selfOnly;
+		this.visibility = visibility;
 		this.slots = List.copyOf(slots);
 		Map<String, Slot> byId = new LinkedHashMap<>();
 		for (Slot slot : slots) {
@@ -163,7 +173,7 @@ final class CosmeticConfig {
 			Math.min(59, Math.max(0, cfg.getInt("sync.teleport-duration", 2))),
 			Math.max(0.0, cfg.getDouble("sync.near-players-radius", 0.0)),
 			(float) Math.max(0.0, cfg.getDouble("view.range", 48.0)),
-			cfg.getBoolean("view.self-only", false),
+			parseVisibility(cfg.getString("view.mode", ""), cfg.getBoolean("view.self-only", false)),
 			slots,
 			cfg.getBoolean("attributes.enabled", true),
 			toStringList(cfg.getStringList("attributes.whitelist")),
@@ -191,6 +201,21 @@ final class CosmeticConfig {
 			}
 		}
 		return out;
+	}
+
+	/**
+	 * 解析可见性模式。兼容旧的 view.self-only：
+	 * 没写 view.mode 时，self-only=true 映射到 SELF_ONLY，否则映射到 HIDE_SELF。
+	 */
+	private static VisibilityMode parseVisibility(String raw, boolean legacySelfOnly) {
+		if (raw == null || raw.isBlank()) {
+			return legacySelfOnly ? VisibilityMode.SELF_ONLY : VisibilityMode.HIDE_SELF;
+		}
+		try {
+			return VisibilityMode.valueOf(raw.trim().toUpperCase(Locale.ROOT));
+		} catch (IllegalArgumentException exception) {
+			return legacySelfOnly ? VisibilityMode.SELF_ONLY : VisibilityMode.HIDE_SELF;
+		}
 	}
 
 	private static ItemDisplay.ItemDisplayTransform parseTransform(String raw) {

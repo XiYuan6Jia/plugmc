@@ -56,7 +56,7 @@
 | `sync.move-threshold` | 位移超过多少格才更新，默认 0.05 |
 | `sync.teleport-duration` | `setTeleportDuration`，越大越省带宽但越飘 |
 | `view.range` | 装饰实体的可见距离，默认 48 |
-| `view.self-only` | 只有自己看得见（默认 `false`） |
+| `view.mode` | 可见性：`all`（所有人可见）/ `hide-self`（默认，自己不可见但别人可见）/ `self-only`（仅自己可见）。旧 `view.self-only: true` 自动映射到 `self-only` |
 | `slots.<id>.*` | 槽位的名称、偏移、缩放、变换、是否跟随俯仰、是否绕圈、权限 |
 | `attributes.enabled` | 是否把槽位物品的属性透传给玩家 |
 | `attributes.whitelist` / `blacklist` | 属性白/黑名单，黑名单默认 `[MAX_HEALTH]` |
