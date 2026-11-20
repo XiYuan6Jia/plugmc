@@ -194,11 +194,17 @@ final class CosmeticListener implements Listener {
 
 	@EventHandler
 	public void onTeleport(PlayerTeleportEvent event) {
-		// 跨世界传送时实体留在旧世界，必须先清掉
+		Player player = event.getPlayer();
+		// 跨世界传送时实体留在旧世界，必须先清掉并延迟重建
 		if (event.getFrom().getWorld() != null && event.getTo() != null
 			&& event.getFrom().getWorld() != event.getTo().getWorld()) {
-			plugin.displayDisplays().removeAll(event.getPlayer().getUniqueId(), true);
+			plugin.displayDisplays().removeAll(player.getUniqueId(), true);
+			plugin.runSyncLater(player);
 		}
+		// 无论同世界还是跨世界：客户端落地后会重新下发实体 spawn 包，
+		// 冲掉 hideEntity 的一次性 destroy 包。延迟两 tick 重新施加可见性，
+		// 才能保持「穿戴者自己看不到装饰」。
+		plugin.reapplyVisibilityLater(player);
 	}
 
 	@EventHandler

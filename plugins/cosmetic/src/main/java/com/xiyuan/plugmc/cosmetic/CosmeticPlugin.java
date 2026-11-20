@@ -155,6 +155,28 @@ public final class CosmeticPlugin extends JavaPlugin {
 		});
 	}
 
+	/**
+	 * 传送落地后重新施加可见性。
+	 *
+	 * <p>{@code hideEntity} 发的是一次性 destroy 包，客户端传送到新区块后会
+	 * 重新下发附近实体的 spawn 包，把被隐藏的装饰又画出来——表现就是
+	 * 「传送后第一人称装饰又显示出来了」。延迟两 tick，等客户端 spawn 包
+	 * 发完再重新 hide/show 一遍。</p>
+	 */
+	void reapplyVisibilityLater(Player player) {
+		// 客户端落地后会分批下发实体 spawn 包（区块加载有快有慢），
+		// 单次 hide 可能被随后的 spawn 冲掉。在 1 秒内分 4 次重施，覆盖慢速加载。
+		for (long delay : new long[]{2L, 7L, 12L, 17L}) {
+			Bukkit.getScheduler().runTaskLater(this, () -> {
+				if (player.isOnline()) {
+					displays.reapplyVisibility(player);
+					getLogger().info("[cosmetic] 传送后重施可见性: " + player.getName()
+						+ " mode=" + config.visibility);
+				}
+			}, delay);
+		}
+	}
+
 	CosmeticConfig config() {
 		return config;
 	}

@@ -197,6 +197,37 @@ final class CosmeticDisplays {
 		}
 	}
 
+	/**
+	 * 传送/换世界落地后重新施加可见性。
+	 *
+	 * <p>{@code hideEntity} 发的是一次性的实体 destroy 包，不是持久状态。
+	 * 客户端跨区块/跨世界传送后会重新下发实体 spawn 包，把之前 destroy 掉的
+	 * 装饰又画出来——表现就是「传送后第一人称装饰又显示出来了」。
+	 * 所以传送落地后必须重新 hide/show 一遍。</p>
+	 */
+	void reapplyVisibility(Player player) {
+		Map<String, ItemDisplay> displays = active.get(player.getUniqueId());
+		if (displays == null) {
+			return;
+		}
+		CosmeticConfig.VisibilityMode mode = config.visibility;
+		for (ItemDisplay display : displays.values()) {
+			if (display == null || !display.isValid()) {
+				continue;
+			}
+			if (mode == CosmeticConfig.VisibilityMode.HIDE_SELF) {
+				// CraftPlayer.hideEntity0 只对 invertedVisibility 表「新增」的实体发 destroy 包：
+				// addInvertedVisibility 在 set 已存在时只 add 并 return false，hideEntity0 收到
+				// false 就空操作。传送后客户端重新下发 spawn 包，若只重调 hideEntity 不会发包，
+				// 装饰就又显示了。先用 showEntity 把实体从表里移出（removeInvertedVisibility
+				// 返回 true → 发 spawn），紧接着 applyOwnerVisibility 的 hideEntity 重新加入
+				// （返回 true → 发 destroy），同 tick 内强制重发一对包，压回「隐藏」状态。
+				player.showEntity(plugin, display);
+			}
+			applyOwnerVisibility(player, display);
+		}
+	}
+
 	private void applyItem(ItemDisplay display, ItemStack stack, CosmeticConfig.Slot slot, float bodyScale) {
 		ItemStack render = CosmeticItems.renderCopy(stack);
 		ItemStack current = display.getItemStack();
