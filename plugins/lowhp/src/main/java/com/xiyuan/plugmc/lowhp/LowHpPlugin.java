@@ -67,8 +67,11 @@ public final class LowHpPlugin extends JavaPlugin {
 			packServer.update(result);
 			packServer.start(settings);
 			alerts.apply(settings, result.durations());
-			String message = "资源包已生成：" + result.durations().size() + " 段提示音，"
-				+ result.bytes() + " 字节";
+			String message = "资源包已生成：" + result.durations().size() + " 段提示音（"
+				+ result.durations().entrySet().stream()
+					.map(entry -> entry.getKey() + "=" + LowHpText.seconds(entry.getValue()))
+					.collect(java.util.stream.Collectors.joining("、"))
+				+ "），" + result.bytes() + " 字节";
 			getLogger().info(message);
 			if (callback != null) {
 				callback.accept(message);
