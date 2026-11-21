@@ -12,6 +12,9 @@
 - `sleepvote/`：入睡半径，半径内达到比例的玩家入睡后跳过夜晚，详见 [sleepvote/README.md](sleepvote/README.md)。
 - `ride/`：玩家骑乘，`/ride <玩家>` 骑上去、`/ride off` 下来，原生乘客位跟随，
   受伤/传送/换世界自动下车；`ride.use` 默认 `op`（**暂时只开放给 OP**），详见 [ride/README.md](ride/README.md)。
+- `lowhp/`：低血量提示音，血量 ≤ 30% 时随机给该玩家播一段内置音频（只有自己能听到），
+  自带内置 HTTP 资源包服务（默认 TCP `20103`），`/lowhp test|toggle|reload`，
+  详见 [lowhp/README.md](lowhp/README.md)。
 - `anti-xray/`：反矿物透视，隐藏矿挖掘预警 + `/antixray apply` 管理 Paper 内置防透视配置，
   详见 [anti-xray/README.md](anti-xray/README.md)。
 - `hub/`：主城大厅，启动时创建独立虚空维度 `hub` 并用代码生成一座带喷泉/柱子/天窗的大厅，

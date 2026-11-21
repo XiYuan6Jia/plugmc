@@ -1,0 +1,40 @@
+# 低血量提示音
+enabled: true
+
+trigger:
+  # 血量低于最大生命值的这个比例时触发（0.3 = 30%，默认 20 点血即 6 点）
+  threshold-percent: 0.3
+  # 回血超过该比例时停止播放并重置冷却
+  heal-percent: 0.45
+  # 同一玩家两次提示音之间的最少间隔（秒）；提示音很长，默认 120 秒
+  cooldown-seconds: 120
+
+playback:
+  volume: 1.0
+  pitch: 1.0
+  # 回血到 heal-percent 以上时立刻停止播放
+  stop-when-healed: true
+  # 触发时给该玩家发一行提示（可用 /lowhp toggle 关闭提示音）
+  notify-player: true
+
+alerts:
+  # 可用的内置提示音：a = 邦吧邦吧邦吧（雨爱·司凤版），b = 你的呼吸像雨滴（雨爱 DJ 1.03x）
+  # 每次触发会在下面列表里随机挑一段，只播放给该玩家自己
+  enabled: [a, b]
+
+pack:
+  # 玩家实际请求的资源包地址；必须对外可访问
+  public-url: "http://q1.minekuai.com:20103/lowhp-alert.zip"
+  # 资源包格式范围 [major, minor]；26.3 为 97.1（可在 server jar 的 version.json
+  # 的 pack_version.resource_major / resource_minor 里查到）
+  min-format: [97, 0]
+  max-format: [97, 99]
+  # 监听地址，留空 = 0.0.0.0
+  bind-address: ""
+  # 内置 HTTP 服务端口（测试服 20101-20105 已分配，20103 空闲）
+  port: 20103
+  # 玩家进服后延迟多少 tick 下发资源包
+  join-delay-ticks: 60
+  # true = 不接受资源包就不能进服
+  required: false
+  prompt: "&6服务器提示音资源包（约 2.5 MB）"

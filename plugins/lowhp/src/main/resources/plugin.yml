@@ -1,0 +1,21 @@
+name: lowhp
+version: '${version}'
+main: com.xiyuan.plugmc.lowhp.LowHpPlugin
+api-version: '${api_version}'
+authors: [XiYuan6Jia]
+description: "低血量提示音：血量低于阈值时随机给该玩家播放一段内置音频"
+commands:
+  lowhp:
+    description: "低血量提示音：状态、试听、开关、重载"
+    usage: /lowhp [status|test [a|b]|toggle|stop|pack [玩家]|reload]
+    aliases: [lowhealth, xuekuang]
+permissions:
+  lowhp.use:
+    description: "查看状态、试听与开关提示音"
+    default: true
+  lowhp.alerts:
+    description: "血量过低时收到提示音"
+    default: true
+  lowhp.admin:
+    description: "重载配置、给其他玩家下发资源包"
+    default: op
